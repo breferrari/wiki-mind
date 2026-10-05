@@ -13,7 +13,7 @@ Bootstrapping. The repo holds no vault content yet. Work goes in this order, and
 
 Do not write vault content before `SPEC.md` is ratified.
 
-## Ontology (proposed; ratified in SPEC.md)
+## Ontology (SPEC.md §2 is authoritative)
 
 | Folder | Holds |
 |--------|-------|
@@ -21,7 +21,7 @@ Do not write vault content before `SPEC.md` is ratified.
 | `concepts/` | Atomic ideas. |
 | `entities/` | Named systems, tools, people. |
 | `syntheses/` | "X vs Y" comparison notes that sit above concepts. |
-| `open_questions/` | The intake queue. |
+| `questions/` | The intake queue: questions and leads, each with a `status`. |
 | `Index.md` | Annotated entry point to the wiki. |
 
 Each folder gets one Obsidian template.
@@ -41,6 +41,14 @@ Update this table in the same PR that adds or removes a top-level path.
 | `LICENSE` | MIT. |
 | `.gitattributes` | Pins LF line endings. |
 | `.shardmindignore` | Repo-only files that `shardmind install` leaves out. |
+| `.gitignore` | Obsidian and hook runtime state. |
+| `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions; the hooks' vault-root marker. |
+| `.claude/scripts/` | Hook entry points, the extension registry (`core/`) and the vendored obsidian-mind libraries (`lib/`, see `.claude/VENDOR.json`). |
+| `.claude/extensions/` | wiki-mind's own hook extensions. |
+| `.claude/settings.json` | Wires the hooks. |
+| `.claude/skills/` | Obsidian and QMD skills (vendored). |
+| `.scripts/` | QMD index bootstrap. |
+| `.mcp.json` | Registers the QMD MCP server. |
 
 ## Developing this shard
 
