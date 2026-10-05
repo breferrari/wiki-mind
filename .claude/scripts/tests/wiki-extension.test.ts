@@ -85,7 +85,7 @@ describe("Stop", () => {
 		try {
 			const { result } = await runDetectors(registry, ctx);
 			const byClaim = new Map(result.map((f) => [f.claim, f.lines]));
-			assert.deepEqual(byClaim.get("1 note with frontmatter problems"), ["- entities/Nameless.md (Missing `description` in frontmatter (required for an entity note, SPEC.md §2))"]);
+			assert.deepEqual(byClaim.get("1 note with frontmatter problems"), ["- entities/Nameless.md (Missing `description` in frontmatter (required for an entity note))"]);
 			assert.deepEqual(byClaim.get("1 open question untouched for 30 days"), ["- questions/Ancient.md"], "Open One was just written, so only Ancient is stale");
 			assert.ok(!result.some((f) => f.claim.includes("orphan")), "every note is now linked from Index.md");
 		} finally {
