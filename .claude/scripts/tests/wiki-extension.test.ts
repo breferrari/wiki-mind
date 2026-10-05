@@ -5,7 +5,7 @@
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmTemp } from "./_helpers.ts";
@@ -69,9 +69,30 @@ describe("Stop", () => {
 			"1 concept or entity note cites no source",
 			"1 synthesis with fewer than two sides",
 			"3 notes Index.md doesn't annotate",
+			"2 orphan notes",
 		]);
 		assert.deepEqual(result[0]?.lines, ["- concepts/Lonely.md"]);
 		assert.deepEqual(result[2]?.lines, ["- concepts/Lonely.md", "- syntheses/Half.md", "- questions/Done.md"]);
+		assert.deepEqual(result[3]?.lines, ["- concepts/Lonely.md", "- questions/Done.md"], "Half links RAG through sides, so it is not an orphan");
+	});
+
+	test("frontmatter problems, stale open questions, and orphans an Index.md link clears", async () => {
+		write("entities/Nameless.md", fm({ date: "2026-10-05", tags: "[e]", kind: "company" }) + "[[New Paper]]\n");
+		const old = (Date.now() - 40 * 86_400_000) / 1000;
+		write("questions/Ancient.md", fm({ ...BASE, status: "open" }), old);
+		const linked = ["RAG", "New Paper", "Old Paper", "FAISS", "RAG vs Finetuning", "Open One", "Lonely", "Done", "Ancient"];
+		write("Index.md", `# Index\n${linked.map((n) => `- [[${n}]]`).join("\n")}\n`);
+		try {
+			const { result } = await runDetectors(registry, ctx);
+			const byClaim = new Map(result.map((f) => [f.claim, f.lines]));
+			assert.deepEqual(byClaim.get("1 note with frontmatter problems"), ["- entities/Nameless.md (Missing `description` in frontmatter (required for an entity note, SPEC.md §2))"]);
+			assert.deepEqual(byClaim.get("1 open question untouched for 30 days"), ["- questions/Ancient.md"], "Open One was just written, so only Ancient is stale");
+			assert.ok(!result.some((f) => f.claim.includes("orphan")), "every note is now linked from Index.md");
+		} finally {
+			rmSync(join(root, "entities", "Nameless.md"));
+			rmSync(join(root, "questions", "Ancient.md"));
+			write("Index.md", "# Index\n- [[RAG]] the idea\n- [[New Paper]]\n- [[Old Paper]]\n- [[FAISS]]\n- [[RAG vs Finetuning]]\n- [[Open One]]\n");
+		}
 	});
 
 	test("the checklist names Index.md, source links and /wiki-lint", () => {

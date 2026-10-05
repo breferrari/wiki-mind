@@ -259,6 +259,7 @@ Each wiki-mind entry point (#35) is a dispatcher over the registry (§7.4). It k
 | `classify-message.ts` | `hook-io`, `hint-state` (`claimUnseen`), `project-dir`, `stop-handoff` | Nothing beyond the signal matcher (S3), which the registry now provides. The order (the handoff taken first, whatever the prompt holds) is copied. |
 | `validate-write.ts` | `hook-io`, `frontmatter` (`shouldSkipFile`), `project-dir`, `qmd-refresh` | The vault-root boundary check and the refresh-before-skip order (S4), both copied. obsidian-mind's memory-location guard is not ported: it sends knowledge to `brain/`, which wiki-mind does not have. |
 | `pre-compact.ts` | vendored whole | — |
+| `lint.ts` | `project-dir` | Nothing: it is a thin dispatcher over the registry's Stop detectors, for `/wiki-lint` (#22). It lifts with the core. |
 
 Every entry point also reads and parses `vault-manifest.json` itself; the core should hand the parsed manifest in.
 
@@ -376,7 +377,12 @@ Each rule that can be tested has a test in `core/registry.test.ts`: declaration,
 - **Detectors:**
   - concepts and entities that cite no source;
   - syntheses with fewer than two `sides`;
-  - notes `Index.md` doesn't link.
+  - notes `Index.md` doesn't link;
+  - notes with frontmatter problems;
+  - orphan notes, which link to no note and no note or `Index.md` links to;
+  - open questions untouched for 30 days.
+
+  They run at every Stop. `.claude/scripts/lint.ts` runs them on demand for `/wiki-lint` (#22), and prints the findings as plain text.
 - **Signals:** a new source (a URL, arXiv, DOI or PDF), a comparison, a question.
 - **Validators:** the §2 frontmatter (global fields, type fields, the `kind` and `status` value sets), the source-link rule, and two `sides` for a synthesis.
 

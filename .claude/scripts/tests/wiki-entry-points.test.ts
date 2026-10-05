@@ -204,6 +204,19 @@ describe("rule 3 across the hooks", () => {
 	});
 });
 
+describe("lint (the /wiki-lint report)", () => {
+	test("prints every Stop detector's findings as plain text, with the notes they name", () => {
+		const { stdout, code } = run("lint", null);
+		assert.equal(code, 0);
+		assert.match(stdout, /⚠️  1 concept or entity note cites no source:\n- concepts\/Lonely\.md/);
+		assert.doesNotMatch(stdout, /^\{/, "plain text, not a hook envelope");
+	});
+
+	test("says when the extensions are off, so an empty report is not mistaken for a clean wiki", () => {
+		assert.match(run("lint", null, { VAULT_EXTENSIONS: "off" }).stdout, /nothing was checked/);
+	});
+});
+
 describe("classify-message", () => {
 	test("bad input writes nothing", () => {
 		assert.equal(run("classify-message", "not json").stdout, "");
