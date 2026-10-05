@@ -2,6 +2,8 @@
  * The ShardMind manifest (.shardmind/shard.yaml), held to SPEC.md §8:
  * - Invariant 3: post-update hooks are additive. wiki-mind declares none, so
  *   the invariant holds trivially; this test changes when one is added.
+ * - Invariant 4: bootstrap re-runs only on fingerprint change. The engine
+ *   enforces it; the shard has to declare a fingerprint for it to apply.
  * - The engine floor the manifest declares is the version CI validates with,
  *   so a manifest can't claim an engine CI never ran.
  *
@@ -9,7 +11,7 @@
  */
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -36,6 +38,14 @@ describe("the ShardMind manifest", () => {
 		const hooks = blockKeys(manifest, "hooks");
 		assert.ok(!hooks.includes("post-update"), "a post-update hook needs a test that holds it to ctx.newFiles");
 		assert.ok(!hooks.includes("post-install"), "post-install is the deprecated combined slot");
+	});
+
+	test("Invariant 4: bootstrap is declared with a fingerprint, so it re-runs on update only when that changes", () => {
+		assert.ok(blockKeys(manifest, "hooks").includes("bootstrap"));
+		const block = manifest.slice(manifest.indexOf("  bootstrap:"));
+		assert.match(block, /^ {4}script: \.shardmind\/hooks\/bootstrap\.ts$/m);
+		assert.match(block, /^ {4}fingerprint: "[^"]+"$/m, "a bootstrap without a fingerprint never re-runs on update");
+		assert.ok(existsSync(join(REPO, ".shardmind", "hooks", "bootstrap.ts")));
 	});
 
 	test("requires.shardmind's floor is the version CI validates with", () => {

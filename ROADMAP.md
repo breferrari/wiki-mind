@@ -45,7 +45,7 @@ Milestone: [Phase 2](https://github.com/breferrari/wiki-mind/milestone/2)
 | ✅ | Keep test files out of installed vaults | [#40](https://github.com/breferrari/wiki-mind/issues/40) |
 | ⬜ | No obsidian-mind in anything user- or model-facing | [#41](https://github.com/breferrari/wiki-mind/issues/41) |
 | ✅ | Contract test for Invariant 1 and Invariant 2: install --defaults equals a clone | [#11](https://github.com/breferrari/wiki-mind/issues/11) |
-| ⬜ | bootstrap hook builds the QMD index, with a test holding Invariant 4 | [#12](https://github.com/breferrari/wiki-mind/issues/12) |
+| ✅ | bootstrap hook builds the QMD index, with a test holding Invariant 4 | [#12](https://github.com/breferrari/wiki-mind/issues/12) |
 | ⬜ | QMD session-start work for wiki-mind sessions (S5) | [#42](https://github.com/breferrari/wiki-mind/issues/42) |
 
 ## Phase 3 — the wiki
@@ -78,6 +78,7 @@ Everything a first tag needs except the tag itself, which is the maintainer's.
 |---|---|---|
 | ⬜ | Add the release workflow and CHANGELOG.md | [#23](https://github.com/breferrari/wiki-mind/issues/23) |
 | ⬜ | Write the README's install, update and usage sections | [#24](https://github.com/breferrari/wiki-mind/issues/24) |
+| ⬜ | Contract test on fork PRs: resolve or skip with a notice | [#51](https://github.com/breferrari/wiki-mind/issues/51) |
 
 ## Phase 5 — after the first release
 

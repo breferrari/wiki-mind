@@ -30,6 +30,19 @@ external_tools:
     optional: true
     when: qmd_enabled
 
-# No hooks yet: bootstrap lands with #12, personalize with #17. There is no
-# post-update hook, and .claude/scripts/tests/shard-manifest.test.ts holds
-# that (Invariant 3).
+hooks:
+  bootstrap:
+    # Unmanaged-path setup on install (SPEC.md §6.5): `git init` when the
+    # vault has no repository, and the QMD index when `qmd_enabled`. Vendored
+    # from obsidian-mind (VENDOR.json).
+    script: .shardmind/hooks/bootstrap.ts
+    # Bump whenever an update must re-run bootstrap on existing installs:
+    # a QMD index schema change, a store migration, a new setup step. The
+    # engine re-runs bootstrap when this differs from the value recorded at
+    # the last install (Invariant 4).
+    fingerprint: "qmd-v1"
+  # The first QMD bootstrap builds the index and embeds every note.
+  timeout_ms: 60000
+
+# personalize lands with #17. There is no post-update hook, and
+# .claude/scripts/tests/shard-manifest.test.ts holds that (Invariant 3).

@@ -62,7 +62,11 @@ describe("Invariant 1 and Invariant 2: install --defaults equals a clone", { ski
 		assert.equal(run.status, 0, `install failed:\n${run.stdout}\n${run.stderr}`);
 
 		const expected = installSet(REPO);
-		const installed = listFiles(target).filter((f) => !f.startsWith(".shardmind/") && f !== "shard-values.yaml");
+		// Besides ShardMind's metadata, the bootstrap hook's unmanaged outputs
+		// are not part of the comparison: `git init` (.git/) and the QMD index
+		// (.qmd/, when QMD is installed). Invariant 1 compares managed files.
+		const unmanaged = (f: string) => f.startsWith(".shardmind/") || f === "shard-values.yaml" || f.startsWith(".git/") || f.startsWith(".qmd/");
+		const installed = listFiles(target).filter((f) => !unmanaged(f));
 		const missing = [...expected].filter((f) => !installed.includes(f)).sort();
 		const extra = installed.filter((f) => !expected.has(f)).sort();
 		assert.deepEqual({ missing, extra }, { missing: [], extra: [] });
@@ -71,6 +75,7 @@ describe("Invariant 1 and Invariant 2: install --defaults equals a clone", { ski
 		assert.deepEqual(differ, [], "Invariant 1: every installed file is byte-identical to the clone's");
 
 		assert.ok(listFiles(target).includes("shard-values.yaml"), "the install records its values");
+		assert.ok(listFiles(target).includes(".git/HEAD"), "the bootstrap hook ran: git init");
 		assert.deepEqual(installed.filter((f) => /\.test\.ts$/.test(f)), [], "no test file installs");
 	});
 });
