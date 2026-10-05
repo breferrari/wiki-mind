@@ -124,7 +124,17 @@ jobs:
         env:
           WIKI_CONTRACT_REF: ${{ github.sha }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: node --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/contract.test.ts
+        run: |
+          # The install fetches this commit's tarball through the GitHub API.
+          # A commit the API can't serve (a fork's, for instance) can't be
+          # installed, which says nothing about the shard: skip with a visible
+          # notice instead of failing. Any other failure is the test's.
+          status=$(curl -s -o /dev/null -w '%{http_code}' -I -L             -H "Authorization: Bearer ${GITHUB_TOKEN}"             "https://api.github.com/repos/${GITHUB_REPOSITORY}/tarball/${WIKI_CONTRACT_REF}")
+          if [ "$status" != "200" ]; then
+            echo "::notice::the contract test is skipped: GitHub can't serve a tarball of ${WIKI_CONTRACT_REF} (HTTP ${status}), so it can't be installed from GitHub"
+            exit 0
+          fi
+          node --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/contract.test.ts
 
       - name: No test wrote outside its temp dir
         shell: bash
