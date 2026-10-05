@@ -5,7 +5,7 @@ argument-hint: "<X> vs <Y> [vs <Z>]"
 
 # Write a synthesis
 
-Compares the notes named in `$ARGUMENTS` in a `syntheses/` note (SPEC.md §2). A synthesis sits above concepts and entities: it says how they relate, and never replaces either.
+Compares the notes named in `$ARGUMENTS` in a `syntheses/` note (CLAUDE.md, "The wiki"). A synthesis sits above concepts and entities: it says how they relate, and never replaces either.
 
 ## 1. Find the sides
 
