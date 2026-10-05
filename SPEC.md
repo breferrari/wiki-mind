@@ -213,6 +213,13 @@ The mod is vendored at `.claude/skills/wiki-mind/` (upstream `.claude/skills/obs
 
 **Decided (2026-10-05, maintainer may overrule):** the correction sweep is not in v0.1 (Q12). obsidian-mind's sweep is built around its single-source status rule. A wiki's correction case is different: a source is retracted or superseded. That case gets its own spec in a later phase (see [Later](#later)).
 
+**Tests stay in the repo (#40).** `.shardmindignore` leaves out:
+- every test file;
+- the test helpers under `.claude/scripts/tests/`;
+- the mod's test engine stand-in, `hooks/world.ts`.
+
+Nothing installed imports them, and `tests/install-set.test.ts` holds that. `.claude/VENDOR.json` still records the vendored tests, because the record describes the vendored source, not the install. A vendor update in an installed vault skips the files that vault doesn't have.
+
 Two things a vendor update has to keep in step:
 
 - `.gitignore` carries the hook runtime-state entries;
