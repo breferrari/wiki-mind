@@ -285,9 +285,9 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 The vendored paths and the vault paths are disjoint. So a vendor update's three-way merge is a safety net that almost never conflicts.
 
-Today an extension imports the API types from `../../scripts/core/types.ts`, and helpers straight from the vendored libraries under `../../scripts/lib/`. wiki-mind's extension uses `lib/session-start.ts` (`extractFrontmatterField`, `stripFrontmatter`) and `lib/wikilinks.ts`.
+An extension imports from `../../scripts/core/index.ts` only (#44). That file re-exports the API types, and the helpers the core chooses to export: `extractFrontmatterField` and `stripFrontmatter` from `lib/session-start.ts`, and `extractWikilinkTargets` from `lib/wikilinks.ts`. `tests/zones.test.ts` holds this rule, and the other zone rules in CONTRIBUTING.md.
 
-**The lift's import rule (decided 2026-10-05, maintainer may overrule):** once the core is extracted, an extension imports only from the core's one public entry point (an index module): the API types, plus the helpers the core chooses to export. It never imports a library file directly. The extraction can then rename or split library internals, as seams S2 and S5 need, without breaking any vault's extensions. The PR that swaps the vendored source moves wiki-mind's extension to that entry point.
+**The lift's import rule (decided 2026-10-05, maintainer may overrule):** an extension imports only from the core's one public entry point, never a library file directly. The extraction can then rename or split library internals, as seams S2 and S5 need, without breaking any vault's extensions. The rule already holds in wiki-mind, so the lift changes only the entry point's path.
 
 #### Declaration
 

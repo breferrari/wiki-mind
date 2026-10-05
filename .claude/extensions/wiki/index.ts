@@ -11,8 +11,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { stripFrontmatter } from "../../scripts/lib/session-start.ts";
-import type { Extension, Finding, HookContext, WriteTarget } from "../../scripts/core/types.ts";
+import { stripFrontmatter, type Extension, type Finding, type HookContext, type WriteTarget } from "../../scripts/core/index.ts";
 import {
 	FOLDERS,
 	NOTE_TYPES,
