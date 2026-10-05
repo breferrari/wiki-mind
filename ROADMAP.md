@@ -43,7 +43,7 @@ Milestone: [Phase 2](https://github.com/breferrari/wiki-mind/milestone/2)
 | ✅ | Organize for the core lift: four zones and core's public entry point | [#44](https://github.com/breferrari/wiki-mind/issues/44) |
 | ✅ | Load only the extensions declared for the current hook event | [#46](https://github.com/breferrari/wiki-mind/issues/46) |
 | ✅ | Keep test files out of installed vaults | [#40](https://github.com/breferrari/wiki-mind/issues/40) |
-| ⬜ | No obsidian-mind in anything user- or model-facing | [#41](https://github.com/breferrari/wiki-mind/issues/41) |
+| ✅ | No obsidian-mind in anything user- or model-facing | [#41](https://github.com/breferrari/wiki-mind/issues/41) |
 | ✅ | Contract test for Invariant 1 and Invariant 2: install --defaults equals a clone | [#11](https://github.com/breferrari/wiki-mind/issues/11) |
 | ✅ | bootstrap hook builds the QMD index, with a test holding Invariant 4 | [#12](https://github.com/breferrari/wiki-mind/issues/12) |
 | ⬜ | QMD session-start work for wiki-mind sessions (S5) | [#42](https://github.com/breferrari/wiki-mind/issues/42) |

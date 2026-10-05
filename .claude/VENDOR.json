@@ -88,7 +88,8 @@
       "upstream": ".claude/scripts/lib/wikilinks.ts"
     },
     ".claude/scripts/package.json": {
-      "modified": false,
+      "change": "#41: the description names wiki-mind; it installs, so nothing user-facing names the upstream vault.",
+      "modified": true,
       "upstream": ".claude/scripts/package.json"
     },
     ".claude/scripts/pre-compact.ts": {
@@ -311,7 +312,8 @@
       "upstream": ".shardmind/hooks/bootstrap.ts"
     },
     ".shardmind/hooks/package.json": {
-      "modified": false,
+      "change": "#41: the description names wiki-mind.",
+      "modified": true,
       "upstream": ".shardmind/hooks/package.json"
     }
   },
