@@ -111,6 +111,18 @@ jobs:
         working-directory: .claude/scripts
         run: npm test
 
+      # Invariant 1 and 2 (SPEC.md §8): install this commit from GitHub with
+      # `install --defaults` and compare it with the clone, byte for byte.
+      # The PR head is pushed by the time CI runs; the token lifts the GitHub
+      # API's unauthenticated rate limit.
+      - name: Contract test (install --defaults equals the clone)
+        shell: bash
+        working-directory: .claude/scripts
+        env:
+          WIKI_CONTRACT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/contract.test.ts
+
       - name: No test wrote outside its temp dir
         shell: bash
         run: |

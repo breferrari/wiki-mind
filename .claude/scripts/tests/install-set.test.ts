@@ -10,51 +10,13 @@
  */
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { RELATIVE_IMPORT, installSet as installSetOf, matcher } from "./_shard.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-
-/** ShardMind's engine-enforced exclusions (SHARD-LAYOUT.md, Tier 1) that a repo can hold. */
-const TIER_1 = [/^\.git\//, /^\.github\//, /^\.shardmind\//];
-
-/**
- * A .shardmindignore pattern as a path test, for the gitignore forms this
- * repo uses: a trailing `/` is a folder, `**` crosses folders, `*` does
- * not, and a pattern with no `/` before its end matches at any depth.
- */
-export function matcher(pattern: string): (path: string) => boolean {
-	let p = pattern.trim();
-	const folder = p.endsWith("/");
-	if (folder) p = p.slice(0, -1);
-	const anchored = p.startsWith("/") || p.includes("/");
-	p = p.replace(/^\//, "");
-	const body = p
-		.split("**/")
-		.map((part) => part.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join("[^/]*"))
-		.join("(?:.*/)?");
-	const re = new RegExp(`${anchored ? "^" : "(?:^|/)"}${body}${folder ? "/" : "$"}`);
-	return (path: string) => re.test(path);
-}
-
-function ignored(): (path: string) => boolean {
-	const patterns = readFileSync(join(REPO, ".shardmindignore"), "utf-8")
-		.split(/\r?\n/)
-		.filter((l) => l.trim() !== "" && !l.startsWith("#"));
-	if (patterns.some((p) => p.startsWith("!"))) throw new Error("negation: extend matcher() before using it");
-	const tests = patterns.map(matcher);
-	return (path) => tests.some((t) => t(path));
-}
-
-function installSet(): Set<string> {
-	const tracked = execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf-8" }).split("\n").filter((l) => l !== "");
-	const skip = ignored();
-	return new Set(tracked.filter((f) => !TIER_1.some((re) => re.test(f)) && !skip(f)));
-}
-
-const RELATIVE_IMPORT = /(?:import|export)\s[^'"]*?from\s*['"](\.[^'"]+)['"]|import\(\s*['"](\.[^'"]+)['"]\s*\)|import\s+['"](\.[^'"]+)['"]/g;
+const installSet = () => installSetOf(REPO);
 
 describe("what a vault gets", () => {
 	const installed = installSet();
