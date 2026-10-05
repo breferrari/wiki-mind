@@ -23,7 +23,7 @@ obsidian-mind's scripts, hooks and mod arrive as a vendored copy with `.claude/V
 | | Task | Issue |
 |---|---|---|
 | ✅ | ci: give the PR-title job its own name | [#4](https://github.com/breferrari/wiki-mind/issues/4) |
-| ⬜ | ci: tighten the session-artifact path pattern before vendored code lands | [#5](https://github.com/breferrari/wiki-mind/issues/5) |
+| ✅ | ci: tighten the session-artifact path pattern before vendored code lands | [#5](https://github.com/breferrari/wiki-mind/issues/5) |
 | ⬜ | Vendor obsidian-mind's machinery at c65062d with .claude/VENDOR.json | [#6](https://github.com/breferrari/wiki-mind/issues/6) |
 | ⬜ | Rename the Claude Code mod to wiki-mind (P1) | [#7](https://github.com/breferrari/wiki-mind/issues/7) |
 | ⬜ | Empty obsidian-mind's prompt signal set (P2) | [#8](https://github.com/breferrari/wiki-mind/issues/8) |

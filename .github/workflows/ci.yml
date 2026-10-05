@@ -39,13 +39,28 @@ jobs:
       - name: No agent-session artifacts in tracked files
         shell: bash
         run: |
-          # CONTRIBUTING.md hard rule 1. Session URLs, session trailers and
-          # local absolute paths never land in the repo. The path patterns
-          # need a real segment after the root and the trailer must start a
-          # line, so the rule's own text (`C:\...`, `/Users/...`, a
+          # CONTRIBUTING.md hard rule 1: session URLs, session trailers and
+          # local absolute paths never land in the repo.
+          #
+          # The path patterns describe a real path, not a mention of one:
+          # - A Windows path has a drive letter that stands alone, followed by
+          #   at least two segments, each closed by \, \\ or / (C:\Users\me\).
+          #   That leaves out regex source like \w+:\s, escaped strings like
+          #   tags:\n- x\n, and two-segment examples like C:\vault\note.md.
+          # - A home folder (/Users/<name>/, /home/<name>/) needs its name
+          #   segment closed.
+          # - The trailer has to start a line.
+          # So the rule's own wording (`C:\...`, `/Users/...`, a
           # `Claude-Session:` mention mid-sentence) doesn't match.
-          pattern='claude\.ai/(code/)?session|^Claude-Session:|[A-Za-z]:\\[A-Za-z0-9_]|/Users/[A-Za-z0-9_]|/home/[A-Za-z0-9_]'
-          hits=$(git grep -nIE "$pattern" || true)
+          #
+          # Excluded:
+          # - test files, test helpers and fixtures, which hold paths on
+          #   purpose to exercise Windows and POSIX handling;
+          # - this workflow, whose pattern line matches itself.
+          pattern='claude\.ai/(code/)?session|^Claude-Session:|(^|[^A-Za-z0-9])[A-Za-z]:(\\{1,2}|/)[A-Za-z0-9_.-]+(\\{1,2}|/)[A-Za-z0-9_.-]+(\\{1,2}|/)|/Users/[^/[:space:]]+/|/home/[^/[:space:]]+/'
+          hits=$(git grep -nIE "$pattern" -- . \
+            ':(exclude)*.test.*' ':(exclude)**/tests/**' ':(exclude)**/fixtures/**' \
+            ':(exclude).github/workflows/ci.yml' || true)
           if [ -n "$hits" ]; then
             echo "::error::agent-session artifacts or local paths in tracked files"
             echo "$hits"
