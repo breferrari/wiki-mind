@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/breferrari/shardmind/main/schemas/shard-schema.schema.json
+
+schema_version: 1
+
+# ---------------------------------------------------------------------------
+# Values (SPEC.md §4). Every value has a default, and the defaults are what a
+# clone gets (Invariant 1). The personalize hook (#17) uses the two strings;
+# the engine skips it on an all-defaults install (Invariant 2).
+# ---------------------------------------------------------------------------
+
+values:
+  user_name:
+    type: string
+    message: "Your name"
+    placeholder: "Ada Researcher"
+    default: ""
+    group: setup
+
+  research_focus:
+    type: string
+    message: "What is this wiki about?"
+    hint: "One line. It heads Index.md and tells search what the vault holds."
+    placeholder: "Retrieval-augmented generation"
+    default: ""
+    group: setup
+
+  qmd_enabled:
+    type: boolean
+    message: "Enable QMD semantic search?"
+    hint: "Requires: npm install -g @tobilu/qmd"
+    default: true
+    group: setup
+
+groups:
+  - id: setup
+    label: "Quick Setup"
+    description: "Three questions. Press Enter after each."
+
+# ---------------------------------------------------------------------------
+# Modules (SPEC.md §5). Neither is removable in the first release; Codex and
+# Gemini arrive as removable modules with #25. `.claude/scripts/` and
+# `.claude/extensions/` are claimed by no module, so they always install:
+# the hooks resolve into them whatever agent runs them.
+# ---------------------------------------------------------------------------
+
+modules:
+  wiki:
+    label: "The wiki: sources, concepts, entities, syntheses, questions, inbox, Bases, Index"
+    paths:
+      - "sources/"
+      - "concepts/"
+      - "entities/"
+      - "syntheses/"
+      - "questions/"
+      - "inbox/"
+      - "bases/"
+      - "templates/"
+      - "Index.md"
+    removable: false
+
+  claude:
+    label: "Claude Code: CLAUDE.md, commands, skills, the mod and the hook wiring"
+    paths:
+      - "CLAUDE.md"
+      - ".claude/commands/"
+      - ".claude/skills/"
+      - ".claude/settings.json"
+      - ".claude/VENDOR.json"
+    removable: false

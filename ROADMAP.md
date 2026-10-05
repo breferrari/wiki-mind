@@ -38,7 +38,7 @@ Milestone: [Phase 2](https://github.com/breferrari/wiki-mind/milestone/2)
 
 | | Task | Issue |
 |---|---|---|
-| ⬜ | Add the ShardMind manifest and values schema, with a test holding Invariant 3 | [#9](https://github.com/breferrari/wiki-mind/issues/9) |
+| ✅ | Add the ShardMind manifest and values schema, with a test holding Invariant 3 | [#9](https://github.com/breferrari/wiki-mind/issues/9) |
 | ⬜ | Add vault-manifest.json with wiki-mind's config keys | [#10](https://github.com/breferrari/wiki-mind/issues/10) |
 | ⬜ | Contract test for Invariant 1 and Invariant 2: install --defaults equals a clone | [#11](https://github.com/breferrari/wiki-mind/issues/11) |
 | ⬜ | bootstrap hook builds the QMD index, with a test holding Invariant 4 | [#12](https://github.com/breferrari/wiki-mind/issues/12) |

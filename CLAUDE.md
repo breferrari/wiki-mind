@@ -41,6 +41,7 @@ Update this table in the same PR that adds or removes a top-level path.
 | `LICENSE` | MIT. |
 | `.gitattributes` | Pins LF line endings. |
 | `.shardmindignore` | Repo-only files that `shardmind install` leaves out. |
+| `.shardmind/` | The ShardMind manifest and values schema; never installed. |
 | `.gitignore` | Obsidian and hook runtime state. |
 | `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions; the hooks' vault-root marker. |
 | `.claude/scripts/` | Hook entry points, the extension registry (`core/`) and the vendored obsidian-mind libraries (`lib/`, see `.claude/VENDOR.json`). |
