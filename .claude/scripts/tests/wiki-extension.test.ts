@@ -128,5 +128,14 @@ describe("listField", () => {
 		assert.deepEqual(listField(fm({ sides: '["[[A]]", "[[B]]"]' }), "sides"), ["A", "B"]);
 		assert.deepEqual(listField("---\nsides:\n  - [[A]]\n  - B\nnext: 1\n---\n", "sides"), ["A", "B"]);
 		assert.deepEqual(listField(fm({ other: "x" }), "sides"), []);
+		assert.deepEqual(listField(fm({ sides: "[[[A]], [[B]]] # the two compared" }), "sides"), ["A", "B"]);
+	});
+
+	test("an empty frontmatter block is frontmatter with missing fields; a byte-order mark is ignored", async () => {
+		const empty = await runValidators(registry, { relPath: "concepts/E.md", content: "---\n---\n[[New Paper]]" }, ctx);
+		assert.ok(!empty.result.includes("Missing YAML frontmatter (SPEC.md §2)"));
+		assert.ok(empty.result.some((w) => w.includes("`date`")));
+		const bom = await runValidators(registry, { relPath: "entities/B.md", content: "﻿" + fm({ ...BASE, kind: "tool" }) + "[[New Paper]]" }, ctx);
+		assert.deepEqual(bom.result, []);
 	});
 });

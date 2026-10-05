@@ -82,18 +82,28 @@ try {
 	/* no manifest: no extensions, default budgets */
 }
 const manifest = parseManifest(manifestJson);
-const registry = await loadRegistry(vaultRoot, manifest);
 const ctx = { vaultRoot, manifest, now: Date.now() };
-const { result: extensionSections, failures } = await collectSections(registry, ctx, mode);
+
+// The extensions' sections and the notices about them. If anything here
+// throws unexpectedly, the session still gets the core sections and says why.
+let extensionSections: BudgetSection[] = [];
+let notes: string[];
+try {
+	const registry = await loadRegistry(vaultRoot, manifest);
+	const collected = await collectSections(registry, ctx, mode);
+	extensionSections = collected.result;
+	notes = [
+		...formatFailures([...registry.failures, ...collected.failures]),
+		...undispatched(registry).map((slot) => `ℹ️  ${slot}: declared, not dispatched yet`),
+		...(registry.off ? ["ℹ️  extensions are off (VAULT_EXTENSIONS=off)"] : []),
+	];
+} catch (err) {
+	notes = [`⚠️  extensions could not run: ${err instanceof Error ? err.message : String(err)}`];
+}
 
 const sections: BudgetSection[] = [
 	{ header: "", body: "## Session Context", priority: 0 },
 	{ header: "### Date", body: formatDateHeader(new Date(ctx.now)), priority: 0 },
-];
-const notes = [
-	...formatFailures([...registry.failures, ...failures]),
-	...undispatched(registry).map((slot) => `ℹ️  ${slot}: declared, not dispatched yet`),
-	...(registry.off ? ["ℹ️  extensions are off (VAULT_EXTENSIONS=off)"] : []),
 ];
 if (notes.length > 0) sections.push({ header: "### Extensions", body: notes.join("\n"), priority: 0 });
 sections.push(...extensionSections);
@@ -119,4 +129,7 @@ process.stdout.write(
 			}),
 		limit,
 	),
+	// Exit once stdout has flushed: an extension call that timed out may have
+	// left a timer or a socket behind.
+	() => process.exit(0),
 );

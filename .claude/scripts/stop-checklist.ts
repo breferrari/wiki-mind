@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+	debug,
 	readStdinJson,
 	writeSilentHookOutput,
 	writeStopFeedback,
@@ -61,56 +62,68 @@ if (input?.stop_hook_active === true && omMod !== "report") {
 	process.exit(0);
 }
 
-const vaultRoot = resolveProjectDir(process.cwd());
-let manifestJson: string | null = null;
-try {
-	manifestJson = readFileSync(join(vaultRoot, "vault-manifest.json"), "utf-8");
-} catch {
-	/* no manifest: no extensions */
-}
-const manifest = parseManifest(manifestJson);
-const registry = await loadRegistry(vaultRoot, manifest);
-const ctx = { vaultRoot, manifest, now: Date.now() };
-const checklist = collectChecklist(registry);
-const detected = await runDetectors(registry, ctx);
-const failures = [...registry.failures, ...checklist.failures, ...detected.failures];
-
-const items = checklist.result;
-const checklistText = items.length > 0 ? ["Wrap-up checklist:", ...items.map((i) => `- ${i.full}`)].join("\n") : "";
-const checklistSummary = items.length > 0 ? `Wrap-up checklist: ${items.map((i) => i.short).join(" · ")}` : "Wrap-up";
-const findingLines = detected.result.flatMap((f) => [`⚠️  ${f.claim}:`, ...f.lines]);
-const failureLines = formatFailures(failures);
-
-// No trailing newline: a message rendered by the agent's UI, not a stream.
-const message = [
-	checklistText,
-	findingLines.length > 0 ? `Vault hygiene (drift detected):\n${findingLines.join("\n")}` : "",
-	failureLines.length > 0 ? `Extensions:\n${failureLines.join("\n")}` : "",
-]
-	.filter((part) => part !== "")
-	.join("\n\n");
-const claims = [...detected.result.map((f) => f.claim), ...(failures.length > 0 ? [`${failures.length} extension failure(s)`] : [])];
-
-const sessionId = input?.session_id;
-const isStop = input?.hook_event_name === "Stop";
-const hasSession = typeof sessionId === "string" && sessionId !== "";
-// The report's identity: what it says, not the order findings arrived in.
-const key = reportKey({ checklist: checklistText, findings: detected.result, failures: failureLines }, new Set<string>());
-
-// The mod's run always gets the report as data (its parser requires one),
-// even an empty one; everything else stays silent when there is nothing to say.
-if (omMod === "report") writeStopReportData({ key, claims, agentText: message === "" ? "" : `${MOD_PREFACE}\n\n${message}` });
-else if (message === "") writeSilentHookOutput();
-else if (isStop && hasSession && !claimChanged(STATE_PATH, sessionId, key)) writeSilentHookOutput();
-else if (isStop && hasSession) {
+async function report(): Promise<void> {
+	const vaultRoot = resolveProjectDir(process.cwd());
+	let manifestJson: string | null = null;
 	try {
-		pruneHandoffs(HANDOFF_DIR, Date.now());
-		writeHandoff(HANDOFF_DIR, sessionId, `${AGENT_PREFACE}\n\n${message}`);
-		writeSystemMessage(stopSummary(checklistSummary, claims));
+		manifestJson = readFileSync(join(vaultRoot, "vault-manifest.json"), "utf-8");
 	} catch {
-		writeStopFeedback(`${FEEDBACK_PREFACE}\n\n${message}`, stopSummary(checklistSummary, claims, FEEDBACK_TRAILER));
+		/* no manifest: no extensions */
 	}
-} else writeSystemMessage(message);
+	const manifest = parseManifest(manifestJson);
+	const registry = await loadRegistry(vaultRoot, manifest);
+	const ctx = { vaultRoot, manifest, now: Date.now() };
+	const checklist = collectChecklist(registry);
+	const detected = await runDetectors(registry, ctx);
+	const failures = [...registry.failures, ...checklist.failures, ...detected.failures];
+
+	const items = checklist.result;
+	const checklistText = items.length > 0 ? ["Wrap-up checklist:", ...items.map((i) => `- ${i.full}`)].join("\n") : "";
+	const checklistSummary = items.length > 0 ? `Wrap-up checklist: ${items.map((i) => i.short).join(" · ")}` : "Wrap-up";
+	const findingLines = detected.result.flatMap((f) => [`⚠️  ${f.claim}:`, ...f.lines]);
+	const failureLines = formatFailures(failures);
+
+	// No trailing newline: a message rendered by the agent's UI, not a stream.
+	const message = [
+		checklistText,
+		findingLines.length > 0 ? `Vault hygiene (drift detected):\n${findingLines.join("\n")}` : "",
+		failureLines.length > 0 ? `Extensions:\n${failureLines.join("\n")}` : "",
+	]
+		.filter((part) => part !== "")
+		.join("\n\n");
+	const claims = [...detected.result.map((f) => f.claim), ...(failures.length > 0 ? [`${failures.length} extension failure(s)`] : [])];
+
+	const sessionId = input?.session_id;
+	const isStop = input?.hook_event_name === "Stop";
+	const hasSession = typeof sessionId === "string" && sessionId !== "";
+	// The report's identity: what it says, not the order findings arrived in.
+	const key = reportKey({ checklist: checklistText, findings: detected.result, failures: failureLines }, new Set<string>());
+
+	// The mod's run always gets the report as data (its parser requires one),
+	// even an empty one; everything else stays silent when there is nothing to say.
+	if (omMod === "report") writeStopReportData({ key, claims, agentText: message === "" ? "" : `${MOD_PREFACE}\n\n${message}` });
+	else if (message === "") writeSilentHookOutput();
+	else if (isStop && hasSession && !claimChanged(STATE_PATH, sessionId, key)) writeSilentHookOutput();
+	else if (isStop && hasSession) {
+		try {
+			pruneHandoffs(HANDOFF_DIR, Date.now());
+			writeHandoff(HANDOFF_DIR, sessionId, `${AGENT_PREFACE}\n\n${message}`);
+			writeSystemMessage(stopSummary(checklistSummary, claims));
+		} catch {
+			writeStopFeedback(`${FEEDBACK_PREFACE}\n\n${message}`, stopSummary(checklistSummary, claims, FEEDBACK_TRAILER));
+		}
+	} else writeSystemMessage(message);
+}
+
+// The output contract holds even if something above throws unexpectedly:
+// one JSON object, and for the mod's run a report it can parse.
+try {
+	await report();
+} catch (err) {
+	debug(`stop-checklist: ${err instanceof Error ? err.message : String(err)}`);
+	if (omMod === "report") writeStopReportData({ key: "unavailable", claims: [], agentText: "" });
+	else writeSilentHookOutput();
+}
 
 triggerDebouncedRefresh({
 	sentinelPath: SENTINEL_PATH,
@@ -118,3 +131,7 @@ triggerDebouncedRefresh({
 	debounceMs: DEBOUNCE_MS,
 	logPrefix: "stop-checklist",
 });
+
+// Exit once stdout has flushed: an extension call that timed out may have
+// left a timer or a socket behind, and Stop's hook timeout is 5 s.
+process.stdout.write("", () => process.exit(0));

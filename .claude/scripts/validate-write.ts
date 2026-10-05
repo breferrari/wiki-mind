@@ -54,11 +54,18 @@ if (shouldRefreshForPath(filePath)) {
 const vaultRoot = resolveProjectDir(process.cwd());
 const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
 const fileFwd = filePath.replaceAll("\\", "/");
-if (!fileFwd.startsWith(`${rootFwd}/`)) {
+// Windows paths compare without case: `C:/Vault` and `c:/vault/x.md` are
+// the same folder, and a case mismatch must not read as outside the vault.
+const fold = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
+if (!fold(fileFwd).startsWith(`${fold(rootFwd)}/`)) {
 	debug(`validate: outside the vault root, skipped: ${filePath}`);
 	process.exit(0);
 }
-if (shouldSkipFile(filePath)) {
+const relPath = fileFwd.slice(rootFwd.length + 1);
+// The skip rules match path segments, so they get the vault-relative path:
+// a vault that itself sits under a `.claude/` or `templates/` folder (a
+// Claude Code worktree, say) would otherwise skip every file.
+if (shouldSkipFile(relPath)) {
 	debug(`validate: skipped ${filePath}`);
 	process.exit(0);
 }
@@ -78,16 +85,22 @@ try {
 	/* no manifest: no extensions */
 }
 const manifest = parseManifest(manifestJson);
-const registry = await loadRegistry(vaultRoot, manifest);
-const relPath = fileFwd.slice(rootFwd.length + 1);
-const validated = await runValidators(registry, { relPath, content }, { vaultRoot, manifest, now: Date.now() });
-const failureLines = formatFailures([...registry.failures, ...validated.failures]);
 
 const blocks: string[] = [];
-if (validated.result.length > 0) blocks.push(`⚠️  ${relPath}:\n${validated.result.map((w) => `- ${w}`).join("\n")}`);
-if (failureLines.length > 0) blocks.push(`Extensions:\n${failureLines.join("\n")}`);
+try {
+	const registry = await loadRegistry(vaultRoot, manifest);
+	const validated = await runValidators(registry, { relPath, content }, { vaultRoot, manifest, now: Date.now() });
+	const failureLines = formatFailures([...registry.failures, ...validated.failures]);
+	if (validated.result.length > 0) blocks.push(`⚠️  ${relPath}:\n${validated.result.map((w) => `- ${w}`).join("\n")}`);
+	if (failureLines.length > 0) blocks.push(`Extensions:\n${failureLines.join("\n")}`);
+} catch (err) {
+	// Fail open: a write is never held up by its validation.
+	debug(`validate: ${err instanceof Error ? err.message : String(err)}`);
+}
 if (blocks.length > 0) {
 	const eventName = typeof input?.hook_event_name === "string" ? input.hook_event_name : "PostToolUse";
 	writeHookOutput(eventName, blocks.join("\n\n"));
 }
-process.exit(0);
+// Exit once stdout has flushed: an extension call that timed out may have
+// left a timer or a socket behind.
+process.stdout.write("", () => process.exit(0));

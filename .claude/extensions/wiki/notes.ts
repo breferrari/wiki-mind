@@ -66,21 +66,30 @@ export function listNotes(vaultRoot: string, type: NoteType): Note[] {
 	return notes;
 }
 
-/** The frontmatter block, without its fences, or null when there is none. */
+/** The content without a leading byte-order mark, which some editors write. */
+function unbom(content: string): string {
+	return content.startsWith("﻿") ? content.slice(1) : content;
+}
+
+/** The frontmatter block, without its fences, or null when there is none. An empty block is "". */
 export function frontmatter(content: string): string | null {
-	const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n|$)/);
+	const m = unbom(content).match(/^---\r?\n(?:([\s\S]*?)\r?\n)?---(\r?\n|$)/);
 	return m ? (m[1] ?? "") : null;
 }
 
-/** True when the frontmatter declares `name`, whatever its value. */
+/**
+ * True when the frontmatter declares `name`, whatever its value. The key is
+ * matched as `name:`, the rule `field` reads values by, so the two never
+ * disagree about whether a field is there.
+ */
 export function hasField(content: string, name: string): boolean {
 	const fm = frontmatter(content);
-	return fm !== null && new RegExp(`^${name}[ \\t]*:`, "m").test(fm);
+	return fm !== null && new RegExp(`^${name}:`, "m").test(fm);
 }
 
 /** A one-line field's value, or null (lib/session-start's small parser). */
 export function field(content: string, name: string): string | null {
-	return extractFrontmatterField(content, name);
+	return extractFrontmatterField(unbom(content), name);
 }
 
 /**
@@ -91,10 +100,11 @@ export function listField(content: string, name: string): string[] {
 	const fm = frontmatter(content);
 	if (fm === null) return [];
 	const lines = fm.split(/\r?\n/);
-	const start = lines.findIndex((l) => new RegExp(`^${name}[ \\t]*:`).test(l));
+	const start = lines.findIndex((l) => new RegExp(`^${name}:`).test(l));
 	if (start === -1) return [];
 	const clean = (s: string) => s.trim().replace(/^["']|["']$/g, "").replace(/^\[\[|\]\]$/g, "").trim();
-	const inline = (lines[start] ?? "").replace(new RegExp(`^${name}[ \\t]*:`), "").trim();
+	// A trailing YAML comment is not part of the value; " #" cannot occur in a wikilink.
+	const inline = (lines[start] ?? "").replace(new RegExp(`^${name}:`), "").replace(/\s+#.*$/, "").trim();
 	if (inline !== "") {
 		const body = isFlowList(inline) ? inline.slice(1, -1) : inline;
 		return splitItems(body).map(clean).filter((s) => s !== "");

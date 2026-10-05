@@ -139,7 +139,9 @@ export const extension: Extension = {
 			render: (ctx) => {
 				const path = join(ctx.vaultRoot, "Index.md");
 				if (!existsSync(path)) return null;
-				const lines = stripFrontmatter(readFileSync(path, "utf-8")).trim().split(/\r?\n/);
+				const text = stripFrontmatter(readFileSync(path, "utf-8")).trim();
+				if (text === "") return null;
+				const lines = text.split(/\r?\n/);
 				const shown = lines.slice(0, INDEX_LINES_SHOWN);
 				if (lines.length > INDEX_LINES_SHOWN) shown.push(`… (${lines.length - INDEX_LINES_SHOWN} more lines in Index.md)`);
 				return shown.join("\n");

@@ -169,7 +169,8 @@ export async function loadRegistry(
 	for (const declaration of declarations) {
 		if (declaration.enabled === false) continue;
 		try {
-			const mod = (await import(pathToFileURL(resolve(vaultRoot, declaration.module)).href)) as Record<string, unknown>;
+			const url = pathToFileURL(resolve(vaultRoot, declaration.module)).href;
+			const mod = (await withTimeout(import(url), declaration.timeoutMs ?? DEFAULT_TIMEOUT_MS)) as Record<string, unknown>;
 			const extension = asExtension(mod["default"]) ?? asExtension(mod["extension"]);
 			if (extension === null) failures.push({ extension: declaration.id, point: "load", message: "the module exports no extension (an object with an `id`)" });
 			else if (extension.id !== declaration.id) failures.push({ extension: declaration.id, point: "load", message: `the module's extension id is "${extension.id}"` });
@@ -204,21 +205,36 @@ function ordered<T extends { readonly id: string; readonly priority?: number }>(
 	for (const { declaration, extension } of registry.loaded) {
 		if (!declaration.events.includes(event)) continue;
 		const off = new Set(declaration.disable ?? []);
-		for (const item of pick(extension) ?? []) {
-			const valid =
-				typeof item === "object" &&
-				item !== null &&
-				typeof item.id === "string" &&
-				(item.priority === undefined || (typeof item.priority === "number" && Number.isFinite(item.priority)));
-			if (!valid) {
+		// Reading an extension's lists and items runs its code too (a getter),
+		// so it is isolated like a call.
+		let items: readonly T[];
+		try {
+			const list = pick(extension) ?? [];
+			if (!Array.isArray(list)) throw new Error("the list is not an array");
+			items = list;
+		} catch (err) {
+			failures.push({ extension: extension.id, point, message: message(err) });
+			continue;
+		}
+		for (const item of items) {
+			let id: unknown;
+			let priority: unknown;
+			try {
+				id = typeof item === "object" && item !== null ? item.id : undefined;
+				priority = typeof item === "object" && item !== null ? item.priority : undefined;
+			} catch (err) {
+				failures.push({ extension: extension.id, point, message: message(err) });
+				continue;
+			}
+			if (typeof id !== "string" || !(priority === undefined || (typeof priority === "number" && Number.isFinite(priority)))) {
 				failures.push({ extension: extension.id, point, message: "an item without a string `id`, or with a priority that is not a finite number" });
 				continue;
 			}
-			if (off.has(item.id)) continue;
+			if (off.has(id)) continue;
 			entries.push({
 				ext: extension.id,
 				item,
-				priority: item.priority ?? declaration.priority ?? Number.POSITIVE_INFINITY,
+				priority: (priority as number | undefined) ?? declaration.priority ?? Number.POSITIVE_INFINITY,
 				timeoutMs: declaration.timeoutMs ?? DEFAULT_TIMEOUT_MS,
 			});
 		}
@@ -232,45 +248,74 @@ function ordered<T extends { readonly id: string; readonly priority?: number }>(
 	);
 }
 
-/** Run one extension call under its time limit, recording a throw or a timeout as a Failure. */
-async function isolated<R>(
-	failures: Failure[],
-	entry: Entry<{ readonly id: string }>,
-	point: Point,
-	fn: () => R | Promise<R>,
-): Promise<{ ok: true; value: R } | { ok: false }> {
+/**
+ * `work`, or a rejection once `ms` have passed. The timer is not unref'd: a
+ * call or an import that never settles leaves nothing else to keep the event
+ * loop alive, and the hook would exit with no output before the limit fired.
+ */
+async function withTimeout<R>(work: Promise<R>, ms: number): Promise<R> {
 	let timer: NodeJS.Timeout | undefined;
 	try {
-		const value = await Promise.race([
-			Promise.resolve().then(fn),
+		return await Promise.race([
+			work,
 			new Promise<never>((_, reject) => {
-				// Not unref'd: a call that never settles leaves nothing else to
-				// keep the event loop alive, and the hook would exit with no
-				// output before the limit fired. `finally` clears it.
-				timer = setTimeout(() => reject(new Error(`timed out after ${entry.timeoutMs} ms`)), entry.timeoutMs);
+				timer = setTimeout(() => reject(new Error(`timed out after ${ms} ms`)), ms);
 			}),
 		]);
-		return { ok: true, value };
-	} catch (err) {
-		failures.push({ extension: entry.ext, point, item: entry.item.id, message: message(err) });
-		return { ok: false };
 	} finally {
 		if (timer !== undefined) clearTimeout(timer);
 	}
 }
 
-/** Run every entry concurrently, keeping the results in run order. */
+function describe(value: unknown): string {
+	if (value === null) return "null";
+	if (Array.isArray(value)) return "an array";
+	return typeof value === "object" ? "an object" : typeof value;
+}
+
+const isString = (v: unknown): v is string => typeof v === "string";
+const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every(isString);
+const isFindingList = (v: unknown): v is Finding[] =>
+	Array.isArray(v) &&
+	v.every((f: unknown) => typeof f === "object" && f !== null && isString((f as Finding).claim) && isStringList((f as Finding).lines));
+
+/**
+ * Run one extension call under its time limit, and check what it returned.
+ * A throw, a rejection, a timeout, or a value of the wrong shape is recorded
+ * as a Failure: nothing an extension returns reaches the hook's output
+ * unchecked.
+ */
+async function isolated<R>(
+	entry: Entry<{ readonly id: string }>,
+	point: Point,
+	fn: () => unknown,
+	accept: (value: unknown) => value is R,
+	expected: string,
+): Promise<{ ok: true; value: R } | { ok: false; failure: Failure }> {
+	try {
+		const value = await withTimeout(Promise.resolve().then(fn), entry.timeoutMs);
+		if (!accept(value)) throw new Error(`returned ${describe(value)}, not ${expected}`);
+		return { ok: true, value };
+	} catch (err) {
+		return { ok: false, failure: { extension: entry.ext, point, item: entry.item.id, message: message(err) } };
+	}
+}
+
+/** Run every entry concurrently, keeping the results and the failures in run order. */
 async function each<T extends { readonly id: string }, R>(
 	entries: readonly Entry<T>[],
 	failures: Failure[],
 	point: Point,
-	fn: (item: T) => R | Promise<R>,
+	fn: (item: T) => unknown,
+	accept: (value: unknown) => value is R,
+	expected: string,
 ): Promise<{ entry: Entry<T>; value: R }[]> {
-	const runs = await Promise.all(entries.map((entry) => isolated(failures, entry, point, () => fn(entry.item))));
+	const runs = await Promise.all(entries.map((entry) => isolated(entry, point, () => fn(entry.item), accept, expected)));
 	const out: { entry: Entry<T>; value: R }[] = [];
 	runs.forEach((run, i) => {
 		const entry = entries[i];
-		if (run.ok && entry !== undefined) out.push({ entry, value: run.value });
+		if (!run.ok) failures.push(run.failure);
+		else if (entry !== undefined) out.push({ entry, value: run.value });
 	});
 	return out;
 }
@@ -291,13 +336,21 @@ export async function collectSections(
 	mode: "full" | "pointer",
 ): Promise<Dispatch<BudgetSection[]>> {
 	const failures: Failure[] = [];
-	const entries = ordered<Section>(registry, "session-start", "section", (e) => e.sections, failures);
+	// A section's header and pointer are written into the output as they are,
+	// so they are checked before anything renders.
+	const entries = ordered<Section>(registry, "session-start", "section", (e) => e.sections, failures).filter(({ ext, item }) => {
+		if (isString(item.header) && (item.pointer === undefined || isString(item.pointer))) return true;
+		failures.push({ extension: ext, point: "section", item: item.id, message: "`header` and `pointer` must be strings" });
+		return false;
+	});
 	const pointers = entries.filter(({ item }) => mode === "pointer" && item.pointer !== undefined);
 	const rendered = await each(
 		entries.filter((e) => !pointers.includes(e)),
 		failures,
 		"section",
 		(item) => item.render(ctx),
+		(v): v is string | null => v === null || isString(v),
+		"a string or null",
 	);
 	const bodies = new Map<Entry<Section>, string>();
 	for (const { entry, value } of rendered) if (value !== null) bodies.set(entry, value);
@@ -318,14 +371,18 @@ export async function collectSections(
 export async function runDetectors(registry: Registry, ctx: HookContext): Promise<Dispatch<Finding[]>> {
 	const failures: Failure[] = [];
 	const entries = ordered<Detector>(registry, "stop", "detector", (e) => e.detectors, failures);
-	const runs = await each(entries, failures, "detector", (item) => item.detect(ctx));
-	return { result: runs.flatMap(({ value }) => [...value]), failures };
+	const runs = await each(entries, failures, "detector", (item) => item.detect(ctx), isFindingList, "a list of findings");
+	return { result: runs.flatMap(({ value }) => value), failures };
 }
 
 /** The wrap-up checklist, in run order. */
 export function collectChecklist(registry: Registry): Dispatch<ChecklistItem[]> {
 	const failures: Failure[] = [];
-	const items = ordered<ChecklistItem>(registry, "stop", "checklist", (e) => e.checklist, failures).map(({ item }) => item);
+	const items: ChecklistItem[] = [];
+	for (const { ext, item } of ordered<ChecklistItem>(registry, "stop", "checklist", (e) => e.checklist, failures)) {
+		if (isString(item.full) && isString(item.short)) items.push(item);
+		else failures.push({ extension: ext, point: "checklist", item: item.id, message: "`full` and `short` must be strings" });
+	}
 	return { result: items, failures };
 }
 
@@ -333,9 +390,14 @@ export function collectChecklist(registry: Registry): Dispatch<ChecklistItem[]> 
 export async function matchSignals(registry: Registry, prompt: string): Promise<Dispatch<string[]>> {
 	const failures: Failure[] = [];
 	const entries = ordered<Signal>(registry, "prompt", "signal", (e) => e.signals, failures);
-	const runs = await each(entries, failures, "signal", (item) => item.match(prompt));
+	const runs = await each(entries, failures, "signal", (item) => item.match(prompt), (v): v is boolean => typeof v === "boolean", "true or false");
 	const hints: string[] = [];
-	for (const { entry, value } of runs) if (value === true && !hints.includes(entry.item.hint)) hints.push(entry.item.hint);
+	for (const { entry, value } of runs) {
+		if (!value) continue;
+		const hint: unknown = entry.item.hint;
+		if (!isString(hint)) failures.push({ extension: entry.ext, point: "signal", item: entry.item.id, message: "`hint` must be a string" });
+		else if (!hints.includes(hint)) hints.push(hint);
+	}
 	return { result: hints, failures };
 }
 
@@ -343,8 +405,15 @@ export async function matchSignals(registry: Registry, prompt: string): Promise<
 export async function runValidators(registry: Registry, target: WriteTarget, ctx: HookContext): Promise<Dispatch<string[]>> {
 	const failures: Failure[] = [];
 	const entries = ordered<Validator>(registry, "write", "validator", (e) => e.validators, failures);
-	const runs = await each(entries, failures, "validator", (item) => (item.appliesTo(target.relPath) ? item.validate(target, ctx) : []));
-	return { result: runs.flatMap(({ value }) => [...value]), failures };
+	const runs = await each(
+		entries,
+		failures,
+		"validator",
+		(item) => (item.appliesTo(target.relPath) ? item.validate(target, ctx) : []),
+		isStringList,
+		"a list of strings",
+	);
+	return { result: runs.flatMap(({ value }) => value), failures };
 }
 
 /** The slots an extension filled that the registry does not dispatch yet. */

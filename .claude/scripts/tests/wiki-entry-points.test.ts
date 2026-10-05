@@ -131,6 +131,24 @@ describe("stop-checklist and the handoff through classify-message", () => {
 		assert.equal(run("classify-message", { hook_event_name: "UserPromptSubmit", session_id: "s1", prompt: "ok" }).stdout, "", "a report is handed over once");
 	});
 
+	test("a detector of the wrong shape, or an import that never settles, still leaves exactly one JSON object", () => {
+		mkdirSync(join(vault, ".claude", "extensions", "bad"), { recursive: true });
+		writeFileSync(join(vault, ".claude", "extensions", "bad", "shape.mjs"), "export default { id: 'shape', detectors: [{ id: 'undef', detect: () => undefined }] };\n");
+		writeFileSync(join(vault, ".claude", "extensions", "bad", "hang.mjs"), "await new Promise(() => {});\nexport default { id: 'hang' };\n");
+		manifest({}, [
+			{ id: "shape", module: ".claude/extensions/bad/shape.mjs", events: ["stop"] },
+			{ id: "hang", module: ".claude/extensions/bad/hang.mjs", events: ["stop"], timeoutMs: 200 },
+		]);
+		const { stdout, code } = run("stop-checklist", { hook_event_name: "SessionEnd", session_id: "s4" });
+		const report = run("stop-checklist", { hook_event_name: "Stop", session_id: "s5", om_mod: "report" }).stdout;
+		manifest();
+		assert.equal(code, 0);
+		const parsed = JSON.parse(stdout) as { systemMessage: string };
+		assert.match(parsed.systemMessage, /extension shape, detector undef: skipped \(returned undefined, not a list of findings\)/);
+		assert.match(parsed.systemMessage, /extension hang: skipped \(timed out after 200 ms\)/);
+		assert.ok((JSON.parse(report) as { report: { claims: string[] } }).report.claims.includes("2 extension failure(s)"));
+	});
+
 	test("SessionEnd reports in full", () => {
 		const end = JSON.parse(run("stop-checklist", { hook_event_name: "SessionEnd", session_id: "s2" }).stdout) as { systemMessage: string };
 		assert.match(end.systemMessage, /^Wrap-up checklist:\n- Update Index\.md/);
@@ -177,6 +195,23 @@ describe("validate-write", () => {
 	test("a valid note writes nothing", () => {
 		writeFileSync(join(vault, "concepts", "Good.md"), fm(BASE) + "[[Paper]]\n");
 		assert.equal(write(join(vault, "concepts", "Good.md")).stdout, "");
+	});
+
+	test("a vault that sits under a templates/ folder is still validated", () => {
+		const outer = mkdtempSync(join(tmpdir(), "wiki-entry-outer-"));
+		const nested = join(outer, "templates", "vault");
+		mkdirSync(join(nested, "concepts"), { recursive: true });
+		cpSync(join(vault, ".claude"), join(nested, ".claude"), { recursive: true });
+		cpSync(join(vault, "vault-manifest.json"), join(nested, "vault-manifest.json"));
+		writeFileSync(join(nested, "concepts", "C.md"), "no frontmatter");
+		const out = runScript(join(nested, ".claude", "scripts", "validate-write.ts"), { tool_input: { file_path: join(nested, "concepts", "C.md") } }, { CLAUDE_PROJECT_DIR: nested });
+		rmTemp(outer);
+		assert.match(out.stdout, /Missing YAML frontmatter/);
+	});
+
+	test("on Windows, a path whose case differs from the vault root's is still inside it", { skip: process.platform !== "win32" }, () => {
+		const out = write(join(vault, "concepts", "Lonely.md").toUpperCase().replace("LONELY.MD", "Lonely.md").replace("CONCEPTS", "concepts"));
+		assert.match(out.stdout, /Cites no source/);
 	});
 
 	test("no hook left runtime state inside the vault copy", () => {

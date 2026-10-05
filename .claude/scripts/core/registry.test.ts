@@ -203,6 +203,58 @@ describe("rule 5: a throw or a timeout is isolated", () => {
 	});
 });
 
+describe("rule 5: nothing an extension returns reaches the output unchecked", () => {
+	test("a value of the wrong shape is a failure at every point, and the neighbours run", async () => {
+		const ext = {
+			id: "a",
+			sections: [
+				{ id: "num", priority: 1, header: "### n", render: () => 42 },
+				{ id: "undef", priority: 2, header: "### u", render: () => undefined },
+				{ id: "badheader", priority: 3, header: 7, render: () => "x" },
+				section("good", 4, "ok"),
+			],
+			detectors: [
+				{ id: "undef", detect: () => undefined },
+				{ id: "nolines", detect: () => [{ claim: "c" }] },
+				{ id: "good", detect: () => [{ claim: "c", lines: ["l"] }] },
+			],
+			checklist: [{ id: "bad", full: 1, short: "s" }, { id: "good", full: "F", short: "S" }],
+			signals: [{ id: "str", match: () => "yes", hint: "h1" }, { id: "nohint", match: () => true, hint: 3 }, { id: "good", match: () => true, hint: "h" }],
+			validators: [{ id: "str", appliesTo: () => true, validate: () => "w" }, { id: "good", appliesTo: () => true, validate: () => ["w"] }],
+		} as unknown as Extension;
+		const registry = fromLoaded([declared(ext)]);
+		const sections = await collectSections(registry, ctx, "full");
+		const detectors = await runDetectors(registry, ctx);
+		const checklist = collectChecklist(registry);
+		const signals = await matchSignals(registry, "p");
+		const validators = await runValidators(registry, { relPath: "a.md", content: "" }, ctx);
+		assert.deepEqual(sections.result.map((s) => s.body), ["ok"]);
+		assert.deepEqual(sections.failures.map((f) => f.item), ["badheader", "num", "undef"]);
+		assert.deepEqual(detectors.result.map((f) => f.claim), ["c"]);
+		assert.deepEqual(detectors.failures.map((f) => f.item), ["nolines", "undef"], "failures follow run order: ties by id");
+		assert.deepEqual(checklist.result.map((i) => i.id), ["good"]);
+		assert.deepEqual(signals.result, ["h"]);
+		assert.deepEqual(signals.failures.map((f) => f.item).sort(), ["nohint", "str"]);
+		assert.deepEqual(validators.result, ["w"]);
+		assert.equal(validators.failures.length, 1);
+		assert.match(sections.failures[1]?.message ?? "", /returned number, not a string or null/);
+	});
+
+	test("a getter that throws, on a list or on an item, is a failure, not a crash", async () => {
+		const throwingList = { id: "a", get detectors(): never { throw new Error("list getter"); } } as unknown as Extension;
+		const throwingItem = { id: "b", detectors: [{ get id(): never { throw new Error("id getter"); }, detect: () => [] }] } as unknown as Extension;
+		const { result, failures } = await runDetectors(fromLoaded([declared(throwingList), declared(throwingItem)]), ctx);
+		assert.deepEqual(result, []);
+		assert.deepEqual(failures.map((f) => f.message), ["list getter", "id getter"]);
+	});
+
+	test("an appliesTo that throws is isolated like a call", async () => {
+		const ext: Extension = { id: "a", validators: [{ id: "bad", appliesTo: () => { throw new Error("nope"); }, validate: () => [] }] };
+		const { failures } = await runValidators(fromLoaded([declared(ext)]), { relPath: "a.md", content: "" }, ctx);
+		assert.equal(failures[0]?.message, "nope");
+	});
+});
+
 describe("rule 8: overrides are by id", () => {
 	test("an item id in `disable` is turned off; the rest of the extension runs", async () => {
 		const ext: Extension = { id: "a", sections: [section("off", 1, "x"), section("on", 2, "y")], signals: [{ id: "off", match: () => true, hint: "h" }] };
@@ -239,6 +291,15 @@ describe("loading (rules 3, 5 and 8)", () => {
 		assert.deepEqual(registry.loaded.map((l) => l.extension.id), ["good", "named"]);
 		assert.deepEqual(registry.failures.map((f) => f.extension), ["wrong", "empty", "throws", "missing"]);
 		assert.equal(collectChecklist(registry).result.length, 1);
+	});
+
+	test("a module whose import never settles times out instead of ending the hook", async () => {
+		writeFileSync(join(root, "ext", "hangs.mjs"), "await new Promise(() => {});\nexport default { id: 'hangs' };\n");
+		const started = Date.now();
+		const registry = await loadRegistry(root, { extensions: [{ id: "hangs", module: "ext/hangs.mjs", events: ["stop"], timeoutMs: 100 }] }, {});
+		assert.ok(Date.now() - started < 2_000);
+		assert.equal(registry.loaded.length, 0);
+		assert.match(registry.failures[0]?.message ?? "", /timed out after 100 ms/);
 	});
 
 	test(`the kill switch (${KILL_SWITCH}=off) loads nothing and says so`, async () => {

@@ -52,10 +52,15 @@ if (typeof prompt === "string" && prompt !== "") {
 	} catch {
 		/* no manifest: no extensions */
 	}
-	const registry = await loadRegistry(vaultRoot, parseManifest(manifestJson));
-	const matched = await matchSignals(registry, prompt);
-	hints = hasSession && matched.result.length > 0 ? claimUnseen(STATE_PATH, sessionId, matched.result) : matched.result;
-	failureLines = formatFailures([...registry.failures, ...matched.failures]);
+	try {
+		const registry = await loadRegistry(vaultRoot, parseManifest(manifestJson));
+		const matched = await matchSignals(registry, prompt);
+		hints = hasSession && matched.result.length > 0 ? claimUnseen(STATE_PATH, sessionId, matched.result) : matched.result;
+		failureLines = formatFailures([...registry.failures, ...matched.failures]);
+	} catch (err) {
+		// Fail open: the waiting Stop report still rides with this prompt.
+		debug(`classify: ${err instanceof Error ? err.message : String(err)}`);
+	}
 }
 
 const parts: string[] = [];
@@ -73,4 +78,6 @@ if (parts.length > 0) {
 	const eventName = typeof input.hook_event_name === "string" ? input.hook_event_name : "UserPromptSubmit";
 	writeHookOutput(eventName, parts.join("\n\n"));
 }
-process.exit(0);
+// Exit once stdout has flushed: an extension call that timed out may have
+// left a timer or a socket behind.
+process.stdout.write("", () => process.exit(0));

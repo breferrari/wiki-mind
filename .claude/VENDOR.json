@@ -202,6 +202,10 @@
       "modified": false,
       "upstream": ".claude/scripts/tsconfig.json"
     },
+    ".claude/settings.json": {
+      "modified": false,
+      "upstream": ".claude/settings.json"
+    },
     ".claude/skills/defuddle/SKILL.md": {
       "modified": false,
       "upstream": ".claude/skills/defuddle/SKILL.md"
