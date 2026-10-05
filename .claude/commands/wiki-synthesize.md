@@ -11,7 +11,7 @@ Compares the notes named in `$ARGUMENTS` in a `syntheses/` note (CLAUDE.md, "The
 
 Split the argument on "vs" (or "versus", or commas). For each side, find its note in `concepts/` or `entities/` (QMD first, see CLAUDE.md "Search").
 
-**Refuse when a side has no note.** Name the missing side, and suggest the source to ingest first (`/wiki-ingest`), if the wiki or the user points at one. A synthesis compares what the wiki holds, never what you remember.
+**Refuse when a side has no note.** Name the missing side, and suggest the source to ingest first, if the wiki or the user points at one: the user can run `/wiki-ingest` for it. A synthesis compares what the wiki holds, never what you remember.
 
 Also check whether a synthesis of the same sides exists. If it does, update it instead of writing a second one.
 
@@ -34,4 +34,4 @@ Add the synthesis to each side's **Related** section, and a one-line annotation 
 
 ## 5. Report
 
-Link the synthesis, and say what the sources leave open. Offer a question note (`/wiki-question`) for each gap.
+Link the synthesis, and say what the sources leave open. Offer to write a question note for each gap: a `questions/` note from `templates/Question.md`, with `status: open`, linked to this synthesis.
