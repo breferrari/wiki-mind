@@ -72,7 +72,8 @@ A synthesis sits above concepts: it never replaces one, and a concept never hold
 |------|------|
 | `CLAUDE.md` | The vault's agent manual. |
 | `.claude/commands/` | Slash commands (§6.2). |
-| `.claude/scripts/` | Hook scripts and the QMD MCP server, vendored (§7). |
+| `.claude/scripts/` | The vendored libraries and QMD MCP server, wiki-mind's entry points, and the extension registry in `core/` (§7). |
+| `.claude/extensions/` | wiki-mind's own sections, detectors, signals and validators (§7.4). |
 | `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod (§6.4), vendored. |
 | `.claude/settings.json` | The hook wiring. |
 | `.mcp.json` | Registers the QMD MCP server. |
@@ -136,15 +137,15 @@ Default wizard state is every module selected (ShardMind rule), so a defaults in
 
 ### 6.3 Hooks
 
-The `.claude/settings.json` hooks from obsidian-mind, retargeted at the wiki:
+The same events obsidian-mind hooks, wired the same way in `.claude/settings.json`. The scripts are wiki-mind's own, written as dispatchers over the extension registry (§7.4); only `pre-compact.ts` is vendored:
 
 | Event | Script | Change for wiki-mind |
 |-------|--------|----------------------|
-| SessionStart | `session-start.ts` | Context lists the wiki folders, open questions and recent sources instead of active work and North Star. |
-| UserPromptSubmit | `classify-message.ts` | Wiki signals instead of work signals (§7.2, X2 and P2). |
-| PostToolUse (Write/Edit) | `validate-write.ts` | Frontmatter and link rules per §2. |
-| PreCompact | `pre-compact.ts` | Unchanged. |
-| Stop | `stop-checklist.ts` | Wiki hygiene findings (the `wiki-lint` checks). |
+| SessionStart | `session-start.ts` | Context sections: `Index.md` summary, open questions, recent sources. |
+| UserPromptSubmit | `classify-message.ts` | Wiki prompt signals: a new source, a claim, a comparison, a question. |
+| PostToolUse (Write/Edit) | `validate-write.ts` | Write validators: frontmatter and link rules per §2. |
+| PreCompact | `pre-compact.ts` | Vendored unmodified. |
+| Stop | `stop-checklist.ts` | Stop detectors: the `wiki-lint` checks. |
 
 ### 6.4 The Claude Code mod
 
@@ -165,90 +166,125 @@ Both paths run the same scripts, so they cannot disagree on content.
 | `personalize` | Write `user_name` and `research_focus` into `Index.md`. Never runs on a defaults install (engine-enforced). |
 | `post-update` | None at first. |
 
-## 7. Vendored machinery from obsidian-mind
+## 7. Claude-side machinery: vendored libraries, own entry points
 
-**Decided:** the scripts, hooks and mod come from obsidian-mind as a vendored copy, not a rewrite. The machinery is expected to move into a reusable repo of its own later; vendoring now means that extraction swaps the source of the copy instead of merging two forks. ShardMind declined composition, so shards vendor what they share.
+**Decided (2026-10-05, maintainer may overrule):** wiki-mind vendors obsidian-mind's *generic libraries*, unmodified. It writes its own entry points over them. obsidian-mind's hook scripts are not vendored, except `pre-compact.ts`, which is generic as a whole.
 
-### 7.1 The record
+Most of obsidian-mind's entry points are its domain: the North Star, work and brain sections, the work-folder hygiene scan, its prompt signals, and its stop checklist. In a wiki vault they would print nothing or misfire. Vendoring them would ship dead weight and needed patches to quiet it.
 
-A `VENDOR.json` records the obsidian-mind commit the copy came from, following ShardMind's `source/ui-kit/VENDOR.json`:
+wiki-mind is also the test bed for the extensible layer. Its entry points are thin dispatchers over a small extension registry (§7.4). That registry is a prototype of the core the machinery is expected to become. The machinery is expected to move into a reusable repo of its own later. Vendoring the libraries unmodified now means that extraction swaps the source of the copy instead of merging two forks. ShardMind declined composition, so shards vendor what they share.
 
-- `repository`, `commit`, `version` (the obsidian-mind release), `license`;
-- `files`: each vendored path mapped to its upstream path, with `modified: true|false` and, when modified, a one-line `change` saying what and why.
+### 7.1 The record and the vendored set
 
-The `files` map is the extraction input: unmodified files are the shared core as it stands, and each `change` line is a place the shared core needs a seam. **Decided (2026-10-05, maintainer may overrule):** the record is `.claude/VENDOR.json`, and it installs (Q11). A vault should know where its machinery came from: a later vendor update in an installed vault reads it.
+`.claude/VENDOR.json` records the obsidian-mind commit the copy came from, in the shape of ShardMind's `source/ui-kit/VENDOR.json`:
 
-Vendored scope, from the initial copy: `.claude/scripts/` (with `lib/` and the tests of what is kept), `.claude/skills/` (the mod and the Obsidian and QMD skills), `.scripts/qmd-bootstrap.ts`, `.shardmind/hooks/bootstrap.ts`. obsidian-mind's commands, agents, templates, Bases and content are not vendored: they are its domain, not machinery.
+- `repository`, `commit`, `version`, `tag`, `license`;
+- `files`: each vendored path mapped to its upstream path, with `modified`. When `modified` is true, a one-line `change` says what changed and why.
 
-**Decided, the maintainer may overrule:** the cross-repo memory MCP server (`om-mcp`, `lib/mcp-*`, `lib/memory-*`) stays in obsidian-mind and is not vendored. It is about half of the machinery, it is a product of its own, and the wiki workflow does not depend on it. If wiki-mind wants it later, it arrives through the extraction or a vendor update, not through a second fork now.
+`modified` is computed from the bytes against upstream at the recorded commit, never typed by hand. **Decided (2026-10-05, maintainer may overrule):** the record installs, at `.claude/VENDOR.json` (Q11). A vault should know where its machinery came from: a later vendor update in an installed vault reads it.
+
+**The vendored set (#6): 66 files from obsidian-mind v9.0.1, all unmodified.**
+
+| Group | Files |
+|-------|-------|
+| Generic libraries (`.claude/scripts/lib/`) | `hook-io`, `main-guard`, `project-dir`, `om-mod`, `frontmatter`, `wikilinks`, `regex`, `read-field`, `read-head`, `charcount`, `atomic-write`, `report-key`, `hint-state`, `stop-handoff`, `stop-report`, `qmd`, `qmd-bootstrap`, `qmd-refresh`, `qmd-ignore`, `qmd-models`, `session-start` (21) |
+| Generic scripts | `pre-compact.ts`, `qmd-mcp.mjs` (+ `.d.mts`), `qmd-refresh-run.ts`, `.scripts/qmd-bootstrap.ts`, `.shardmind/hooks/bootstrap.ts` |
+| Config | `.claude/scripts/package.json` and `tsconfig.json`, `.scripts/package.json`, `.shardmind/hooks/package.json`, `.mcp.json` |
+| Skills | `obsidian-markdown`, `obsidian-bases`, `obsidian-cli`, `json-canvas`, `defuddle`, `qmd` |
+| Tests | the 22 obsidian-mind tests whose subject is a vendored file, plus `tests/_helpers.ts` |
+
+How the set was chosen:
+
+- Each library was checked against its static imports. A library that imports obsidian-mind domain code is out. `matcher` imports obsidian-mind's signal set, so it is out (seam S3).
+- Each test was checked the same way, and then by running it. `qmd-refresh.integration.test.ts` imports only vendored code, but it spawns obsidian-mind's `validate-write.ts`. Its subject is an entry point wiki-mind doesn't vendor, so it is out. A wiki-mind version comes back with the entry points.
+
+**What the first attempt vendored, for the record.** The first attempt took the import closure of obsidian-mind's entry points: 98 files, three of them patched. This set is 66 files, none patched.
+
+Not vendored:
+
+- the hook entry points `session-start.ts`, `classify-message.ts`, `validate-write.ts` and `stop-checklist.ts`, and the libraries only they use (`active-hygiene`, `signals`, `matcher`, `memory-promoted`, `mcp-exposure`, `mcp-qmd-client`);
+- the memory MCP server and its libraries;
+- `tidy-fix`, the correction sweep, `update-skills.ts`, the root `.claude-plugin/`, and the `excalidraw-diagram` and `mermaid-visualizer` skills;
+- obsidian-mind's commands, agents, templates, Bases and content.
+
+The mod is vendored by #7, together with its identity change (P1). `.claude/settings.json` arrives with wiki-mind's entry points, because obsidian-mind's version points at scripts this set doesn't have.
+
+**Decided, the maintainer may overrule:** the memory MCP server, and the libraries only it uses, stay in obsidian-mind. The server is a product of its own, it is about half of the machinery, and the wiki workflow doesn't depend on it. If wiki-mind wants it later, it arrives through the extraction or a vendor update.
 
 **Decided (2026-10-05, maintainer may overrule):** the correction sweep is not in v0.1 (Q12). obsidian-mind's sweep is built around its single-source status rule. A wiki's correction case is different: a source is retracted or superseded. That case gets its own spec in a later phase (see [Later](#later)).
 
-### 7.2 What wiki-mind changes, and how deep
+Two things a vendor update has to keep in step:
 
-wiki-mind vendors obsidian-mind's machinery as it is. It does not build an extension mechanism of its own. Instead, it records what each change would need from the extracted layer. The extracted layer is meant to be a core with declared extension points per lifecycle event:
+- `.gitignore` carries the hook runtime-state entries;
+- CI typechecks and tests the vendored scripts on all three operating systems.
+
+### 7.2 What the extraction learns from this split
+
+#### Config
+
+The vendored code reads these `vault-manifest.json` keys. Each one falls back to a default when absent. #10 writes wiki-mind's values.
+
+| Key | Read by |
+|-----|---------|
+| `template`, `qmd_index`, `qmd_min_version`, `qmd_context` | the QMD libraries, `qmd-mcp.mjs`, `.scripts/qmd-bootstrap.ts` |
+| `eager_layer_budget_bytes`, `eager_layer_instruction_budget_bytes`, `listing_collapse_threshold` | `lib/session-start.ts` (the session-context budget) |
+| `infrastructure` | `lib/session-start.ts` (which root files are infrastructure) |
+
+The keys of obsidian-mind's unvendored code are not carried over: `open_loop_dirs`, `open_loop_sections`, `memory_root`, the `mcp_*` keys, `user_content_roots` and `scaffold`.
+
+#### Seams found by vendoring
+
+| ID | Seam | What the extraction does with it |
+|----|------|----------------------------------|
+| S1 | obsidian-mind's hygiene scan (`active-hygiene`) imports the memory layer (`memory-promoted` → `mcp-exposure` → `mcp-qmd-client`) to check captures already promoted into `brain/`. | That check becomes a Stop detector obsidian-mind registers. The core's hygiene path imports no memory code. |
+| S2 | `lib/session-start.ts` is mostly generic: the injection budget, listing collapse, QMD index resolution and frontmatter helpers. It also holds three obsidian-mind formatters (`formatActiveWork`, `hasBrainContent`, `formatBrainIndex`). The QMD libraries import their index helpers from it. | Split it. The budget, listing and QMD helpers move to the core; the formatters become obsidian-mind's session-start extensions. |
+| S3 | `lib/matcher.ts` classifies prompts against obsidian-mind's fixed signal set (`lib/signals.ts`). | The matcher takes its signals from the registry (prompt signals, §7.4), with no built-in set. |
+| S4 | The QMD refresh trigger lives inside obsidian-mind's `validate-write.ts` entry point. | It becomes a core write hook that runs whatever validators are registered. |
+
+#### Per entry point
+
+For each wiki-mind entry point, the issue that builds it fills in this table: the vendored libraries it uses, and what it needed that no library gave. That list is the extraction's API gap.
+
+| Entry point | Vendored libraries used | Needed and not given |
+|-------------|-------------------------|----------------------|
+| `session-start.ts` | (entry-points issue) | |
+| `stop-checklist.ts` | (entry-points issue) | |
+| `validate-write.ts` | (entry-points issue) | |
+| `classify-message.ts` | (entry-points issue) | |
+| `pre-compact.ts` | vendored whole | — |
+
+### 7.3 Contracts that must not change
+
+These are shared between obsidian-mind and wiki-mind, and stay shared through the extraction.
+
+| Contract | What it fixes | Why it is fixed |
+|----------|---------------|-----------------|
+| `vault-manifest.json` as the vault-root marker | The hook commands in `.claude/settings.json` walk up from the project directory to the first folder holding `vault-manifest.json`. | Every hook command depends on it, and a session started in a vault subfolder relies on the walk. The keys inside may differ per vault (§7.2); the file's name and role do not. |
+| The `om_mod` flag protocol | The field name `om_mod`, and the values `deliver`, `standdown` and `report` that the mod passes to the settings hooks. | It is how the hooks know the mod handled an event. The extraction exposes it as the shared layer's API. |
+| The entry-point file names the mod runs | The mod's `register.ts` runs `.claude/scripts/session-start.ts` with `om_mod: "deliver"` and `.claude/scripts/stop-checklist.ts` with `om_mod: "report"`, by path. | wiki-mind's own entry points keep those two names, so the mod's identity change (P1) stays identity-only. |
+
+### 7.4 The extension registry (prototype for the extracted core)
+
+**Decided (2026-10-05, maintainer may overrule):** wiki-mind's entry points are thin dispatchers over an extension registry. The registry lives in `.claude/scripts/core/`, so a `git mv` can lift it into the future core repo. It imports only the vendored libraries.
+
+Extension points:
 
 - session-start sections;
 - Stop and hygiene detectors;
 - prompt signals;
-- write validators;
-- pre-tool guards;
-- MCP tools.
+- write validators.
 
-Under that design, a vault's own behaviour lives outside the vendored code (for example under `.claude/extensions/`) and is declared in `vault-manifest.json`. The core owns ordering, the byte budget and failure isolation. Vaults that patch obsidian-mind's core files today to add their own behaviour are the case it serves.
+Pre-tool guards and MCP tools exist as slots only.
 
-Every change below is in one of three tiers:
+The registry owns three things:
 
-- **Config:** a `vault-manifest.json` key. No vendored code changes.
-- **Extension:** new behaviour at a lifecycle point. It names the point it needs. Until the core has that point, the behaviour is written in wiki-mind's own files (the commands, `CLAUDE.md`), not in the vendored scripts.
-- **Core patch:** an edited vendored file, recorded in `VENDOR.json`. Each one marks an extension point the core lacks, so each one is justified, and the list is kept as short as possible.
+- **ordering:** by priority;
+- **the byte budget:** low-priority sections degrade first, through `hook-io`'s `fitWithMeter`;
+- **failure isolation:** an extension that throws is named in the output and skipped, and it never blocks the hook.
 
-A row marked *verify* is a reading of obsidian-mind's code that the vendoring PR confirms or corrects.
+wiki-mind's own behaviour is written as extensions under `.claude/extensions/`, declared in `vault-manifest.json`. That covers the `Index.md`, open-questions and recent-sources sections, the `wiki-lint` detectors, and the §2 validators.
 
-#### Config
-
-| ID | Change | Key |
-|----|--------|-----|
-| K1 | Vault identity and release. | `template`, `version`, `released` |
-| K2 | QMD index, minimum version and the context string search sees. `bootstrap.ts` already reads them, so it stays unmodified. | `qmd_index`, `qmd_min_version`, `qmd_context` |
-| K3 | Which folders hold unchecked open loops. *Verify*: obsidian-mind's open-loop detector counts unchecked checkboxes, and question notes carry `status:` frontmatter, not checkboxes, so pointing it at `questions/` may count nothing. If so, X4 owns stale open questions, and K3 only empties the work folders. | `open_loop_dirs`, `open_loop_sections` |
-| K4 | Which paths are infrastructure and which hold user notes. | `infrastructure`, `user_content_roots`, `scaffold` |
-| K5 | Session-context byte budgets. obsidian-mind's values are kept. | `eager_layer_budget_bytes`, `eager_layer_instruction_budget_bytes`, `listing_collapse_threshold` |
-| K6 | Per-type required frontmatter (§2). obsidian-mind ships this key, but none of its hooks read it today (verified); see X3. | `frontmatter_required` |
-| K7 | The memory-server keys are dropped, because the server is not vendored (§7.1). *Verify*: no vendored script outside the memory server reads them unconditionally; if one does, they stay. | `memory_root`, `mcp_exposed_roots`, `mcp_never_expose`, `mcp_inbox` |
-
-#### Extension
-
-| ID | Behaviour | Extension point it needs | Until the point exists |
-|----|-----------|--------------------------|------------------------|
-| X1 | Session context shows open questions (`status: open`), recent sources and the `Index.md` summary. | session-start sections | `CLAUDE.md` tells the agent to read `Index.md` and `questions/` at session start. |
-| X2 | Prompt signals for wiki intake: a new source, a claim, a comparison, a question. Each routes to its folder. | prompt signals | `CLAUDE.md` carries the routing table. |
-| X3 | Write validation per note type: required frontmatter (K6); concepts and entities link at least one source; a synthesis names two or more sides. | write validators, reading K6 | `wiki-lint` reports the same problems on demand. |
-| X4 | Wiki hygiene at Stop: orphans, claims with no source, one-sided syntheses, `Index.md` drift. | Stop and hygiene detectors | The `wiki-lint` command. |
-| X5 | No pre-tool guard at first. | pre-tool guards | None needed. |
-| X6 | No MCP tool beyond QMD at first. | MCP tools | None needed. |
-
-obsidian-mind's own sections, detectors and checks for its work folders (`work/active/`, `work/meetings/`, `brain/North Star.md`) stay in the vendored code untouched. In a wiki vault those folders don't exist, so they should produce nothing (*verify*: each one tolerates an absent folder). In the extracted design they become obsidian-mind's extensions, not core.
-
-#### Core patch
-
-| ID | File | Change | Why it can't wait for an extension point | Point the core lacks |
-|----|------|--------|-------------------------------------------|----------------------|
-| P1 | `.claude/skills/<mod>/` (`register.ts`, `context.ts`, `stop.ts`, `.claude-plugin/plugin.json`) and the folder name | The mod's name, state keys, context block and plugin identity become `wiki-mind`. The `om_mod` flag protocol is unchanged (§7.3). | With both vaults installed, two mods named `obsidian-mind` would collide. | Mod identity as configuration. |
-| P2 | `lib/signals.ts` | obsidian-mind's signal set (DECISION, WIN, INCIDENT, ONE_ON_ONE, …) is emptied. | Those signals fire on wiki prompts and route to folders the vault doesn't have. That is wrong guidance, not just silence. | Prompt signals that a vault declares and can replace, with no fixed default set. |
-| P3 | `stop-checklist.ts` | Drop the work-vault checklist lines ("Archive completed projects? work/active/ …"). *Verify*: only if they print regardless of whether the folders exist. | Same reason as P2: the lines would tell the agent to do things that can't apply. | Stop checklist items as detectors. |
-| P4 | `validate-write.ts` | The topic-cluster hint suggests a folder under the wiki's own folders, not `work/active/<Topic>/`. *Verify*: only if the hint can fire in a wiki vault. | A hint that points at a nonexistent folder misleads. | Cluster target folder as config. |
-
-P1 and P2 are certain. P3 and P4 land only if the vendoring PR confirms them. Every other file is vendored unmodified.
-
-### 7.3 Contracts that must not change
-
-These are shared between obsidian-mind and wiki-mind, and stay shared through the extraction. A vendored change that touches one is a bug, not a seam.
-
-| Contract | What it fixes | Why it is fixed |
-|----------|---------------|-----------------|
-| `vault-manifest.json` as the vault-root marker | The hook commands in `.claude/settings.json` walk up from the project directory to the first folder holding `vault-manifest.json`. | Every hook command depends on it, and a session started in a vault subfolder relies on the walk. The keys inside the file may differ per vault (§7.2, Config); its name and role do not. |
-| The `om_mod` flag protocol | The field name `om_mod` and the values `deliver`, `standdown` and `report` that the mod passes to the settings hooks. | It is how the hooks know the mod handled an event. Both sides of it are vendored, and the extraction exposes it as the shared layer's API. |
+The entry-points issue writes this section's API in full: the extension shape, the manifest declaration, and how each point dispatches. The extraction starts from that.
 
 ## 8. Invariants
 
