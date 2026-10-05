@@ -70,6 +70,17 @@ Until the vault manual exists, the hard rules are repeated here.
 6. **Repo-only files go in `.shardmindignore`.** If a file is about the GitHub repo (contributor docs, CI helpers, tests of repo-only scripts, media), list it there with a comment saying why.
 7. **Don't work around ShardMind.** If the engine can't do something the shard needs, stop and report the gap so it is filed on [breferrari/shardmind](https://github.com/breferrari/shardmind). Do not patch around it in the shard.
 
+### Zones
+
+The hook layer keeps four zones so its core can be lifted out with a `git mv`. The full rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md#zones-keeping-the-core-liftable).
+
+- **`lib/`** is vendored obsidian-mind. It changes only by recorded, parameterized modifications.
+- **`core/`** imports only `lib/`.
+- **`.claude/extensions/`** imports only `core/index.ts`.
+- **The entry points** are thin dispatchers.
+- **Divergence:** every divergence from obsidian-mind is a parameter with a VENDOR.json change line and a SPEC.md §7.2 seam row.
+- **General-purpose code** goes in `core/`, never in an entry point or an extension.
+
 ### References
 
 - How a shard is built: ShardMind's [`docs/AUTHORING.md`](https://github.com/breferrari/shardmind/blob/main/docs/AUTHORING.md), [`docs/SHARD-LAYOUT.md`](https://github.com/breferrari/shardmind/blob/main/docs/SHARD-LAYOUT.md) (the binding invariants), [`docs/FORK-TO-SHARD.md`](https://github.com/breferrari/shardmind/blob/main/docs/FORK-TO-SHARD.md).

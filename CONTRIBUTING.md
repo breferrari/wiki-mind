@@ -21,6 +21,27 @@ This file holds the rules for working on the wiki-mind repo. `.shardmindignore` 
 5. **Repo-only files go in `.shardmindignore`.** If a file is about the GitHub repo (contributor docs, CI helpers, tests of repo-only scripts, media), list it there with a comment saying why.
 6. **Don't work around ShardMind.** If the engine can't do something the shard needs, stop and report the gap so it is filed on [breferrari/shardmind](https://github.com/breferrari/shardmind). Do not patch around it in the shard.
 
+## Zones: keeping the core liftable
+
+The hook layer is built to move into a shared core repo. The move should be three steps: `git mv .claude/scripts/core/`, then swapping `.claude/VENDOR.json`'s source, then deleting the duplicated Stop flow. These rules keep it that way.
+
+1. **Four zones, never mixed.** `tests/zones.test.ts` holds the imports.
+
+   | Zone | Holds | May import |
+   |------|-------|------------|
+   | `.claude/scripts/lib/` | obsidian-mind's vendored libraries, untouched except for recorded, parameterized modifications | `lib/` only |
+   | `.claude/scripts/core/` | the extension registry and its API; lift-ready | `core/` and `lib/` |
+   | `.claude/extensions/` | wiki-mind's behaviour | itself and `core/index.ts`, the core's one public entry point |
+   | `.claude/scripts/*.ts` | the entry points: thin dispatchers | `lib/` and `core/` |
+
+2. **Every divergence from obsidian-mind is a parameter, never a fork of logic.**
+   - Make a vendored string or behaviour configurable, as `modPreface(modName)` does. Don't copy and edit it.
+   - Each one gets a change line in `.claude/VENDOR.json` and a seam row in SPEC.md §7.2.
+3. **No general-purpose code in an entry point or an extension.**
+   - If it would serve another vault, it goes in `core/`, with a comment flagging it as a lift candidate.
+   - If an extension needs a helper, the core exports it from `core/index.ts`.
+4. **Keep SPEC.md §7.2's API-gap table current.** Update it in the same PR that finds a gap.
+
 ## References
 
 - How a shard is built: ShardMind's [`docs/AUTHORING.md`](https://github.com/breferrari/shardmind/blob/main/docs/AUTHORING.md), [`docs/SHARD-LAYOUT.md`](https://github.com/breferrari/shardmind/blob/main/docs/SHARD-LAYOUT.md) (the binding invariants), [`docs/FORK-TO-SHARD.md`](https://github.com/breferrari/shardmind/blob/main/docs/FORK-TO-SHARD.md).
