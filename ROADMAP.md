@@ -39,9 +39,12 @@ Milestone: [Phase 2](https://github.com/breferrari/wiki-mind/milestone/2)
 | | Task | Issue |
 |---|---|---|
 | ✅ | Add the ShardMind manifest and values schema, with a test holding Invariant 3 | [#9](https://github.com/breferrari/wiki-mind/issues/9) |
-| ⬜ | Add vault-manifest.json with wiki-mind's config keys | [#10](https://github.com/breferrari/wiki-mind/issues/10) |
+| ✅ | Add vault-manifest.json with wiki-mind's config keys | [#10](https://github.com/breferrari/wiki-mind/issues/10) |
+| ⬜ | Keep test files out of installed vaults | [#40](https://github.com/breferrari/wiki-mind/issues/40) |
+| ⬜ | No obsidian-mind in anything user- or model-facing | [#41](https://github.com/breferrari/wiki-mind/issues/41) |
 | ⬜ | Contract test for Invariant 1 and Invariant 2: install --defaults equals a clone | [#11](https://github.com/breferrari/wiki-mind/issues/11) |
 | ⬜ | bootstrap hook builds the QMD index, with a test holding Invariant 4 | [#12](https://github.com/breferrari/wiki-mind/issues/12) |
+| ⬜ | QMD session-start work for wiki-mind sessions (S5) | [#42](https://github.com/breferrari/wiki-mind/issues/42) |
 
 ## Phase 3 — the wiki
 
