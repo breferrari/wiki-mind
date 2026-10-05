@@ -64,7 +64,7 @@ The ontology from SPEC.md §2 becomes a vault: folders, templates, Bases views, 
 | ✅ | personalize hook writes user_name and research_focus into Index.md | [#17](https://github.com/breferrari/wiki-mind/issues/17) |
 | ✅ | Write the vault CLAUDE.md manual | [#18](https://github.com/breferrari/wiki-mind/issues/18) |
 | ✅ | Add /wiki-question | [#19](https://github.com/breferrari/wiki-mind/issues/19) |
-| ⬜ | Add /wiki-ingest | [#20](https://github.com/breferrari/wiki-mind/issues/20) |
+| ✅ | Add /wiki-ingest | [#20](https://github.com/breferrari/wiki-mind/issues/20) |
 | ⬜ | Add /wiki-synthesize | [#21](https://github.com/breferrari/wiki-mind/issues/21) |
 | ⬜ | Add /wiki-lint | [#22](https://github.com/breferrari/wiki-mind/issues/22) |
 | ⬜ | Test bed: run every hook and the mod in real Claude Code sessions | [#36](https://github.com/breferrari/wiki-mind/issues/36) |
