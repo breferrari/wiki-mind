@@ -29,3 +29,10 @@ node_modules/
 .claude/scripts/.checklist-state.json
 .claude/scripts/.stop-handoff/
 .claude/scripts/.qmd-refresh-sentinel
+
+# The Claude Code mod: the session context it delivers (rewritten every
+# session, read through /memory), and the typings and tsconfig Claude Code
+# writes into a mod folder loaded for development.
+.claude/session-context.md
+.claude/skills/wiki-mind/.claude-plugin/types/
+.claude/skills/wiki-mind/tsconfig.json

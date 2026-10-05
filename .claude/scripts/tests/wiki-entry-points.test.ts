@@ -161,6 +161,11 @@ describe("stop-checklist and the handoff through classify-message", () => {
 		assert.equal(typeof out.report.key, "string");
 		assert.ok(out.report.claims.includes("1 concept or entity note cites no source"));
 		assert.match(out.report.agentText, /Wrap-up checklist/);
+		// The report names the vault's own mod, as its plugin.json does (SPEC.md §7.2, S6).
+		const plugin = JSON.parse(readFileSync(join(REPO, ".claude", "skills", "wiki-mind", ".claude-plugin", "plugin.json"), "utf-8")) as { name: string };
+		assert.equal(plugin.name, "wiki-mind");
+		assert.ok(out.report.agentText.includes(`a vault notice from the ${plugin.name} plugin`));
+		assert.ok(!out.report.agentText.includes("obsidian-mind"));
 	});
 });
 
