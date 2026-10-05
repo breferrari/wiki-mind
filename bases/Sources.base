@@ -1,0 +1,34 @@
+filters:
+  and:
+    - file.inFolder("sources")
+    - file.ext == "md"
+    - file.name != "README"
+properties:
+  file.name:
+    displayName: Source
+  authors:
+    displayName: Authors
+  year:
+    displayName: Year
+  description:
+    displayName: Summary
+  url:
+    displayName: Link
+views:
+  - type: table
+    name: By year
+    groupBy:
+      property: year
+      direction: DESC
+    order:
+      - file.name
+      - authors
+      - year
+      - description
+      - url
+  - type: table
+    name: Recently added
+    order:
+      - file.name
+      - file.ctime
+      - description

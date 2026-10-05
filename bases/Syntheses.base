@@ -1,0 +1,19 @@
+filters:
+  and:
+    - file.inFolder("syntheses")
+    - file.ext == "md"
+    - file.name != "README"
+properties:
+  file.name:
+    displayName: Synthesis
+  sides:
+    displayName: Compares
+  description:
+    displayName: Summary
+views:
+  - type: table
+    name: All syntheses
+    order:
+      - file.name
+      - sides
+      - description

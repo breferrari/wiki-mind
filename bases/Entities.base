@@ -1,0 +1,22 @@
+filters:
+  and:
+    - file.inFolder("entities")
+    - file.ext == "md"
+    - file.name != "README"
+properties:
+  file.name:
+    displayName: Entity
+  kind:
+    displayName: Kind
+  description:
+    displayName: Summary
+views:
+  - type: table
+    name: By kind
+    groupBy:
+      property: kind
+      direction: ASC
+    order:
+      - file.name
+      - kind
+      - description
