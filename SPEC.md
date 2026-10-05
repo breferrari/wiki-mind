@@ -285,6 +285,8 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 The vendored paths and the vault paths are disjoint. So a vendor update's three-way merge is a safety net that almost never conflicts.
 
+An extension imports the API types from `../../scripts/core/types.ts` and may use the vendored libraries under `../../scripts/lib/`. When the core is lifted out, those import paths change in the same PR that swaps the vendored source.
+
 #### Declaration
 
 An extension runs only if `vault-manifest.json` declares it, and only for the events it lists:
@@ -350,7 +352,7 @@ A module exports an `Extension` (`.claude/scripts/core/types.ts`) as `default` o
 7. **No extension weakens a core guard.** When guards are dispatched, an extension can add a block, never remove one.
 8. **Overrides are by id:** `enabled: false`, or an id in `disable`. No extension replaces a core file.
 
-Each rule that can be tested has a test in `core/registry.test.ts`: declaration, event gating, order, the budget, a throw, a timeout, disable by id, the kill switch and slots. Rule 1's effect on real hooks is tested in `tests/wiki-entry-points.test.ts`. Each guarantee was mutated away once and its test watched fail (#35).
+Each rule that can be tested has a test in `core/registry.test.ts`: declaration, event gating, order, the budget, a throw, a timeout, disable by id, the kill switch and slots. Rule 1's effect on real hooks is tested in `tests/wiki-entry-points.test.ts`. Isolation covers more than throws: a value of the wrong shape, a getter that throws, and an import that never settles are each a reported failure, and every entry point still writes its protocol's output. Each guarantee was mutated away once and its test watched fail; PR #37 lists them.
 
 #### wiki-mind's extension
 
