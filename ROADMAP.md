@@ -66,7 +66,7 @@ The ontology from SPEC.md §2 becomes a vault: folders, templates, Bases views, 
 | ✅ | Add /wiki-question | [#19](https://github.com/breferrari/wiki-mind/issues/19) |
 | ✅ | Add /wiki-ingest | [#20](https://github.com/breferrari/wiki-mind/issues/20) |
 | ✅ | Add /wiki-synthesize | [#21](https://github.com/breferrari/wiki-mind/issues/21) |
-| ⬜ | Add /wiki-lint | [#22](https://github.com/breferrari/wiki-mind/issues/22) |
+| ✅ | Add /wiki-lint | [#22](https://github.com/breferrari/wiki-mind/issues/22) |
 | ⬜ | Test bed: run every hook and the mod in real Claude Code sessions | [#36](https://github.com/breferrari/wiki-mind/issues/36) |
 
 ## Phase 4 — first release

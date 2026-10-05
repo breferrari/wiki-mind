@@ -48,6 +48,8 @@ const ENUM_FIELDS: Readonly<Partial<Record<NoteType, { field: string; values: re
 const OPEN_QUESTIONS_SHOWN = 15;
 const RECENT_SOURCES_SHOWN = 8;
 const INDEX_LINES_SHOWN = 40;
+/** An open question nobody has touched for this long is reported as stale. */
+const STALE_QUESTION_DAYS = 30;
 
 const plural = (n: number, one: string, many: string = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const article = (word: string) => (/^[aeiou]/i.test(word) ? `an ${word}` : `a ${word}`);
@@ -181,6 +183,48 @@ export const extension: Extension = {
 				const indexed = linkedNames(readFileSync(path, "utf-8"));
 				const notes = NOTE_TYPES.flatMap((t) => listNotes(ctx.vaultRoot, t)).filter((n) => !indexed.has(n.name.toLowerCase()));
 				return findingOf(`${plural(notes.length, "note")} Index.md doesn't annotate`, notes);
+			},
+		},
+		{
+			id: "wiki.frontmatter",
+			priority: 40,
+			detect: (ctx) => {
+				const broken = NOTE_TYPES.flatMap((t) => listNotes(ctx.vaultRoot, t).map((n) => ({ n, w: frontmatterWarnings(t, n.content) }))).filter((x) => x.w.length > 0);
+				return findingOf(
+					`${plural(broken.length, "note")} with frontmatter problems`,
+					broken.map((x) => x.n),
+					(n) => broken.find((x) => x.n === n)?.w[0] ?? "",
+				);
+			},
+		},
+		{
+			id: "wiki.orphans",
+			priority: 50,
+			detect: (ctx) => {
+				// An orphan links to no other note, and no note or Index.md links to it.
+				const notes = NOTE_TYPES.flatMap((t) => listNotes(ctx.vaultRoot, t));
+				const names = new Set(notes.map((n) => n.name.toLowerCase()));
+				const inbound = new Set<string>();
+				const outbound = new Map<Note, number>();
+				for (const n of notes) {
+					const links = [...linkedNames(n.content)].filter((l) => names.has(l) && l !== n.name.toLowerCase());
+					outbound.set(n, links.length);
+					for (const l of links) inbound.add(l);
+				}
+				const index = join(ctx.vaultRoot, "Index.md");
+				if (existsSync(index)) for (const l of linkedNames(readFileSync(index, "utf-8"))) inbound.add(l);
+				const orphans = notes.filter((n) => outbound.get(n) === 0 && !inbound.has(n.name.toLowerCase()));
+				return findingOf(`${plural(orphans.length, "orphan note")}`, orphans);
+			},
+		},
+		{
+			id: "wiki.stale-questions",
+			priority: 60,
+			detect: (ctx) => {
+				// No day count in the lines: the Stop report's identity is its text,
+				// and a count that grows daily would re-show an unchanged report.
+				const stale = listNotes(ctx.vaultRoot, "question").filter((n) => isOpen(n) && ctx.now - n.mtimeMs > STALE_QUESTION_DAYS * 86_400_000);
+				return findingOf(`${plural(stale.length, "open question")} untouched for ${STALE_QUESTION_DAYS} days`, stale);
 			},
 		},
 	],
