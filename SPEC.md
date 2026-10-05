@@ -211,11 +211,11 @@ A row marked *verify* is a reading of obsidian-mind's code that the vendoring PR
 |----|--------|-----|
 | K1 | Vault identity and release. | `template`, `version`, `released` |
 | K2 | QMD index, minimum version and the context string search sees. `bootstrap.ts` already reads them, so it stays unmodified. | `qmd_index`, `qmd_min_version`, `qmd_context` |
-| K3 | Which folders hold unchecked open loops: `questions/` instead of obsidian-mind's work folders. | `open_loop_dirs`, `open_loop_sections` |
+| K3 | Which folders hold unchecked open loops. *Verify*: obsidian-mind's open-loop detector counts unchecked checkboxes, and question notes carry `status:` frontmatter, not checkboxes, so pointing it at `questions/` may count nothing. If so, X4 owns stale open questions, and K3 only empties the work folders. | `open_loop_dirs`, `open_loop_sections` |
 | K4 | Which paths are infrastructure and which hold user notes. | `infrastructure`, `user_content_roots`, `scaffold` |
 | K5 | Session-context byte budgets. obsidian-mind's values are kept. | `eager_layer_budget_bytes`, `eager_layer_instruction_budget_bytes`, `listing_collapse_threshold` |
 | K6 | Per-type required frontmatter (§2). obsidian-mind ships this key, but none of its hooks read it today (verified); see X3. | `frontmatter_required` |
-| K7 | The memory-server keys are dropped, because the server is not vendored (§7.1). | `memory_root`, `mcp_exposed_roots`, `mcp_never_expose`, `mcp_inbox` |
+| K7 | The memory-server keys are dropped, because the server is not vendored (§7.1). *Verify*: no vendored script outside the memory server reads them unconditionally; if one does, they stay. | `memory_root`, `mcp_exposed_roots`, `mcp_never_expose`, `mcp_inbox` |
 
 #### Extension
 
@@ -252,12 +252,23 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 ## 8. Invariants
 
-ShardMind's four invariants apply as written. For this shard:
+ShardMind's four invariants apply as written. Each is held by a test whose name cites it. Until that test exists, an open issue names it. The `take-next` pre-flight checks this (`ROADMAP.md`).
 
-1. **`install --defaults` equals a clone.** Enforced in CI on ubuntu, macOS and Windows by a contract test shaped like obsidian-mind's `shard-contract.test.ts`. With no `.njk` (§3.4), every installed file is byte-identical to the clone.
-2. **A defaults install touches no managed file.** Holds by the engine gate; the `personalize` hook adds no defaults check of its own.
-3. **`post-update` is additive.** Holds trivially while it is unused.
-4. **`bootstrap` re-runs only on fingerprint change.** The fingerprint is bumped in the PR that changes the QMD index schema.
+### Invariant 1 — `install --defaults` equals a clone
+
+Enforced in CI on ubuntu, macOS and Windows by a contract test shaped like obsidian-mind's `shard-contract.test.ts`. With no `.njk` (§3.4), every installed file is byte-identical to the clone.
+
+### Invariant 2 — a defaults install touches no managed file
+
+Holds by the engine gate. The `personalize` hook adds no defaults check of its own. The Invariant 1 contract test also holds this one: a hook edit on a defaults install would break byte equality.
+
+### Invariant 3 — `post-update` is additive
+
+Holds trivially while it is unused. A test asserts that the manifest declares no `post-update` hook. That test changes when one is added.
+
+### Invariant 4 — `bootstrap` re-runs only on fingerprint change
+
+The fingerprint is bumped in the PR that changes the QMD index schema.
 
 Line endings are LF everywhere (`.gitattributes`), because Invariant 1 compares bytes.
 

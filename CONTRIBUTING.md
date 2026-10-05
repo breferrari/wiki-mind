@@ -6,7 +6,8 @@ This file holds the rules for working on the wiki-mind repo. `.shardmindignore` 
 
 - Branch and PR for every change. Never push to `main`.
 - PR titles use `type: short description`. Types: `feat`, `fix`, `docs`, `chore`, `ci`, `test`, `refactor`.
-- One issue per PR. The issue's roadmap row is updated in the same PR.
+- One issue per PR, based on `main`. No stacked PRs. The issue's roadmap row is updated in the same PR.
+- `ROADMAP.md` is the build order. The `take-next` skill (`.claude/skills/take-next/`) takes the next task from it; run its `selftest.sh` after editing the skill's scripts.
 
 ## Hard rules
 
