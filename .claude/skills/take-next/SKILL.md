@@ -147,7 +147,7 @@ Mark the PR ready once the local checks are green and the plan diff is clean.
 
 **Watch CI by polling, not by watching.** Never run `gh run watch` or a polling loop: the API rate limit is shared. Check `gh pr checks <n>` a few minutes apart, and confirm the run's `headSha` is the PR head. The matrix covers three operating systems, so a failure on Windows alone is still a failure.
 
-**Merging is the maintainer's,** or belongs to whoever the maintainer has delegated it to. Merge yourself only when that delegation covers this run (see `unattended-loop.md`). Then use `gh pr merge <n> --squash --delete-branch`. **This skill never tags a release.**
+**Merging is the maintainer's,** or belongs to whoever the maintainer has delegated it to. Merge yourself only when that delegation covers this run, which an unattended run's does (see `unattended-loop.md`, which also lists the PRs that still go to the reviewer). Then use `gh pr merge <n> --auto --squash`: branch protection holds the merge until the required checks pass, and the repo deletes merged branches. **This skill never tags a release.**
 
 ## 8. Close the loop
 
