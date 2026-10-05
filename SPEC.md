@@ -1,6 +1,6 @@
 # wiki-mind shard specification
 
-> **Status:** draft for ratification. Sections marked **Decided** are settled. Everything under [Open questions](#open-questions) waits for the maintainer's answer, and the text that depends on an answer says so. Once ratified, this file is the contract the roadmap builds against. A change to it lands in its own PR before the code that needs it.
+> **Status:** decided 2026-10-05. Every question the draft raised is answered; [Decisions](#decisions) lists the answers and where each one landed. The maintainer may overrule any of them. This file is the contract the roadmap builds against. A change to it lands in its own PR before the code that needs it.
 
 This spec covers the shard surface: what a user gets from `shardmind install github:breferrari/wiki-mind`, and how the repo is laid out to produce it. The ShardMind contract it builds on is [`docs/SHARD-LAYOUT.md`](https://github.com/breferrari/shardmind/blob/main/docs/SHARD-LAYOUT.md); this file does not restate it.
 
@@ -8,11 +8,12 @@ This spec covers the shard surface: what a user gets from `shardmind install git
 
 wiki-mind is a research vault on the LLM-wiki pattern. The user brings material, and an agent keeps a linked wiki over it:
 
-1. A question or a lead lands in `open_questions/`.
-2. A paper or article is ingested as one note in `sources/`.
-3. Ingesting a source creates or updates the `concepts/` and `entities/` notes it bears on, and each claim links back to the source it came from.
-4. When two or more concepts compete or overlap, a `syntheses/` note compares them.
-5. `Index.md` is the annotated entry point over all of it.
+1. A question or a lead lands in `questions/`.
+2. Raw material (a PDF, a saved page, notes) is dropped in `inbox/`.
+3. A paper or article is ingested as one note in `sources/`, from a URL or from a file in `inbox/`. The original stays where it is.
+4. Ingesting a source creates or updates the `concepts/` and `entities/` notes it bears on, and each claim links back to the source it came from.
+5. When two or more concepts compete or overlap, a `syntheses/` note compares them.
+6. `Index.md` is the annotated entry point over all of it.
 
 The agent does the writing; the user steers, reads and corrects. Every note is plain Markdown that Obsidian opens without the agent.
 
@@ -26,13 +27,28 @@ Five note types, each with one folder and one Obsidian template, plus `Index.md`
 | Concept | `concepts/` | atomic idea | `templates/Concept.md` | at least one source |
 | Entity | `entities/` | named system, tool or person | `templates/Entity.md` | at least one source |
 | Synthesis | `syntheses/` | "X vs Y" comparison | `templates/Synthesis.md` | the concepts or entities it compares, two or more |
-| Open question | `open_questions/` | question or lead to pursue | `templates/Open Question.md` | whatever raised it, when anything did |
+| Question | `questions/` | question or lead to pursue | `templates/Question.md` | whatever raised it, when anything did |
 
 A synthesis sits above concepts: it never replaces one, and a concept never holds a comparison. That separation is what keeps concepts atomic.
 
-`Index.md` sits at the vault root and lists each note type's notes with a one-line annotation per note. Whether the agent maintains it by hand or it embeds Bases views is open (Q4).
+**Decided (2026-10-05, maintainer may overrule):** the folder is `questions/`, not `open_questions/`, because a question note has a status and answered questions stay in the folder. The type is Question throughout (Q1).
 
-Frontmatter per type (field names, required set) is fixed by the templates PR, against Q3.
+`Index.md` sits at the vault root. **Decided (2026-10-05, maintainer may overrule):** it is both of these (Q4):
+
+- the agent-curated, annotated entry point, with a one-line annotation per note, since annotations need judgement;
+- the page that embeds the `bases/` views for complete listings.
+
+`wiki-lint` reports a note that a Bases view shows but `Index.md` doesn't annotate.
+
+**Decided (2026-10-05, maintainer may overrule):** frontmatter (Q3). Every note has `date`, `description` and `tags`. Per type:
+
+| Type | Adds |
+|------|------|
+| Source | `authors`, `year`, `url` |
+| Concept | nothing |
+| Entity | `kind`: `system`, `tool` or `person` |
+| Synthesis | `sides`: the notes it compares |
+| Question | `status`: `open`, `answered` or `dropped` |
 
 ## 3. Shipped files
 
@@ -41,12 +57,14 @@ Frontmatter per type (field names, required set) is fixed by the templates PR, a
 | Path | What |
 |------|------|
 | `Index.md` | Annotated entry point. |
-| `sources/`, `concepts/`, `entities/`, `syntheses/`, `open_questions/` | Empty at install, each with a `README.md` that says what goes there, so the folder exists in a clone. |
+| `sources/`, `concepts/`, `entities/`, `syntheses/`, `questions/` | Empty at install, each with a `README.md` that says what goes there, so the folder exists in a clone. |
+| `inbox/` | Raw drops before ingest: the pattern's raw layer. Empty at install, with a `README.md`. `wiki-ingest` reads from it and leaves the original in place. |
+| `bases/` | Bases views over the five note types, embedded in `Index.md`. |
 | `templates/` | The five templates above. |
 | `.obsidian/` | Vault config: core plugins, templates folder, attachment folder. No user state (ShardMind's Tier 1 excludes it anyway). |
 | `README.md`, `LICENSE` | As today. |
 
-Further content folders (a `brain/` for the agent's operational memory, `bases/`, a `thinking/` scratchpad, an `inbox/` for raw drops) are open (Q2).
+**Decided (2026-10-05, maintainer may overrule):** `inbox/` and `bases/` ship. `brain/` and `thinking/` don't in v0.1: the wiki is the memory, and `CLAUDE.md` is the manual (Q2).
 
 ### 3.2 Agent layer (installed)
 
@@ -60,11 +78,12 @@ Further content folders (a `brain/` for the agent's operational memory, `bases/`
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
 | `.scripts/qmd-bootstrap.ts` | Builds the QMD index on a fresh clone. |
-| `AGENTS.md` + `.codex/`, `GEMINI.md` + `.gemini/` | Only if Q6 answers yes. |
+| `.claude/VENDOR.json` | Where the vendored machinery came from (§7.1). |
+| `AGENTS.md` + `.codex/`, `GEMINI.md` + `.gemini/` | Not in the first release: a later roadmap phase (§5). |
 
 ### 3.3 Repo-only (in `.shardmindignore`)
 
-`CONTRIBUTING.md`, `SPEC.md`, `ROADMAP.md`, the vendoring record (§7.1), tests of repo-only scripts, and any media. `.github/` and `.shardmind/` are excluded by the engine itself.
+`CONTRIBUTING.md`, `SPEC.md`, `ROADMAP.md`, tests of repo-only scripts, and any media. `.github/` and `.shardmind/` are excluded by the engine itself.
 
 ### 3.4 Static vs templated
 
@@ -80,17 +99,19 @@ Every value has a default (ShardMind rejects one without). The defaults are what
 | `research_focus` | string | `""` | `personalize`: one line in `Index.md`; the QMD context string. |
 | `qmd_enabled` | boolean | `true` | `bootstrap` (build the index or not); the `when:` of the QMD `external_tools` entry. |
 
-This set is a proposal (Q5). obsidian-mind's `org_name` and `vault_purpose` don't carry over: wiki-mind has one purpose.
+**Decided (2026-10-05, maintainer may overrule):** these three values (Q5). obsidian-mind's `org_name` and `vault_purpose` don't carry over: wiki-mind has one purpose.
 
 ## 5. Modules
 
 | Module | Paths | Removable | Why |
 |--------|-------|-----------|-----|
-| `wiki` | the five folders, `Index.md`, `templates/` | no | The product. |
+| `wiki` | the five note folders, `inbox/`, `bases/`, `Index.md`, `templates/` | no | The product. |
 | `claude` | `CLAUDE.md`, `.claude/` except `scripts/`, `.claude-plugin/` if shipped | no | As in obsidian-mind: other agents' hook configs resolve into `.claude/scripts/`, so removing Claude would orphan them. `.claude/scripts/` is claimed by no module and so always installs. |
-| `codex`, `gemini` | their manual and dotfolder | yes | Only if Q6 answers yes. |
+| `codex`, `gemini` | their manual and dotfolder | yes | **Later roadmap phase**, not the first release. Planned, as in obsidian-mind, not dropped. |
 
-QMD search is a value (`qmd_enabled`), not a module, as in obsidian-mind: its files are small scripts that do nothing when QMD is absent, and keeping them installed means turning it on later needs no reinstall. Whether to make it a module instead is Q7.
+**Decided (2026-10-05, maintainer may overrule):** the first release is Claude only (Q6).
+
+**Decided (2026-10-05, maintainer may overrule):** QMD search is a value (`qmd_enabled`), not a module, as in obsidian-mind (Q7). Its files are small scripts that do nothing when QMD is absent, and keeping them installed means turning it on later needs no reinstall. The vendored `bootstrap` already works this way.
 
 Default wizard state is every module selected (ShardMind rule), so a defaults install ships all of the above.
 
@@ -102,16 +123,16 @@ Default wizard state is every module selected (ShardMind rule), so a defaults in
 
 ### 6.2 Commands
 
-Proposed, prefix open (Q8):
+**Decided (2026-10-05, maintainer may overrule):** the prefix is `wiki-` (Q8). It reads naturally and doesn't collide with obsidian-mind's `om-` commands.
 
 | Command | Does |
 |---------|------|
-| `ingest <url or file>` | Fetch the source (`defuddle` for web pages), write the `sources/` note, create or update the concepts and entities it informs, link both ways, update `Index.md`, close or annotate any open question it answers. |
-| `synthesize <X> vs <Y>` | Write a `syntheses/` note comparing two or more existing concepts or entities, citing their sources. Refuses when a side has no note yet and says which to ingest first. |
-| `question <text>` | File an `open_questions/` note. |
-| `lint` | Report orphans, claims with no source link, syntheses with fewer than two sides, and `Index.md` drift. |
+| `/wiki-ingest <url or inbox path>` | Fetch the source (`defuddle` for web pages) or read it from `inbox/`, leaving the original in place; write the `sources/` note, create or update the concepts and entities it informs, link both ways, update `Index.md`, mark any question it answers. |
+| `/wiki-synthesize <X> vs <Y>` | Write a `syntheses/` note comparing two or more existing concepts or entities, citing their sources. Refuses when a side has no note yet and says which to ingest first. |
+| `/wiki-question <text>` | File a `questions/` note with `status: open`. |
+| `/wiki-lint` | Report orphans, claims with no source link, syntheses with fewer than two sides, frontmatter missing per §2, and notes a Bases view shows that `Index.md` doesn't annotate. |
 
-Whether obsidian-mind's generic commands (`wrap-up`, `tidy`, `vault-audit`) carry over is Q9.
+**Decided (2026-10-05, maintainer may overrule):** v0.1 ships only these four commands (Q9). `wiki-lint` covers what `vault-audit` would. `wrap-up` and `tidy` can come later through the extraction.
 
 ### 6.3 Hooks
 
@@ -120,10 +141,10 @@ The `.claude/settings.json` hooks from obsidian-mind, retargeted at the wiki:
 | Event | Script | Change for wiki-mind |
 |-------|--------|----------------------|
 | SessionStart | `session-start.ts` | Context lists the wiki folders, open questions and recent sources instead of active work and North Star. |
-| UserPromptSubmit | `classify-message.ts` | Wiki signals (§7.2) instead of work signals. |
+| UserPromptSubmit | `classify-message.ts` | Wiki signals instead of work signals (§7.2, X2 and P2). |
 | PostToolUse (Write/Edit) | `validate-write.ts` | Frontmatter and link rules per §2. |
 | PreCompact | `pre-compact.ts` | Unchanged. |
-| Stop | `stop-checklist.ts` | Wiki hygiene findings (the `lint` checks). |
+| Stop | `stop-checklist.ts` | Wiki hygiene findings (the `wiki-lint` checks). |
 
 ### 6.4 The Claude Code mod
 
@@ -155,25 +176,70 @@ A `VENDOR.json` records the obsidian-mind commit the copy came from, following S
 - `repository`, `commit`, `version` (the obsidian-mind release), `license`;
 - `files`: each vendored path mapped to its upstream path, with `modified: true|false` and, when modified, a one-line `change` saying what and why.
 
-The `files` map is the extraction input: unmodified files are the shared core as it stands, and each `change` line is a place the shared core needs a seam. Location of the record is Q11.
+The `files` map is the extraction input: unmodified files are the shared core as it stands, and each `change` line is a place the shared core needs a seam. **Decided (2026-10-05, maintainer may overrule):** the record is `.claude/VENDOR.json`, and it installs (Q11). A vault should know where its machinery came from: a later vendor update in an installed vault reads it.
 
 Vendored scope, from the initial copy: `.claude/scripts/` (with `lib/` and the tests of what is kept), `.claude/skills/` (the mod and the Obsidian and QMD skills), `.scripts/qmd-bootstrap.ts`, `.shardmind/hooks/bootstrap.ts`. obsidian-mind's commands, agents, templates, Bases and content are not vendored: they are its domain, not machinery.
 
-**Decided, the maintainer may overrule:** the cross-repo memory MCP server (`om-mcp`, `lib/mcp-*`, `lib/memory-*`) stays in obsidian-mind and is not vendored. It is about half of the machinery, it is a product of its own, and the wiki workflow does not depend on it. If wiki-mind wants it later, it arrives through the extraction or a vendor update, not through a second fork now. Whether the correction sweep comes along is Q12.
+**Decided, the maintainer may overrule:** the cross-repo memory MCP server (`om-mcp`, `lib/mcp-*`, `lib/memory-*`) stays in obsidian-mind and is not vendored. It is about half of the machinery, it is a product of its own, and the wiki workflow does not depend on it. If wiki-mind wants it later, it arrives through the extraction or a vendor update, not through a second fork now.
 
-### 7.2 What wiki-mind changes, and why
+**Decided (2026-10-05, maintainer may overrule):** the correction sweep is not in v0.1 (Q12). obsidian-mind's sweep is built around its single-source status rule. A wiki's correction case is different: a source is retracted or superseded. That case gets its own spec in a later phase (see [Later](#later)).
 
-Known at spec time. The vendoring PR completes the list file by file in `VENDOR.json`.
+### 7.2 What wiki-mind changes, and how deep
 
-| Area | Change | Why | Seam it implies |
-|------|--------|-----|-----------------|
-| Signals (`lib/signals.ts`) | Replace DECISION, WIN, INCIDENT, ONE_ON_ONE and the rest with wiki signals: new source, claim, comparison, question. | The routing targets are a different ontology. | Signals as data the shard supplies. |
-| Session context (`lib/session-start.ts`) | Read wiki folders and open questions, not `work/active/` and `brain/North Star.md`. | Different folders carry the vault's state. | Context sections declared by the shard. |
-| Write validation (`validate-write.ts`) | Frontmatter per §2 types; source-link rule for concepts and entities. | Different note types. | Note-type rules read from the shard. |
-| Hygiene (`lib/active-hygiene.ts`, Stop report) | Wiki checks (`lint`) instead of active-work staleness. | Different notion of drift. | Pluggable hygiene checks. |
-| Mod identity | Plugin name, mod folder and state keys become `wiki-mind`. The `om_mod` flag does not change (§7.3). | Two mods named `obsidian-mind` would collide in a user who runs both vaults. | The mod name becomes configuration; the flag protocol becomes the extracted layer's API. |
-| `vault-manifest.json` keys | Drop obsidian-mind-only keys (`open_loop_dirs`, `open_loop_sections`); keep the shared ones. | The keys describe folders wiki-mind does not have. | A shared core key set plus shard keys. |
-| `bootstrap.ts` | Index name and QMD context string from wiki-mind's values. | Different vault. | Already value-driven; likely unmodified. |
+wiki-mind vendors obsidian-mind's machinery as it is. It does not build an extension mechanism of its own. Instead, it records what each change would need from the extracted layer. The extracted layer is meant to be a core with declared extension points per lifecycle event:
+
+- session-start sections;
+- Stop and hygiene detectors;
+- prompt signals;
+- write validators;
+- pre-tool guards;
+- MCP tools.
+
+Under that design, a vault's own behaviour lives outside the vendored code (for example under `.claude/extensions/`) and is declared in `vault-manifest.json`. The core owns ordering, the byte budget and failure isolation. Vaults that patch obsidian-mind's core files today to add their own behaviour are the case it serves.
+
+Every change below is in one of three tiers:
+
+- **Config:** a `vault-manifest.json` key. No vendored code changes.
+- **Extension:** new behaviour at a lifecycle point. It names the point it needs. Until the core has that point, the behaviour is written in wiki-mind's own files (the commands, `CLAUDE.md`), not in the vendored scripts.
+- **Core patch:** an edited vendored file, recorded in `VENDOR.json`. Each one marks an extension point the core lacks, so each one is justified, and the list is kept as short as possible.
+
+A row marked *verify* is a reading of obsidian-mind's code that the vendoring PR confirms or corrects.
+
+#### Config
+
+| ID | Change | Key |
+|----|--------|-----|
+| K1 | Vault identity and release. | `template`, `version`, `released` |
+| K2 | QMD index, minimum version and the context string search sees. `bootstrap.ts` already reads them, so it stays unmodified. | `qmd_index`, `qmd_min_version`, `qmd_context` |
+| K3 | Which folders hold unchecked open loops: `questions/` instead of obsidian-mind's work folders. | `open_loop_dirs`, `open_loop_sections` |
+| K4 | Which paths are infrastructure and which hold user notes. | `infrastructure`, `user_content_roots`, `scaffold` |
+| K5 | Session-context byte budgets. obsidian-mind's values are kept. | `eager_layer_budget_bytes`, `eager_layer_instruction_budget_bytes`, `listing_collapse_threshold` |
+| K6 | Per-type required frontmatter (§2). obsidian-mind ships this key, but none of its hooks read it today (verified); see X3. | `frontmatter_required` |
+| K7 | The memory-server keys are dropped, because the server is not vendored (§7.1). | `memory_root`, `mcp_exposed_roots`, `mcp_never_expose`, `mcp_inbox` |
+
+#### Extension
+
+| ID | Behaviour | Extension point it needs | Until the point exists |
+|----|-----------|--------------------------|------------------------|
+| X1 | Session context shows open questions (`status: open`), recent sources and the `Index.md` summary. | session-start sections | `CLAUDE.md` tells the agent to read `Index.md` and `questions/` at session start. |
+| X2 | Prompt signals for wiki intake: a new source, a claim, a comparison, a question. Each routes to its folder. | prompt signals | `CLAUDE.md` carries the routing table. |
+| X3 | Write validation per note type: required frontmatter (K6); concepts and entities link at least one source; a synthesis names two or more sides. | write validators, reading K6 | `wiki-lint` reports the same problems on demand. |
+| X4 | Wiki hygiene at Stop: orphans, claims with no source, one-sided syntheses, `Index.md` drift. | Stop and hygiene detectors | The `wiki-lint` command. |
+| X5 | No pre-tool guard at first. | pre-tool guards | None needed. |
+| X6 | No MCP tool beyond QMD at first. | MCP tools | None needed. |
+
+obsidian-mind's own sections, detectors and checks for its work folders (`work/active/`, `work/meetings/`, `brain/North Star.md`) stay in the vendored code untouched. In a wiki vault those folders don't exist, so they should produce nothing (*verify*: each one tolerates an absent folder). In the extracted design they become obsidian-mind's extensions, not core.
+
+#### Core patch
+
+| ID | File | Change | Why it can't wait for an extension point | Point the core lacks |
+|----|------|--------|-------------------------------------------|----------------------|
+| P1 | `.claude/skills/<mod>/` (`register.ts`, `context.ts`, `stop.ts`, `.claude-plugin/plugin.json`) and the folder name | The mod's name, state keys, context block and plugin identity become `wiki-mind`. The `om_mod` flag protocol is unchanged (§7.3). | With both vaults installed, two mods named `obsidian-mind` would collide. | Mod identity as configuration. |
+| P2 | `lib/signals.ts` | obsidian-mind's signal set (DECISION, WIN, INCIDENT, ONE_ON_ONE, …) is emptied. | Those signals fire on wiki prompts and route to folders the vault doesn't have. That is wrong guidance, not just silence. | Prompt signals that a vault declares and can replace, with no fixed default set. |
+| P3 | `stop-checklist.ts` | Drop the work-vault checklist lines ("Archive completed projects? work/active/ …"). *Verify*: only if they print regardless of whether the folders exist. | Same reason as P2: the lines would tell the agent to do things that can't apply. | Stop checklist items as detectors. |
+| P4 | `validate-write.ts` | The topic-cluster hint suggests a folder under the wiki's own folders, not `work/active/<Topic>/`. *Verify*: only if the hint can fire in a wiki vault. | A hint that points at a nonexistent folder misleads. | Cluster target folder as config. |
+
+P1 and P2 are certain. P3 and P4 land only if the vendoring PR confirms them. Every other file is vendored unmodified.
 
 ### 7.3 Contracts that must not change
 
@@ -181,7 +247,7 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 | Contract | What it fixes | Why it is fixed |
 |----------|---------------|-----------------|
-| `vault-manifest.json` as the vault-root marker | The hook commands in `.claude/settings.json` walk up from the project directory to the first folder holding `vault-manifest.json`. | Every hook command depends on it, and a session started in a vault subfolder relies on the walk. The keys inside the file may differ per vault (§7.2); its name and role do not. |
+| `vault-manifest.json` as the vault-root marker | The hook commands in `.claude/settings.json` walk up from the project directory to the first folder holding `vault-manifest.json`. | Every hook command depends on it, and a session started in a vault subfolder relies on the walk. The keys inside the file may differ per vault (§7.2, Config); its name and role do not. |
 | The `om_mod` flag protocol | The field name `om_mod` and the values `deliver`, `standdown` and `report` that the mod passes to the settings hooks. | It is how the hooks know the mod handled an event. Both sides of it are vendored, and the extraction exposes it as the shared layer's API. |
 
 ## 8. Invariants
@@ -195,19 +261,29 @@ ShardMind's four invariants apply as written. For this shard:
 
 Line endings are LF everywhere (`.gitattributes`), because Invariant 1 compares bytes.
 
-## Open questions
+## Decisions
 
-Answer inline or on the PR. Each answer edits the section named.
+The draft's open questions, all answered 2026-10-05. The maintainer may overrule any of them.
 
-- **Q1. Ontology as proposed?** Five types, folder names as written (`open_questions/` with an underscore, the others plural). (§2)
-- **Q2. More content folders?** Any of: `brain/` (the agent's operational memory, as in obsidian-mind), `bases/` (Bases views over the five types), `thinking/` (scratchpad), `inbox/` (raw drops before ingest). (§3.1)
-- **Q3. Frontmatter.** Minimum fields for every note (proposal: `date`, `description`, `tags`), plus per type: source (`authors`, `year`, `url`), entity (`kind`: system, tool or person), synthesis (`sides`), open question (`status`: open, answered, dropped)? (§2)
-- **Q4. `Index.md`: agent-maintained list, Bases embeds, or both?** (§2)
-- **Q5. Values.** `user_name`, `research_focus`, `qmd_enabled`: keep, add, drop? (§4)
-- **Q6. Codex and Gemini.** Ship `AGENTS.md` and `GEMINI.md` with their hook configs as removable modules, as obsidian-mind does, or Claude only at first? (§3.2, §5)
-- **Q7. QMD as a value or a module?** (§5)
-- **Q8. Command prefix.** obsidian-mind uses `om-`. `wm-`, `wiki-`, or none? (§6.2)
-- **Q9. Generic obsidian-mind commands.** Carry over `wrap-up`, `tidy`, `vault-audit` (adapted), or only the wiki commands? (§6.2)
-- **Q10.** Decided: the mod is named `wiki-mind`, and the `om_mod` flag protocol is unchanged. (§6.4, §7.3)
-- **Q11. Where `VENDOR.json` lives.** At the repo root (repo-only, in `.shardmindignore`), or next to the code it describes (`.claude/VENDOR.json`, installed, so a vault knows where its machinery came from)? (§7.1)
-- **Q12. The correction sweep.** Vendor obsidian-mind's correction sweep (`lib/correction-sweep.ts`, `om-correct`), which sweeps a corrected fact through the vault (fixes it at its single source and replaces restatements with links), or leave it out? The memory MCP server is decided out (§7.1). (§7.1)
+| Q | Question | Answer | Lands in |
+|---|----------|--------|----------|
+| Q1 | Ontology as proposed? | Yes, with `questions/` in place of `open_questions/`; the type is Question. | §1, §2 |
+| Q2 | More content folders? | `inbox/` and `bases/`. No `brain/` or `thinking/` in v0.1. | §3.1 |
+| Q3 | Frontmatter | As proposed. | §2 |
+| Q4 | `Index.md` shape | Agent-curated annotations plus embedded Bases views. | §2, §6.2 |
+| Q5 | Values | `user_name`, `research_focus`, `qmd_enabled`. | §4 |
+| Q6 | Codex and Gemini | Claude only in the first release; Codex and Gemini in a later phase. | §3.2, §5 |
+| Q7 | QMD as value or module | A value. | §5 |
+| Q8 | Command prefix | `wiki-`. | §6.2 |
+| Q9 | Generic obsidian-mind commands | Not in v0.1. | §6.2 |
+| Q10 | Mod name and flag | Mod `wiki-mind`; `om_mod` protocol unchanged. | §6.4, §7.3 |
+| Q11 | Where `VENDOR.json` lives | `.claude/VENDOR.json`, installed. | §3.2, §7.1 |
+| Q12 | Correction sweep | Not in v0.1; specified separately later. | §7.1 |
+
+## Later
+
+Planned for phases after the first release, so they are scheduled rather than dropped:
+
+- **Codex and Gemini** as removable modules, as in obsidian-mind (§5).
+- **Corrections for a retracted or superseded source:** how the wiki updates the concepts, entities and syntheses that cite it. This needs its own spec, not obsidian-mind's sweep (§7.1).
+- **`wrap-up` and `tidy`**, through the extraction rather than as wiki-mind copies (§6.2).
