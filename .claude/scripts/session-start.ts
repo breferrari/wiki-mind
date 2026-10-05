@@ -36,6 +36,7 @@ import {
 	type InjectionBudget,
 } from "./lib/session-start.ts";
 import { collectSections, formatFailures, loadRegistry, parseManifest, undispatched } from "./core/registry.ts";
+import { qmdSessionStart } from "./core/qmd-session.ts";
 
 type HookInput = { readonly source?: unknown };
 
@@ -105,6 +106,15 @@ const sections: BudgetSection[] = [
 	{ header: "", body: "## Session Context", priority: 0 },
 	{ header: "### Date", body: formatDateHeader(new Date(ctx.now)), priority: 0 },
 ];
+
+// QMD's session-start work (core/qmd-session.ts): the index refresh in the
+// background, and a load-bearing note when QMD needed a self-heal or is too
+// old. Never fatal: a session must start whatever QMD's state.
+try {
+	for (const note of qmdSessionStart(vaultRoot, manifestJson).notes) sections.push({ header: note.header, body: note.body, priority: 0 });
+} catch {
+	/* QMD is optional */
+}
 if (notes.length > 0) sections.push({ header: "### Extensions", body: notes.join("\n"), priority: 0 });
 sections.push(...extensionSections);
 
