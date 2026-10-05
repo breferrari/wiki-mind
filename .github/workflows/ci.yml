@@ -52,6 +52,12 @@ jobs:
             exit 1
           fi
 
+      - name: take-next selftest
+        shell: bash
+        # The loop's selection and pre-flight are jq inside shell, so this
+        # fixture suite is their only test. It is offline: no gh, no network.
+        run: sh .claude/skills/take-next/selftest.sh
+
       - uses: actions/setup-node@v4
         if: hashFiles('.shardmind/shard.yaml') != ''
         with:
