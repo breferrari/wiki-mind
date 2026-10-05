@@ -27,6 +27,7 @@ obsidian-mind's scripts, hooks and mod arrive as a vendored copy with `.claude/V
 | ⬜ | Vendor obsidian-mind's machinery at c65062d with .claude/VENDOR.json | [#6](https://github.com/breferrari/wiki-mind/issues/6) |
 | ⬜ | Rename the Claude Code mod to wiki-mind (P1) | [#7](https://github.com/breferrari/wiki-mind/issues/7) |
 | ⬜ | Empty obsidian-mind's prompt signal set (P2) | [#8](https://github.com/breferrari/wiki-mind/issues/8) |
+| ⬜ | Remove the in-repo take-next once the global skill lands. Blocked: waits for the reviewer's word that the global skill has landed; skip it until then | [#31](https://github.com/breferrari/wiki-mind/issues/31) |
 
 ## Phase 2 — the shard installs
 

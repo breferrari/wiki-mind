@@ -53,6 +53,9 @@ jobs:
           fi
 
       - name: take-next selftest
+        # Runs only while the in-repo copy exists: take-next is moving to a
+        # global skill (#31), and this step leaves with the copy.
+        if: hashFiles('.claude/skills/take-next/selftest.sh') != ''
         shell: bash
         # The loop's selection and pre-flight are jq inside shell, so this
         # fixture suite is their only test. It is offline: no gh, no network.
