@@ -1,0 +1,11 @@
+{
+  "template": "wiki-mind",
+  "extensions": [
+    {
+      "id": "wiki",
+      "module": ".claude/extensions/wiki/index.ts",
+      "events": ["session-start", "stop", "prompt", "write"],
+      "priority": 100
+    }
+  ]
+}
