@@ -267,6 +267,16 @@ Every entry point also reads and parses `vault-manifest.json` itself; the core s
 | S5 | QMD's session-start work lived in obsidian-mind's `session-start.ts`, not in a library. *Resolved in #42:* `core/qmd-session.ts` runs it for any vault's session-start. It covers the background index update (or the idempotent bootstrap when the store is missing or near-empty), the native-ABI self-heal, and the minimum-version note, and its side effects are injectable. `VAULT_QMD=off` turns it off, so tests never touch the user's QMD store. | A core session-start step, run before the sections. It lifts with `core/` as it is. |
 | S6 | `lib/stop-report.ts`'s `MOD_PREFACE` told the agent a notice may come "from the obsidian-mind plugin". *Patched in #7:* `modPreface(modName)` builds it for any vault's mod, and `MOD_PREFACE` keeps obsidian-mind's value. wiki-mind's `stop-checklist.ts` passes `wiki-mind`, and a test holds that equal to the mod's `plugin.json`. | The mod's name comes from the mod's declaration, so no entry point names it. |
 
+#### Live run (#36)
+
+The real-session test bed ran wiki-mind on Windows with Claude Code 2.1.289, on both delivery paths: the settings hooks and the mod. It ran two scenarios, `wiki` and `compact`, for four sessions in all. The extraction can rely on these results:
+
+- **Both paths work.** The `wiki` scenario passed every check on both arms. The session context reached the model, the routing hints fired on a URL, the write validator ran after a Write, and the Stop report was handed over with the next message.
+- **The mod's line is confirmed.** Under the mod, the Stop line shows live as `wiki-mind: vault check: …`. Claude Code prefixes it with the name from the mod's declaration, which confirms S6's choice: no entry point names the mod.
+- **Under the mod, the hooks print almost nothing.** The settings hooks' output bytes move into the mod's `classic.*` events: SessionStart prints 0 B and Stop prints 2 B, and the context and the report still arrive. The slowest mod events took about 2 s: `classic.SessionStart`, `classic.Stop` and `prompt.submit`. That is the QMD refresh and the detectors over a small vault. Each extension's time limit (§7.4) bounds this cost; nothing else does.
+- **Compaction.** `SessionStart:compact` fires and re-injects the context; the model-layer check passed. PreCompact runs, and appears in Claude Code's debug log as `PreCompact:manual`. The checks that failed attributed these events to the wrong turn: that is a fault in the test bed's parser, not in the hooks.
+- **Not yet covered:** macOS and Linux (#70).
+
 ### 7.3 Contracts that must not change
 
 These are shared between obsidian-mind and wiki-mind, and stay shared through the extraction.
