@@ -1,14 +1,14 @@
 # wiki-mind Roadmap
 
-> Living document. The phases below are the build order. Each row links its issue, and the tracker holds each issue's state. A fresh session takes the next task with the `take-next` skill, which needs no context from earlier conversations.
+> Living document. The phases below are the build order. Each row links its issue, and the tracker holds each issue's state. A fresh session takes the next task with the maintainer's global `take-next` skill (none ships in the repo), which needs no context from earlier conversations.
 >
-> Contract: [`SPEC.md`](SPEC.md) | Rules: [`CONTRIBUTING.md`](CONTRIBUTING.md) | Loop: [`.claude/skills/take-next/SKILL.md`](.claude/skills/take-next/SKILL.md)
+> Contract: [`SPEC.md`](SPEC.md) | Rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## How work is taken
 
-- **Order is the phase number at the start of a milestone title.** `sh .claude/skills/take-next/next.sh` names the milestone to take from, and the topmost ⬜ row of its section here is the task.
+- **Order is the phase number at the start of a milestone title.** take-next's `next.sh` names the milestone to take from, and the topmost ⬜ row of its section here is the task.
 - **Each phase has a section whose heading matches its milestone title exactly,** and a table whose marks follow the tracker: ✅ closed, ⬜ open, 🔨 in progress.
-- **`sh .claude/skills/take-next/preflight.sh` checks the record against itself.** Every invariant in `SPEC.md` is held by a test, or tracked by an open issue that names it. Every roadmap mark agrees with its issue. Every open issue has a milestone. Every issue is mentioned here.
+- **take-next's `preflight.sh` checks the record against itself.** Every invariant in `SPEC.md` is held by a test, or tracked by an open issue that names it. Every roadmap mark agrees with its issue. Every open issue has a milestone. Every issue is mentioned here.
 - **An issue filed mid-pass gets a milestone and a row in the same pass.** Out-of-scope work gets a row in the phase it belongs to, or in a new phase after the last one.
 - **One issue, one PR,** based on `main`. No stacked PRs.
 
@@ -28,7 +28,7 @@ obsidian-mind's generic libraries arrive as a vendored copy with `.claude/VENDOR
 | ✅ | Write wiki-mind's entry points over an extension registry | [#35](https://github.com/breferrari/wiki-mind/issues/35) |
 | ✅ | Vendor the Claude Code mod as wiki-mind (P1) | [#7](https://github.com/breferrari/wiki-mind/issues/7) |
 | ✅ | Empty obsidian-mind's prompt signal set (P2). Closed as not needed: the #6 rescope vendors no signal set | [#8](https://github.com/breferrari/wiki-mind/issues/8) |
-| ⬜ | Remove the in-repo take-next once the global skill lands. Blocked: waits for the reviewer's word that the global skill has landed; skip it until then | [#31](https://github.com/breferrari/wiki-mind/issues/31) |
+| ✅ | Remove the in-repo take-next once the global skill lands | [#31](https://github.com/breferrari/wiki-mind/issues/31) |
 
 ## Phase 2 — the shard installs
 
@@ -67,7 +67,7 @@ The ontology from SPEC.md §2 becomes a vault: folders, templates, Bases views, 
 | ✅ | Add /wiki-ingest | [#20](https://github.com/breferrari/wiki-mind/issues/20) |
 | ✅ | Add /wiki-synthesize | [#21](https://github.com/breferrari/wiki-mind/issues/21) |
 | ✅ | Add /wiki-lint | [#22](https://github.com/breferrari/wiki-mind/issues/22) |
-| ⬜ | Test bed: run every hook and the mod in real Claude Code sessions | [#36](https://github.com/breferrari/wiki-mind/issues/36) |
+| ✅ | Test bed: run every hook and the mod in real Claude Code sessions | [#36](https://github.com/breferrari/wiki-mind/issues/36) |
 
 ## Phase 4 — first release
 
@@ -80,6 +80,7 @@ Everything a first tag needs except the tag itself, which is the maintainer's.
 | ✅ | Add the release workflow and CHANGELOG.md | [#23](https://github.com/breferrari/wiki-mind/issues/23) |
 | ✅ | Write the README's install, update and usage sections | [#24](https://github.com/breferrari/wiki-mind/issues/24) |
 | ✅ | Contract test on fork PRs: resolve or skip with a notice | [#51](https://github.com/breferrari/wiki-mind/issues/51) |
+| ⬜ | Test bed: the POSIX half of the real-session runs. Blocked: needs a macOS or Linux runner for live sessions, the maintainer's call | [#70](https://github.com/breferrari/wiki-mind/issues/70) |
 
 ## Phase 5 — after the first release
 

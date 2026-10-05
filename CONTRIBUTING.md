@@ -7,7 +7,8 @@ This file holds the rules for working on the wiki-mind repo. `.shardmindignore` 
 - Branch and PR for every change. Never push to `main`.
 - PR titles use `type: short description`. Types: `feat`, `fix`, `docs`, `chore`, `ci`, `test`, `refactor`.
 - One issue per PR, based on `main`. No stacked PRs. The issue's roadmap row is updated in the same PR.
-- `ROADMAP.md` is the build order. The `take-next` skill (`.claude/skills/take-next/`) takes the next task from it; run its `selftest.sh` after editing the skill's scripts.
+- `ROADMAP.md` is the build order. The maintainer's global `take-next` skill takes the next task from it; the repo carries no copy and no extension.
+- **Merging is delegated to a reviewer.** A run whose delegation covers merging marks its PR ready and runs `gh pr merge <n> --auto --squash`; branch protection holds it until `check (ubuntu-latest)`, `check (macos-latest)` and `check (windows-latest)` pass on the head. A PR that changes `SPEC.md` is marked ready without auto-merge and goes to the reviewer. The matrix job in `ci.yml` stays named `check`, since protection requires it by that name.
 
 ## Development setup
 
@@ -41,7 +42,6 @@ Update this table in the same PR that adds or removes a top-level path.
 | `CONTRIBUTING.md` | Rules for working on the repo; repo-only. |
 | `SPEC.md` | The shard contract: what installs and why; repo-only. |
 | `ROADMAP.md` | Build order: phases mirror GitHub milestones, one issue per row; repo-only. |
-| `.claude/skills/take-next/` | The loop that takes the next roadmap task; repo-only. |
 | `README.md` | GitHub landing page; also installs into the vault. |
 | `LICENSE` | MIT. |
 | `.gitattributes` | Pins LF line endings. |
