@@ -38,7 +38,9 @@ export function parseStopReport(stdout: string): StopReport {
 /**
  * The line drawn under the answer when the report changed: what drifted, in
  * the report's own words, and where the rest went. Claude Code shows it after
- * the mod's name (observed on 2.1.288: `wiki-mind: …`).
+ * the mod's name: observed in obsidian-mind on 2.1.288 as `obsidian-mind: …`,
+ * so `wiki-mind: …` here (not yet observed live; the real-session test bed
+ * asserts it).
  */
 export function summaryLine(report: StopReport): string {
 	const what = report.claims.length > 0 ? report.claims.join(" · ") : "wrap-up checklist";
