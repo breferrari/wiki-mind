@@ -1,0 +1,19 @@
+filters:
+  and:
+    - file.inFolder("concepts")
+    - file.ext == "md"
+    - file.name != "README"
+properties:
+  file.name:
+    displayName: Concept
+  description:
+    displayName: Summary
+  date:
+    displayName: Date
+views:
+  - type: table
+    name: All concepts
+    order:
+      - file.name
+      - description
+      - date
