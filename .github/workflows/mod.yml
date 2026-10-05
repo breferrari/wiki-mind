@@ -1,0 +1,61 @@
+name: Mod
+
+# The Claude Code mod in .claude/skills/wiki-mind/ is checked by Claude Code
+# itself: `plugin validate --strict` reads its manifest and module the way the
+# engine will, and `plugin test` runs its *.test.ts files against the real
+# engine. Shaped like obsidian-mind's mod workflow.
+#
+# Pushes and pull requests use a pinned CLI, so main never turns red without a
+# change in the repo. A weekly run uses the latest CLI: the mod API is young
+# and moves between releases, and a break should show there first.
+
+on:
+  push:
+    branches: [main]
+    paths: &mod-paths
+      - '.claude/skills/wiki-mind/**'
+      # The mod runs the vault's hook scripts.
+      - '.claude/scripts/**'
+      - '.github/workflows/mod.yml'
+  pull_request:
+    paths: *mod-paths
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+env:
+  # The version the mod is known to work on; the weekly run overrides it.
+  CLAUDE_CODE_VERSION: ${{ github.event_name == 'schedule' && 'latest' || '2.1.288' }}
+
+jobs:
+  mod:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code (CI-only, not shipped)
+        shell: bash
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" && claude --version
+      - name: Validate the mod
+        shell: bash
+        run: claude plugin validate --strict .claude/skills/wiki-mind
+      - name: Test the mod
+        shell: bash
+        run: claude plugin test .claude/skills/wiki-mind
+      - name: The checks left nothing behind
+        shell: bash
+        run: |
+          # --ignored too: the engine's typings and tsconfig are gitignored, and
+          # a check that writes them should still be seen.
+          residue=$(git status --porcelain --ignored --untracked-files=all)
+          if [ -n "$residue" ]; then
+            echo "::error::the mod checks left files behind"
+            echo "$residue"
+            exit 1
+          fi

@@ -33,8 +33,15 @@ import { resolveProjectDir } from "./lib/project-dir.ts";
 import { triggerDebouncedRefresh } from "./lib/qmd-refresh.ts";
 import { reportKey } from "./lib/report-key.ts";
 import { HANDOFF_DIR, pruneHandoffs, writeHandoff } from "./lib/stop-handoff.ts";
-import { AGENT_PREFACE, FEEDBACK_PREFACE, FEEDBACK_TRAILER, MOD_PREFACE, stopSummary } from "./lib/stop-report.ts";
+import { AGENT_PREFACE, FEEDBACK_PREFACE, FEEDBACK_TRAILER, modPreface, stopSummary } from "./lib/stop-report.ts";
 import { collectChecklist, formatFailures, loadRegistry, parseManifest, runDetectors } from "./core/registry.ts";
+
+/**
+ * The vault's Claude Code mod, as its plugin.json names it. The mod's report
+ * tells the agent which plugin a notice comes from; a test holds this equal
+ * to .claude/skills/wiki-mind/.claude-plugin/plugin.json.
+ */
+const MOD_NAME = "wiki-mind";
 
 const DEBOUNCE_MS = 30_000;
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -101,7 +108,7 @@ async function report(): Promise<void> {
 
 	// The mod's run always gets the report as data (its parser requires one),
 	// even an empty one; everything else stays silent when there is nothing to say.
-	if (omMod === "report") writeStopReportData({ key, claims, agentText: message === "" ? "" : `${MOD_PREFACE}\n\n${message}` });
+	if (omMod === "report") writeStopReportData({ key, claims, agentText: message === "" ? "" : `${modPreface(MOD_NAME)}\n\n${message}` });
 	else if (message === "") writeSilentHookOutput();
 	else if (isStop && hasSession && !claimChanged(STATE_PATH, sessionId, key)) writeSilentHookOutput();
 	else if (isStop && hasSession) {

@@ -79,7 +79,8 @@
       "upstream": ".claude/scripts/lib/stop-handoff.ts"
     },
     ".claude/scripts/lib/stop-report.ts": {
-      "modified": false,
+      "change": "S6 (SPEC.md §7.2): modPreface(modName) builds the mod-report framing for any vault's mod; MOD_PREFACE stays obsidian-mind's value, so existing callers are unchanged.",
+      "modified": true,
       "upstream": ".claude/scripts/lib/stop-report.ts"
     },
     ".claude/scripts/lib/wikilinks.ts": {
@@ -249,6 +250,49 @@
     ".claude/skills/qmd/SKILL.md": {
       "modified": false,
       "upstream": ".claude/skills/qmd/SKILL.md"
+    },
+    ".claude/skills/wiki-mind/.claude-plugin/plugin.json": {
+      "change": "P1: name wiki-mind, version 0.1.0 (wiki-mind's), description and author URL for wiki-mind.",
+      "modified": true,
+      "upstream": ".claude/skills/obsidian-mind/.claude-plugin/plugin.json"
+    },
+    ".claude/skills/wiki-mind/hooks/context.ts": {
+      "change": "P1 (SPEC.md §7.2): the mod's identity is wiki-mind (plugin name, state keys, context block, its own origin check), so it does not collide with obsidian-mind's mod in a user who runs both vaults; the om_mod protocol is unchanged.",
+      "modified": true,
+      "upstream": ".claude/skills/obsidian-mind/hooks/context.ts"
+    },
+    ".claude/skills/wiki-mind/hooks/hooks.json": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-mind/hooks/hooks.json"
+    },
+    ".claude/skills/wiki-mind/hooks/register.test.ts": {
+      "change": "P1: the tests read the wiki-mind state keys; issue references qualified.",
+      "modified": true,
+      "upstream": ".claude/skills/obsidian-mind/hooks/register.test.ts"
+    },
+    ".claude/skills/wiki-mind/hooks/register.ts": {
+      "change": "P1 (SPEC.md §7.2): the mod's identity is wiki-mind (plugin name, state keys, context block, its own origin check), so it does not collide with obsidian-mind's mod in a user who runs both vaults; the om_mod protocol is unchanged. obsidian-mind issue references are qualified (obsidian-mind#NNN).",
+      "modified": true,
+      "upstream": ".claude/skills/obsidian-mind/hooks/register.ts"
+    },
+    ".claude/skills/wiki-mind/hooks/stop.test.ts": {
+      "change": "P1: the tests expect the wiki-mind origin; issue references qualified.",
+      "modified": true,
+      "upstream": ".claude/skills/obsidian-mind/hooks/stop.test.ts"
+    },
+    ".claude/skills/wiki-mind/hooks/stop.ts": {
+      "change": "P1 (SPEC.md §7.2): the mod's identity is wiki-mind (plugin name, state keys, context block, its own origin check), so it does not collide with obsidian-mind's mod in a user who runs both vaults; the om_mod protocol is unchanged. obsidian-mind issue references are qualified (obsidian-mind#NNN).",
+      "modified": true,
+      "upstream": ".claude/skills/obsidian-mind/hooks/stop.ts"
+    },
+    ".claude/skills/wiki-mind/hooks/world.ts": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-mind/hooks/world.ts"
+    },
+    ".claude/skills/wiki-mind/types/index.d.ts": {
+      "change": "P1: the plugin state is declared under wiki-mind.",
+      "modified": true,
+      "upstream": ".claude/skills/obsidian-mind/types/index.d.ts"
     },
     ".mcp.json": {
       "modified": false,
