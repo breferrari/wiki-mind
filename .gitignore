@@ -1,0 +1,31 @@
+# Obsidian runtime state, not vault config.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/*/data.json
+.obsidian/graph.json
+
+# OS
+.DS_Store
+.Trash/
+
+# Claude Code. The re-include guards against a user-level global gitignore
+# that excludes .claude/, which would silently drop the hook layer.
+!.claude/
+.claude/settings.local.json
+
+# QMD index (local, regenerated).
+.qmd/
+
+# ShardMind hook output (local).
+.shardmind/logs/
+
+# Typecheck dependencies (CI and local dev only; the scripts have no runtime
+# dependencies).
+node_modules/
+.claude/scripts/node_modules/
+
+# Hook runtime state (local, self-pruning, or a debounce sentinel).
+.claude/scripts/.hint-state.json
+.claude/scripts/.checklist-state.json
+.claude/scripts/.stop-handoff/
+.claude/scripts/.qmd-refresh-sentinel

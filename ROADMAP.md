@@ -18,15 +18,16 @@
 
 Milestone: [Phase 1](https://github.com/breferrari/wiki-mind/milestone/1)
 
-obsidian-mind's scripts, hooks and mod arrive as a vendored copy with `.claude/VENDOR.json` (SPEC.md §7). The two CI fixes come first, because the session-artifact grep would fail on vendored regex source. The vendoring issue settles every *verify* row in §7.2. P1 and P2, the two certain core patches, follow.
+obsidian-mind's generic libraries arrive as a vendored copy with `.claude/VENDOR.json` (SPEC.md §7.1). wiki-mind then writes its own entry points over an extension registry (§7.4), and vendors the mod under its own name. The two CI fixes came first, because the session-artifact grep would have failed on vendored regex source.
 
 | | Task | Issue |
 |---|---|---|
 | ✅ | ci: give the PR-title job its own name | [#4](https://github.com/breferrari/wiki-mind/issues/4) |
 | ✅ | ci: tighten the session-artifact path pattern before vendored code lands | [#5](https://github.com/breferrari/wiki-mind/issues/5) |
-| ⬜ | Vendor obsidian-mind's machinery at c65062d with .claude/VENDOR.json | [#6](https://github.com/breferrari/wiki-mind/issues/6) |
-| ⬜ | Rename the Claude Code mod to wiki-mind (P1) | [#7](https://github.com/breferrari/wiki-mind/issues/7) |
-| ⬜ | Empty obsidian-mind's prompt signal set (P2) | [#8](https://github.com/breferrari/wiki-mind/issues/8) |
+| ✅ | Vendor obsidian-mind's generic libraries at c65062d with .claude/VENDOR.json | [#6](https://github.com/breferrari/wiki-mind/issues/6) |
+| ⬜ | Write wiki-mind's entry points over an extension registry | [#35](https://github.com/breferrari/wiki-mind/issues/35) |
+| ⬜ | Vendor the Claude Code mod as wiki-mind (P1) | [#7](https://github.com/breferrari/wiki-mind/issues/7) |
+| ✅ | Empty obsidian-mind's prompt signal set (P2). Closed as not needed: the #6 rescope vendors no signal set | [#8](https://github.com/breferrari/wiki-mind/issues/8) |
 | ⬜ | Remove the in-repo take-next once the global skill lands. Blocked: waits for the reviewer's word that the global skill has landed; skip it until then | [#31](https://github.com/breferrari/wiki-mind/issues/31) |
 
 ## Phase 2 — the shard installs
@@ -60,6 +61,7 @@ The ontology from SPEC.md §2 becomes a vault: folders, templates, Bases views, 
 | ⬜ | Add /wiki-ingest | [#20](https://github.com/breferrari/wiki-mind/issues/20) |
 | ⬜ | Add /wiki-synthesize | [#21](https://github.com/breferrari/wiki-mind/issues/21) |
 | ⬜ | Add /wiki-lint | [#22](https://github.com/breferrari/wiki-mind/issues/22) |
+| ⬜ | Test bed: run every hook and the mod in real Claude Code sessions | [#36](https://github.com/breferrari/wiki-mind/issues/36) |
 
 ## Phase 4 — first release
 
@@ -83,3 +85,4 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ⬜ | Codex and Gemini as removable modules | [#25](https://github.com/breferrari/wiki-mind/issues/25) |
 | ⬜ | Spec corrections for a retracted or superseded source | [#26](https://github.com/breferrari/wiki-mind/issues/26) |
 | ⬜ | wrap-up and tidy through the extraction | [#27](https://github.com/breferrari/wiki-mind/issues/27) |
+| ⬜ | Diagram skill for syntheses (mermaid) | [#33](https://github.com/breferrari/wiki-mind/issues/33) |
