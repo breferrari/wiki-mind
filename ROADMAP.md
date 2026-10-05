@@ -58,7 +58,7 @@ The ontology from SPEC.md §2 becomes a vault: folders, templates, Bases views, 
 | | Task | Issue |
 |---|---|---|
 | ✅ | Add the wiki folders, inbox/ and Obsidian config | [#13](https://github.com/breferrari/wiki-mind/issues/13) |
-| ⬜ | Add the five note templates with their frontmatter | [#14](https://github.com/breferrari/wiki-mind/issues/14) |
+| ✅ | Add the five note templates with their frontmatter | [#14](https://github.com/breferrari/wiki-mind/issues/14) |
 | ⬜ | Add Bases views over the five note types | [#15](https://github.com/breferrari/wiki-mind/issues/15) |
 | ⬜ | Add Index.md, the annotated entry point | [#16](https://github.com/breferrari/wiki-mind/issues/16) |
 | ⬜ | personalize hook writes user_name and research_focus into Index.md | [#17](https://github.com/breferrari/wiki-mind/issues/17) |
