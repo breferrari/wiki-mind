@@ -16,15 +16,15 @@ SPEC.md
 ROADMAP.md
 .claude/skills/take-next/
 
-# Tests that import repo-only code. bootstrap-hook.test.ts imports
-# .shardmind/hooks/bootstrap.ts, which the engine never installs (Tier 1), so
-# in a vault the whole file would fail to load. obsidian-mind lists it the
-# same way.
-.claude/scripts/tests/bootstrap-hook.test.ts
-
-# Reads .shardmind/shard.yaml and .github/workflows/ci.yml, which never
-# install (Tier 1): in a vault the file would fail on its first read.
-.claude/scripts/tests/shard-manifest.test.ts
+# Tests and their support files. They run in CI, in the repo; nothing runs
+# them in a vault, and some read paths a vault never has (.shardmind/,
+# .github/). The mod's world.ts is the mod tests' stand-in engine, imported
+# by nothing else. tests/install-set.test.ts holds that no installed file
+# imports anything listed here, and that no *.test.ts installs.
+.claude/scripts/tests/
+.claude/scripts/**/*.test.ts
+.claude/skills/wiki-mind/hooks/*.test.ts
+.claude/skills/wiki-mind/hooks/world.ts
 
 # Development dependencies (the CI typecheck install). A vault never gets
 # them, and on POSIX their .bin entries are symbolic links, which the engine
