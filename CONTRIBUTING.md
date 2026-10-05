@@ -9,6 +9,14 @@ This file holds the rules for working on the wiki-mind repo. `.shardmindignore` 
 - One issue per PR, based on `main`. No stacked PRs. The issue's roadmap row is updated in the same PR.
 - `ROADMAP.md` is the build order. The `take-next` skill (`.claude/skills/take-next/`) takes the next task from it; run its `selftest.sh` after editing the skill's scripts.
 
+## Development setup
+
+A dev checkout is a vault. Its committed `.claude/settings.json` runs the vault's hooks in every Claude Code session you start there. With QMD installed, a session start or compaction builds a QMD index named after the checkout's folder, in your QMD cache and config. To stop that, set `VAULT_QMD=off` in an uncommitted `.claude/settings.local.json` in each checkout and worktree:
+
+```json
+{ "env": { "VAULT_QMD": "off" } }
+```
+
 ## Hard rules
 
 1. **No agent-session artifacts in anything that lands in the repo.** That covers files, commit messages, PR and issue bodies, and review comments. Never include claude.ai session URLs, `Claude-Session:` trailers, or local absolute paths (`C:\...`, `/Users/...`, `/home/...`). Use repo-relative paths or GitHub URLs. `Co-Authored-By:` trailers are fine.
