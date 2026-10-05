@@ -77,7 +77,7 @@ Everything a first tag needs except the tag itself, which is the maintainer's.
 
 | | Task | Issue |
 |---|---|---|
-| ⬜ | Add the release workflow and CHANGELOG.md | [#23](https://github.com/breferrari/wiki-mind/issues/23) |
+| ✅ | Add the release workflow and CHANGELOG.md | [#23](https://github.com/breferrari/wiki-mind/issues/23) |
 | ✅ | Write the README's install, update and usage sections | [#24](https://github.com/breferrari/wiki-mind/issues/24) |
 | ⬜ | Contract test on fork PRs: resolve or skip with a notice | [#51](https://github.com/breferrari/wiki-mind/issues/51) |
 

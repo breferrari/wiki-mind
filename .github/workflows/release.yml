@@ -1,0 +1,60 @@
+name: Release
+
+# Publishes a GitHub release when the maintainer pushes a version tag.
+# ShardMind installs and updates from the tagged commit's tarball, so the
+# release itself only has to be consistent: the tag, the shard's version and
+# the mod's version agree, and CHANGELOG.md has that version's section, whose
+# text becomes the release notes. Tagging is the maintainer's step
+# (CONTRIBUTING.md, "Releasing").
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tag, the shard version and the mod version agree
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::tag $tag is not vX.Y.Z"; exit 1
+          fi
+          version="${tag#v}"
+          shard=$(sed -n 's/^version:[[:space:]]*\([0-9.]*\)[[:space:]]*$/\1/p' .shardmind/shard.yaml)
+          mod=$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([0-9.]*\)".*$/\1/p' .claude/skills/wiki-mind/.claude-plugin/plugin.json)
+          echo "tag $version, shard.yaml $shard, plugin.json $mod"
+          if [ "$shard" != "$version" ] || [ "$mod" != "$version" ]; then
+            echo "::error::bump .shardmind/shard.yaml and the mod's plugin.json to $version before tagging"; exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: CHANGELOG.md has this version's section
+        shell: bash
+        run: |
+          # The section runs from its "## [X.Y.Z]" heading to the next "## [".
+          # Plain string matching, not a regex: a version holds dots, and an
+          # awk regex built from a string loses the escapes on the brackets.
+          awk -v h="## [$VERSION]" '
+            index($0, h) == 1 { on = 1; next }
+            on && index($0, "## [") == 1 { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no '## [$VERSION]' section with content"; exit 1
+          fi
+          cat notes.md
+
+      - name: Publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
