@@ -132,7 +132,9 @@ The `.claude/settings.json` hooks from obsidian-mind, retargeted at the wiki:
 - On Claude Code 2.1.287 and later, the mod under `.claude/skills/<mod>/` delivers the session context as an instruction file and shows the Stop report as one line under the answer. For each event it handles, it passes the settings hook a stand-down flag and the hook exits.
 - On older Claude Code, and on Codex and Gemini, the mod does not load and the settings hooks run unchanged.
 
-Both paths run the same scripts, so they cannot disagree on content. The mod's name, folder and flag name are Q10.
+Both paths run the same scripts, so they cannot disagree on content.
+
+**Decided:** the mod's identity is per vault, and its flag protocol is shared. The mod is named `wiki-mind` (folder `.claude/skills/wiki-mind/`, plugin name `wiki-mind`), so a user who runs both vaults gets no collision. The flag stays byte-identical to obsidian-mind's: the field is `om_mod` and its values are `deliver`, `standdown` and `report`. That flag is the contract between the settings hooks and the mod, so renaming it in one shard would fork the protocol (§7.3).
 
 ### 6.5 ShardMind lifecycle hooks
 
@@ -155,7 +157,9 @@ A `VENDOR.json` records the obsidian-mind commit the copy came from, following S
 
 The `files` map is the extraction input: unmodified files are the shared core as it stands, and each `change` line is a place the shared core needs a seam. Location of the record is Q11.
 
-Vendored scope, from the initial copy: `.claude/scripts/` (with `lib/` and the tests of what is kept), `.claude/skills/` (the mod and the Obsidian and QMD skills), `.scripts/qmd-bootstrap.ts`, `.shardmind/hooks/bootstrap.ts`. obsidian-mind's commands, agents, templates, Bases and content are not vendored: they are its domain, not machinery. Which `lib/` subsystems come along is Q12.
+Vendored scope, from the initial copy: `.claude/scripts/` (with `lib/` and the tests of what is kept), `.claude/skills/` (the mod and the Obsidian and QMD skills), `.scripts/qmd-bootstrap.ts`, `.shardmind/hooks/bootstrap.ts`. obsidian-mind's commands, agents, templates, Bases and content are not vendored: they are its domain, not machinery.
+
+**Decided, the maintainer may overrule:** the cross-repo memory MCP server (`om-mcp`, `lib/mcp-*`, `lib/memory-*`) stays in obsidian-mind and is not vendored. It is about half of the machinery, it is a product of its own, and the wiki workflow does not depend on it. If wiki-mind wants it later, it arrives through the extraction or a vendor update, not through a second fork now. Whether the correction sweep comes along is Q12.
 
 ### 7.2 What wiki-mind changes, and why
 
@@ -167,9 +171,18 @@ Known at spec time. The vendoring PR completes the list file by file in `VENDOR.
 | Session context (`lib/session-start.ts`) | Read wiki folders and open questions, not `work/active/` and `brain/North Star.md`. | Different folders carry the vault's state. | Context sections declared by the shard. |
 | Write validation (`validate-write.ts`) | Frontmatter per §2 types; source-link rule for concepts and entities. | Different note types. | Note-type rules read from the shard. |
 | Hygiene (`lib/active-hygiene.ts`, Stop report) | Wiki checks (`lint`) instead of active-work staleness. | Different notion of drift. | Pluggable hygiene checks. |
-| Mod identity | Plugin name, mod folder, state keys, possibly the flag name. | Two mods named `obsidian-mind` would collide in a user who runs both vaults. | Name supplied by the shard. |
+| Mod identity | Plugin name, mod folder and state keys become `wiki-mind`. The `om_mod` flag does not change (§7.3). | Two mods named `obsidian-mind` would collide in a user who runs both vaults. | The mod name becomes configuration; the flag protocol becomes the extracted layer's API. |
 | `vault-manifest.json` keys | Drop obsidian-mind-only keys (`open_loop_dirs`, `open_loop_sections`); keep the shared ones. | The keys describe folders wiki-mind does not have. | A shared core key set plus shard keys. |
 | `bootstrap.ts` | Index name and QMD context string from wiki-mind's values. | Different vault. | Already value-driven; likely unmodified. |
+
+### 7.3 Contracts that must not change
+
+These are shared between obsidian-mind and wiki-mind, and stay shared through the extraction. A vendored change that touches one is a bug, not a seam.
+
+| Contract | What it fixes | Why it is fixed |
+|----------|---------------|-----------------|
+| `vault-manifest.json` as the vault-root marker | The hook commands in `.claude/settings.json` walk up from the project directory to the first folder holding `vault-manifest.json`. | Every hook command depends on it, and a session started in a vault subfolder relies on the walk. The keys inside the file may differ per vault (§7.2); its name and role do not. |
+| The `om_mod` flag protocol | The field name `om_mod` and the values `deliver`, `standdown` and `report` that the mod passes to the settings hooks. | It is how the hooks know the mod handled an event. Both sides of it are vendored, and the extraction exposes it as the shared layer's API. |
 
 ## 8. Invariants
 
@@ -195,6 +208,6 @@ Answer inline or on the PR. Each answer edits the section named.
 - **Q7. QMD as a value or a module?** (§5)
 - **Q8. Command prefix.** obsidian-mind uses `om-`. `wm-`, `wiki-`, or none? (§6.2)
 - **Q9. Generic obsidian-mind commands.** Carry over `wrap-up`, `tidy`, `vault-audit` (adapted), or only the wiki commands? (§6.2)
-- **Q10. Mod name and flag.** Mod folder and plugin name (`wiki-mind`?), and whether the stand-down flag keeps obsidian-mind's `om_mod` name (one flag across shards, easier extraction) or becomes `wm_mod`. (§6.4, §7.2)
+- **Q10.** Decided: the mod is named `wiki-mind`, and the `om_mod` flag protocol is unchanged. (§6.4, §7.3)
 - **Q11. Where `VENDOR.json` lives.** At the repo root (repo-only, in `.shardmindignore`), or next to the code it describes (`.claude/VENDOR.json`, installed, so a vault knows where its machinery came from)? (§7.1)
-- **Q12. Which obsidian-mind subsystems come along.** The cross-repo memory MCP server (`om-mcp`, `lib/mcp-*`, `lib/memory-*`) and the correction sweep are large and work-vault shaped. Vendor them now, later, or never? (§7.1)
+- **Q12. The correction sweep.** Vendor obsidian-mind's correction sweep (`lib/correction-sweep.ts`, `om-correct`), which sweeps a corrected fact through the vault (fixes it at its single source and replaces restatements with links), or leave it out? The memory MCP server is decided out (§7.1). (§7.1)
