@@ -85,6 +85,18 @@ jobs:
         with:
           node-version: 22
 
+      # Validate the shard as it is published: before any dependency install
+      # puts node_modules in the tree.
+      - name: shardmind validate
+        if: hashFiles('.shardmind/shard.yaml') != ''
+        shell: bash
+        run: npx --yes "shardmind@${SHARDMIND_VERSION}" validate
+
+      - name: shardmind validate (skipped, no manifest yet)
+        if: hashFiles('.shardmind/shard.yaml') == ''
+        shell: bash
+        run: echo "::notice::.shardmind/shard.yaml does not exist yet; shardmind validate is skipped."
+
       - name: Install typecheck deps (CI-only, not shipped)
         shell: bash
         run: npm install --no-save --silent --prefix .claude/scripts typescript@5.6.3 @types/node@22.9.0
@@ -112,12 +124,3 @@ jobs:
             exit 1
           fi
 
-      - name: shardmind validate
-        if: hashFiles('.shardmind/shard.yaml') != ''
-        shell: bash
-        run: npx --yes "shardmind@${SHARDMIND_VERSION}" validate
-
-      - name: shardmind validate (skipped, no manifest yet)
-        if: hashFiles('.shardmind/shard.yaml') == ''
-        shell: bash
-        run: echo "::notice::.shardmind/shard.yaml does not exist yet; shardmind validate is skipped."

@@ -25,3 +25,8 @@ ROADMAP.md
 # Reads .shardmind/shard.yaml and .github/workflows/ci.yml, which never
 # install (Tier 1): in a vault the file would fail on its first read.
 .claude/scripts/tests/shard-manifest.test.ts
+
+# Development dependencies (the CI typecheck install). A vault never gets
+# them, and on POSIX their .bin entries are symbolic links, which the engine
+# rejects anywhere in a shard (WALK_SYMLINK_REJECTED).
+node_modules/
