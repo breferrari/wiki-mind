@@ -25,7 +25,7 @@ obsidian-mind's generic libraries arrive as a vendored copy with `.claude/VENDOR
 | ✅ | ci: give the PR-title job its own name | [#4](https://github.com/breferrari/wiki-mind/issues/4) |
 | ✅ | ci: tighten the session-artifact path pattern before vendored code lands | [#5](https://github.com/breferrari/wiki-mind/issues/5) |
 | ✅ | Vendor obsidian-mind's generic libraries at c65062d with .claude/VENDOR.json | [#6](https://github.com/breferrari/wiki-mind/issues/6) |
-| ⬜ | Write wiki-mind's entry points over an extension registry | [#35](https://github.com/breferrari/wiki-mind/issues/35) |
+| ✅ | Write wiki-mind's entry points over an extension registry | [#35](https://github.com/breferrari/wiki-mind/issues/35) |
 | ⬜ | Vendor the Claude Code mod as wiki-mind (P1) | [#7](https://github.com/breferrari/wiki-mind/issues/7) |
 | ✅ | Empty obsidian-mind's prompt signal set (P2). Closed as not needed: the #6 rescope vendors no signal set | [#8](https://github.com/breferrari/wiki-mind/issues/8) |
 | ⬜ | Remove the in-repo take-next once the global skill lands. Blocked: waits for the reviewer's word that the global skill has landed; skip it until then | [#31](https://github.com/breferrari/wiki-mind/issues/31) |

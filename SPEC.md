@@ -75,7 +75,7 @@ A synthesis sits above concepts: it never replaces one, and a concept never hold
 | `.claude/scripts/` | The vendored libraries and QMD MCP server, wiki-mind's entry points, and the extension registry in `core/` (§7). |
 | `.claude/extensions/` | wiki-mind's own sections, detectors, signals and validators (§7.4). |
 | `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod (§6.4), vendored. |
-| `.claude/settings.json` | The hook wiring. |
+| `.claude/settings.json` | The hook wiring, vendored unmodified: wiki-mind's entry points keep obsidian-mind's script names and walk-up (§7.3). |
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
 | `.scripts/qmd-bootstrap.ts` | Builds the QMD index on a fresh clone. |
@@ -243,15 +243,22 @@ The keys of obsidian-mind's unvendored code are not carried over: `open_loop_dir
 
 #### Per entry point
 
-For each wiki-mind entry point, the issue that builds it fills in this table: the vendored libraries it uses, and what it needed that no library gave. That list is the extraction's API gap.
+Each wiki-mind entry point (#35) is a dispatcher over the registry (§7.4). It keeps obsidian-mind's generic protocol and drops its domain. This table lists, for each one, the vendored libraries it uses and what it needed that no library gave. That list is the extraction's API gap: each line it copies from obsidian-mind's entry point is a function the core should own.
 
 | Entry point | Vendored libraries used | Needed and not given |
 |-------------|-------------------------|----------------------|
-| `session-start.ts` | (entry-points issue) | |
-| `stop-checklist.ts` | (entry-points issue) | |
-| `validate-write.ts` | (entry-points issue) | |
-| `classify-message.ts` | (entry-points issue) | |
+| `session-start.ts` | `hook-io` (stdin, `fitWithMeter`, the output cap), `om-mod`, `project-dir`, `lib/session-start` (budget, meter, env export, date header, `injectionMode`) | The optional-stdin read with a 2 s deadline, copied from obsidian-mind's entry point. QMD's session-start work (index update, native-ABI self-heal, minimum-version note) also lives only in that entry point, and is not ported (seam S5); wiki-mind refreshes QMD at Stop and on write instead. |
+| `stop-checklist.ts` | `hook-io` (the Stop writers), `hint-state` (`claimChanged`), `om-mod`, `project-dir`, `qmd-refresh`, `report-key`, `stop-handoff`, `stop-report` | The Stop flow itself: standdown, then the re-entry guard, the mod's report, the per-session dedupe, the handoff and its feedback fallback. It is about 40 lines copied from obsidian-mind's entry point, and should be one core function. `stop-report`'s mod preface names "the obsidian-mind plugin" (seam S6). |
+| `classify-message.ts` | `hook-io`, `hint-state` (`claimUnseen`), `project-dir`, `stop-handoff` | Nothing beyond the signal matcher (S3), which the registry now provides. The order (the handoff taken first, whatever the prompt holds) is copied. |
+| `validate-write.ts` | `hook-io`, `frontmatter` (`shouldSkipFile`), `project-dir`, `qmd-refresh` | The vault-root boundary check and the refresh-before-skip order (S4), both copied. obsidian-mind's memory-location guard is not ported: it sends knowledge to `brain/`, which wiki-mind does not have. |
 | `pre-compact.ts` | vendored whole | — |
+
+Every entry point also reads and parses `vault-manifest.json` itself; the core should hand the parsed manifest in.
+
+| ID | Seam (continued) | What the extraction does with it |
+|----|------------------|----------------------------------|
+| S5 | QMD's session-start work lives in obsidian-mind's `session-start.ts`, not in a library. | A core session-start step, run before the sections, that any vault gets. |
+| S6 | `lib/stop-report.ts`'s `MOD_PREFACE` tells the agent a notice may come "from the obsidian-mind plugin". | The mod's name becomes a parameter, as with P1. |
 
 ### 7.3 Contracts that must not change
 
@@ -265,26 +272,102 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 ### 7.4 The extension registry (prototype for the extracted core)
 
-**Decided (2026-10-05, maintainer may overrule):** wiki-mind's entry points are thin dispatchers over an extension registry. The registry lives in `.claude/scripts/core/`, so a `git mv` can lift it into the future core repo. It imports only the vendored libraries.
+**Decided (2026-10-05, maintainer may overrule):** wiki-mind's entry points are thin dispatchers over an extension registry. wiki-mind is the test bed for the extensible layer: once this registry and the real-session test bed (#36) pass, it moves to the shared core unchanged, and `.claude/VENDOR.json` then points there.
 
-Extension points:
+#### Where things live
 
-- session-start sections;
-- Stop and hygiene detectors;
-- prompt signals;
-- write validators.
+| Path | Holds | Written by |
+|------|-------|------------|
+| `.claude/scripts/core/` | `types.ts` (the API), `registry.ts` (loading and dispatch), and their tests. Imports only `../lib`, so a `git mv` lifts it out. | a vendor update, once extracted |
+| `.claude/scripts/lib/` | the vendored libraries (§7.1) | a vendor update only |
+| `.claude/scripts/*.ts` | the entry points `.claude/settings.json` runs | wiki-mind now; the core once extracted |
+| `.claude/extensions/` | the vault's own extensions | the vault only |
 
-Pre-tool guards and MCP tools exist as slots only.
+The vendored paths and the vault paths are disjoint. So a vendor update's three-way merge is a safety net that almost never conflicts.
 
-The registry owns three things:
+#### Declaration
 
-- **ordering:** by priority;
-- **the byte budget:** low-priority sections degrade first, through `hook-io`'s `fitWithMeter`;
-- **failure isolation:** an extension that throws is named in the output and skipped, and it never blocks the hook.
+An extension runs only if `vault-manifest.json` declares it, and only for the events it lists:
 
-wiki-mind's own behaviour is written as extensions under `.claude/extensions/`, declared in `vault-manifest.json`. That covers the `Index.md`, open-questions and recent-sources sections, the `wiki-lint` detectors, and the §2 validators.
+```json
+"extensions": [
+  {
+    "id": "wiki",
+    "module": ".claude/extensions/wiki/index.ts",
+    "events": ["session-start", "stop", "prompt", "write"],
+    "priority": 100,
+    "enabled": true,
+    "disable": ["wiki.unindexed"],
+    "timeoutMs": 1000
+  }
+]
+```
 
-The entry-points issue writes this section's API in full: the extension shape, the manifest declaration, and how each point dispatches. The extraction starts from that.
+| Field | Rule |
+|-------|------|
+| `id` | Required, unique, and equal to the `id` the module exports. |
+| `module` | Required. A vault-relative `.ts`, `.mts`, `.js` or `.mjs` path with forward slashes. Not absolute, and no `..`. |
+| `events` | Required, at least one of `session-start`, `stop`, `prompt`, `write`, `pre-tool` and `mcp`. The last two are slots, recorded and not dispatched. |
+| `priority` | Optional. The default for this extension's items that set none. |
+| `enabled` | Optional. `false` turns the extension off; its module is never imported. |
+| `disable` | Optional. Item ids to turn off, leaving the rest of the extension on. |
+| `timeoutMs` | Optional, default 1000. The time limit for each call. |
+
+A malformed declaration is a failure, reported and skipped, and the others still load.
+
+#### The extension
+
+A module exports an `Extension` (`.claude/scripts/core/types.ts`) as `default` or as `extension`: an `id`, plus any of these lists. Every item has an `id` and an optional `priority`. Every function may be async and receives a `HookContext`: the vault root, the parsed manifest, and a fixed `now`.
+
+| Point | Event | Item | Returns |
+|-------|-------|------|---------|
+| Sections | `session-start` | `header`, `render(ctx)`, optional `pointer` | The body, or null to leave the section out. A section with a pointer can be given up for it; one without is load-bearing. |
+| Detectors | `stop` | `detect(ctx)` | Findings: a one-line `claim` for the user's summary, and the `lines` the agent reads. |
+| Checklist | `stop` | `full`, `short` | The wrap-up line as the agent reads it and as the summary shows it. |
+| Signals | `prompt` | `match(prompt)`, `hint` | True when the prompt matches; the hint is routed once per session. |
+| Validators | `write` | `appliesTo(relPath)`, `validate(target, ctx)` | Warnings for the file just written. |
+| Slots | `pre-tool`, `mcp` | `preToolGuards`, `mcpTools` | Not dispatched yet. Session-start lists them as declared. |
+
+#### The contract
+
+1. **One dispatcher per event runs every extension in-process.** Claude Code runs matching hooks in parallel with no order, so order exists only inside these dispatchers.
+2. **Disjoint paths:** see "Where things live".
+3. **Declared, not discovered:** an extension runs only through its declaration, and only for its listed events.
+4. **Order:**
+   - The order is a numeric priority, lower first.
+   - An unset priority falls back to the declaration's, and otherwise runs last.
+   - Ties break by item id, then extension id, so declaration order never matters.
+   - The core's own sections (the heading, the date, extension notices) come before every extension's.
+5. **Isolation:**
+   - Every call runs in its own try, with its own time limit, and calls for one event run concurrently.
+   - A throw, a rejected promise or a timeout is recorded, the item is skipped, and the hook carries on and reports the failure in its own output.
+   - `VAULT_EXTENSIONS=off` turns every extension off, for debugging.
+   - The limit bounds a call that waits. It cannot interrupt synchronous code that never returns; Claude Code's own hook timeout is the backstop for that.
+6. **The core owns the output:**
+   - Extensions return values and never write to stdout.
+   - Sections become the budget's sections, so the highest priority number is given up first, and a section without a pointer never is.
+   - `fitWithMeter` caps the whole output, and the meter names what was given up.
+7. **No extension weakens a core guard.** When guards are dispatched, an extension can add a block, never remove one.
+8. **Overrides are by id:** `enabled: false`, or an id in `disable`. No extension replaces a core file.
+
+Each rule that can be tested has a test in `core/registry.test.ts`: declaration, event gating, order, the budget, a throw, a timeout, disable by id, the kill switch and slots. Rule 1's effect on real hooks is tested in `tests/wiki-entry-points.test.ts`. Each guarantee was mutated away once and its test watched fail (#35).
+
+#### wiki-mind's extension
+
+`.claude/extensions/wiki/` holds one extension, `wiki`:
+
+- **Sections:**
+  - the counts per note folder (load-bearing);
+  - open questions (`status: open`);
+  - the newest sources;
+  - the head of `Index.md`.
+- **Checklist:** `Index.md` annotations, source links, `/wiki-lint`.
+- **Detectors:**
+  - concepts and entities that cite no source;
+  - syntheses with fewer than two `sides`;
+  - notes `Index.md` doesn't link.
+- **Signals:** a new source (a URL, arXiv, DOI or PDF), a comparison, a question.
+- **Validators:** the §2 frontmatter (global fields, type fields, the `kind` and `status` value sets), the source-link rule, and two `sides` for a synthesis.
 
 ## 8. Invariants
 
