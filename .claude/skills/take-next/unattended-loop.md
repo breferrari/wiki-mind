@@ -11,8 +11,18 @@ The reader invoked `/take-next unattended-loop`. That invocation approves the pl
 
 ## Merging
 
-- **Merge only if the invocation said so.** The loop merges only when the reader's invocation delegates merging for this run. Otherwise it marks each PR ready and reports it.
-- **When delegated:** merge a PR when its `CI` run on the **head** is green on all three operating systems. Remove its worktree and local branch in the same step.
+Recorded 2026-10-05. The maintainer delegated merges to a reviewer, and the reviewer delegated this much to the loop. An unattended invocation carries this delegation.
+
+- **The loop merges its own PRs.** Once a PR is ready, run `gh pr ready <n>`, then `gh pr merge <n> --auto --squash`. Branch protection holds the merge until the required checks pass: `check (ubuntu-latest)`, `check (macos-latest)` and `check (windows-latest)`. Merged branches are deleted. Remove the worktree and local branch after the merge.
+- **These PRs go to the reviewer first:**
+  - any PR that changes `SPEC.md`;
+  - #6 (vendoring), because the `VENDOR.json` change lines are the extraction input;
+  - #18 (the vault `CLAUDE.md`, the product's voice);
+  - #20 (`/wiki-ingest`, the core workflow).
+
+  Mark these ready, but don't enable auto-merge. Tell the reviewer, then take the next item meanwhile.
+- **A four-stops question goes to the reviewer,** not the maintainer. Leave the draft PR with the question at the top of its body, tell the reviewer, and continue.
+- **The matrix job in `ci.yml` stays named `check`.** Protection requires it by that name. A rename needs the protection updated first, so ask the reviewer before renaming it.
 - **A red run stops merging.** Fix it before the next pass starts.
 - **When `main` moves under an open PR, rebase it.** On a `ROADMAP.md` conflict, keep both sides' rows.
 

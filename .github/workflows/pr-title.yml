@@ -5,7 +5,9 @@ on:
     types: [opened, edited, synchronize]
 
 jobs:
-  check:
+  # Not `check`: that name belongs to ci.yml's three-OS matrix, which branch
+  # protection requires by name.
+  pr-title:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title format
