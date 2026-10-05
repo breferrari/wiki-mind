@@ -4,7 +4,7 @@ description: "Check the wiki for drift: orphans, unsourced concepts and entities
 
 # Check the wiki
 
-Runs every drift check the vault declares and works through what it finds (SPEC.md §2, §6.2).
+Runs every drift check the vault declares and works through what it finds (CLAUDE.md, "Check the wiki").
 
 ## 1. Run the checks
 
