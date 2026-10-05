@@ -34,6 +34,7 @@ Update this table in the same PR that adds or removes a top-level path.
 |------|------|
 | `CLAUDE.md` | The vault's agent manual; ships in every install. |
 | `CONTRIBUTING.md` | Rules for working on the repo; repo-only. |
+| `SPEC.md` | The shard contract: what installs and why; repo-only. |
 | `README.md` | GitHub landing page; also installs into the vault. |
 | `LICENSE` | MIT. |
 | `.gitattributes` | Pins LF line endings. |

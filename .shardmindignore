@@ -7,3 +7,6 @@
 
 # Contributor rules. The vault's CLAUDE.md points here for shard development.
 CONTRIBUTING.md
+
+# The shard's design contract. Describes the repo, not a vault's content.
+SPEC.md
