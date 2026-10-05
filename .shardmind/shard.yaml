@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/breferrari/shardmind/main/schemas/shard.schema.json
+
+apiVersion: v1
+name: wiki-mind
+namespace: breferrari
+version: 0.1.0
+description: "Obsidian research vault on the LLM-wiki pattern"
+persona: "Researchers who want an agent to keep a linked wiki over their sources"
+license: MIT
+homepage: https://github.com/breferrari/wiki-mind
+
+requires:
+  # Bases views (SPEC.md §3.1) need a current Obsidian.
+  obsidian: ">=1.12.0"
+  # `--experimental-strip-types` + ESM: the hook scripts run on Node with no
+  # build step.
+  node: ">=22.6.0"
+  # The version CI validates with (.github/workflows/ci.yml): 0.2.0 ships
+  # `validate` and `install --defaults`.
+  shardmind: ">=0.2.0"
+
+external_tools:
+  # Semantic search (SPEC.md §4, §5). Optional: without it the vault works
+  # and the agent falls back to grep.
+  qmd:
+    package: "@tobilu/qmd"
+    version: ">=2.0.0"
+    command: qmd
+    args: ["--version"]
+    optional: true
+    when: qmd_enabled
+
+# No hooks yet: bootstrap lands with #12, personalize with #17. There is no
+# post-update hook, and .claude/scripts/tests/shard-manifest.test.ts holds
+# that (Invariant 3).

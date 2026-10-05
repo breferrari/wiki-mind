@@ -21,3 +21,7 @@ ROADMAP.md
 # in a vault the whole file would fail to load. obsidian-mind lists it the
 # same way.
 .claude/scripts/tests/bootstrap-hook.test.ts
+
+# Reads .shardmind/shard.yaml and .github/workflows/ci.yml, which never
+# install (Tier 1): in a vault the file would fail on its first read.
+.claude/scripts/tests/shard-manifest.test.ts
