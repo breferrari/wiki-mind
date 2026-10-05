@@ -69,7 +69,21 @@ The hook layer is built to move into a shared core repo. The move should be thre
    - If an extension needs a helper, the core exports it from `core/index.ts`.
 4. **Keep SPEC.md §7.2's API-gap table current.** Update it in the same PR that finds a gap.
 
+## Releasing
+
+Tagging is the maintainer's step. The release workflow (`.github/workflows/release.yml`) refuses a tag that doesn't match the repo, so a bad tag fails loudly instead of publishing.
+
+1. In a PR:
+   - rename `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD`, and open a new empty `## [Unreleased]` above it;
+   - set `version: X.Y.Z` in `.shardmind/shard.yaml`;
+   - set `"version": "X.Y.Z"` in `.claude/skills/wiki-mind/.claude-plugin/plugin.json`.
+2. Merge it.
+3. Tag the merge commit `vX.Y.Z` on `main`, and push the tag.
+
+The workflow checks that the tag, `shard.yaml` and `plugin.json` agree, and that `CHANGELOG.md` has the version's section. Then it publishes the GitHub release with that section as its notes. `shardmind update` offers the release to installed vaults from then on.
+
 ## References
+
 
 - How a shard is built: ShardMind's [`docs/AUTHORING.md`](https://github.com/breferrari/shardmind/blob/main/docs/AUTHORING.md), [`docs/SHARD-LAYOUT.md`](https://github.com/breferrari/shardmind/blob/main/docs/SHARD-LAYOUT.md) (the binding invariants), [`docs/FORK-TO-SHARD.md`](https://github.com/breferrari/shardmind/blob/main/docs/FORK-TO-SHARD.md).
 - Reference shard: [obsidian-mind](https://github.com/breferrari/obsidian-mind). Copy its shape (manifest, CI, contract test), not its content.
