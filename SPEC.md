@@ -74,7 +74,7 @@ A synthesis sits above concepts: it never replaces one, and a concept never hold
 | `.claude/commands/` | Slash commands (§6.2). |
 | `.claude/scripts/` | The vendored libraries and QMD MCP server, wiki-mind's entry points, and the extension registry in `core/` (§7). |
 | `.claude/extensions/` | wiki-mind's own sections, detectors, signals and validators (§7.4). |
-| `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod (§6.4), vendored. |
+| `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod at `.claude/skills/wiki-mind/` (§6.4), vendored. |
 | `.claude/settings.json` | The hook wiring, vendored unmodified: wiki-mind's entry points keep obsidian-mind's script names and walk-up (§7.3). |
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
@@ -183,7 +183,7 @@ wiki-mind is also the test bed for the extensible layer. Its entry points are th
 
 `modified` is computed from the bytes against upstream at the recorded commit, never typed by hand. **Decided (2026-10-05, maintainer may overrule):** the record installs, at `.claude/VENDOR.json` (Q11). A vault should know where its machinery came from: a later vendor update in an installed vault reads it.
 
-**The vendored set (#6): 66 files from obsidian-mind v9.0.1, all unmodified.**
+**The vendored set: 76 files from obsidian-mind v9.0.1.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. `.claude/VENDOR.json` lists each one.
 
 | Group | Files |
 |-------|-------|
@@ -207,7 +207,7 @@ Not vendored:
 - `tidy-fix`, the correction sweep, `update-skills.ts`, the root `.claude-plugin/`, and the `excalidraw-diagram` and `mermaid-visualizer` skills;
 - obsidian-mind's commands, agents, templates, Bases and content.
 
-The mod is vendored by #7, together with its identity change (P1). `.claude/settings.json` arrives with wiki-mind's entry points, because obsidian-mind's version points at scripts this set doesn't have.
+The mod is vendored at `.claude/skills/wiki-mind/` (upstream `.claude/skills/obsidian-mind/`). P1, its identity change, renames its plugin, state keys and context block to `wiki-mind`, and leaves the `om_mod` protocol and the script paths it runs unchanged (§7.3). It doesn't need obsidian-mind's root `.claude-plugin/`. `claude plugin validate --strict` and `claude plugin test` check it in CI on all three operating systems (`.github/workflows/mod.yml`).
 
 **Decided, the maintainer may overrule:** the memory MCP server, and the libraries only it uses, stay in obsidian-mind. The server is a product of its own, it is about half of the machinery, and the wiki workflow doesn't depend on it. If wiki-mind wants it later, it arrives through the extraction or a vendor update.
 
@@ -258,7 +258,7 @@ Every entry point also reads and parses `vault-manifest.json` itself; the core s
 | ID | Seam (continued) | What the extraction does with it |
 |----|------------------|----------------------------------|
 | S5 | QMD's session-start work lives in obsidian-mind's `session-start.ts`, not in a library. | A core session-start step, run before the sections, that any vault gets. |
-| S6 | `lib/stop-report.ts`'s `MOD_PREFACE` tells the agent a notice may come "from the obsidian-mind plugin". | The mod's name becomes a parameter, as with P1. |
+| S6 | `lib/stop-report.ts`'s `MOD_PREFACE` told the agent a notice may come "from the obsidian-mind plugin". *Patched in #7:* `modPreface(modName)` builds it for any vault's mod, and `MOD_PREFACE` keeps obsidian-mind's value. wiki-mind's `stop-checklist.ts` passes `wiki-mind`, and a test holds that equal to the mod's `plugin.json`. | The mod's name comes from the mod's declaration, so no entry point names it. |
 
 ### 7.3 Contracts that must not change
 
@@ -285,7 +285,9 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 The vendored paths and the vault paths are disjoint. So a vendor update's three-way merge is a safety net that almost never conflicts.
 
-An extension imports the API types from `../../scripts/core/types.ts` and may use the vendored libraries under `../../scripts/lib/`. When the core is lifted out, those import paths change in the same PR that swaps the vendored source.
+Today an extension imports the API types from `../../scripts/core/types.ts`, and helpers straight from the vendored libraries under `../../scripts/lib/`. wiki-mind's extension uses `lib/session-start.ts` (`extractFrontmatterField`, `stripFrontmatter`) and `lib/wikilinks.ts`.
+
+**The lift's import rule (decided 2026-10-05, maintainer may overrule):** once the core is extracted, an extension imports only from the core's one public entry point (an index module): the API types, plus the helpers the core chooses to export. It never imports a library file directly. The extraction can then rename or split library internals, as seams S2 and S5 need, without breaking any vault's extensions. The PR that swaps the vendored source moves wiki-mind's extension to that entry point.
 
 #### Declaration
 

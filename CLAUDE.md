@@ -46,7 +46,7 @@ Update this table in the same PR that adds or removes a top-level path.
 | `.claude/scripts/` | Hook entry points, the extension registry (`core/`) and the vendored obsidian-mind libraries (`lib/`, see `.claude/VENDOR.json`). |
 | `.claude/extensions/` | wiki-mind's own hook extensions. |
 | `.claude/settings.json` | Wires the hooks. |
-| `.claude/skills/` | Obsidian and QMD skills (vendored). |
+| `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod in `wiki-mind/` (vendored). |
 | `.scripts/` | QMD index bootstrap. |
 | `.mcp.json` | Registers the QMD MCP server. |
 
