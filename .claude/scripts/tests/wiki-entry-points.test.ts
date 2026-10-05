@@ -53,6 +53,11 @@ after(() => {
 });
 
 describe("session-start", () => {
+	test("started in a vault subfolder, it walks up to vault-manifest.json and serves the vault (SPEC.md §7.3)", () => {
+		const { stdout } = run("session-start", { source: "startup" }, { CLAUDE_PROJECT_DIR: join(vault, "questions") });
+		assert.match(stdout, /### Open questions\n- \[\[Why\]\]/);
+	});
+
 	test("a startup gets the core sections, then the extension's, under the meter", () => {
 		const { stdout, code } = run("session-start", { source: "startup" });
 		assert.equal(code, 0);

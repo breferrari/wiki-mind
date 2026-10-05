@@ -1,10 +1,36 @@
 {
   "template": "wiki-mind",
+  "qmd_index": "",
+  "qmd_min_version": "2.0.0",
+  "qmd_context": "Research wiki built on wiki-mind. Sources (one note per paper or article), atomic concepts, entities (systems, tools, people), syntheses comparing two or more of them, and open questions. Every concept and entity cites its sources; Index.md is the annotated entry point.",
+  "eager_layer_budget_bytes": 9100,
+  "eager_layer_instruction_budget_bytes": 20000,
+  "listing_collapse_threshold": 12,
+  "infrastructure": [
+    "CLAUDE.md",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "Index.md",
+    ".gitignore",
+    ".mcp.json",
+    "vault-manifest.json",
+    "shard-values.yaml",
+    ".claude/**",
+    ".scripts/**",
+    "templates/**",
+    "bases/**"
+  ],
   "extensions": [
     {
       "id": "wiki",
       "module": ".claude/extensions/wiki/index.ts",
-      "events": ["session-start", "stop", "prompt", "write"],
+      "events": [
+        "session-start",
+        "stop",
+        "prompt",
+        "write"
+      ],
       "priority": 100
     }
   ]
