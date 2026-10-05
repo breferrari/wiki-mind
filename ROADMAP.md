@@ -62,7 +62,7 @@ The ontology from SPEC.md §2 becomes a vault: folders, templates, Bases views, 
 | ✅ | Add Bases views over the five note types | [#15](https://github.com/breferrari/wiki-mind/issues/15) |
 | ✅ | Add Index.md, the annotated entry point | [#16](https://github.com/breferrari/wiki-mind/issues/16) |
 | ✅ | personalize hook writes user_name and research_focus into Index.md | [#17](https://github.com/breferrari/wiki-mind/issues/17) |
-| ⬜ | Write the vault CLAUDE.md manual | [#18](https://github.com/breferrari/wiki-mind/issues/18) |
+| ✅ | Write the vault CLAUDE.md manual | [#18](https://github.com/breferrari/wiki-mind/issues/18) |
 | ⬜ | Add /wiki-question | [#19](https://github.com/breferrari/wiki-mind/issues/19) |
 | ⬜ | Add /wiki-ingest | [#20](https://github.com/breferrari/wiki-mind/issues/20) |
 | ⬜ | Add /wiki-synthesize | [#21](https://github.com/breferrari/wiki-mind/issues/21) |

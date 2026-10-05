@@ -21,6 +21,33 @@ This file holds the rules for working on the wiki-mind repo. `.shardmindignore` 
 5. **Repo-only files go in `.shardmindignore`.** If a file is about the GitHub repo (contributor docs, CI helpers, tests of repo-only scripts, media), list it there with a comment saying why.
 6. **Don't work around ShardMind.** If the engine can't do something the shard needs, stop and report the gap so it is filed on [breferrari/shardmind](https://github.com/breferrari/shardmind). Do not patch around it in the shard.
 
+## Repo layout
+
+Update this table in the same PR that adds or removes a top-level path.
+
+| Path | What |
+|------|------|
+| `CLAUDE.md` | The vault's agent manual; ships in every install. |
+| `Index.md`, `sources/`, `concepts/`, `entities/`, `syntheses/`, `questions/`, `inbox/`, `templates/`, `bases/` | The vault content (CLAUDE.md, "Vault layout"). |
+| `.obsidian/` | Vault config: core plugins, the templates folder, attachments to `inbox/`. |
+| `CONTRIBUTING.md` | Rules for working on the repo; repo-only. |
+| `SPEC.md` | The shard contract: what installs and why; repo-only. |
+| `ROADMAP.md` | Build order: phases mirror GitHub milestones, one issue per row; repo-only. |
+| `.claude/skills/take-next/` | The loop that takes the next roadmap task; repo-only. |
+| `README.md` | GitHub landing page; also installs into the vault. |
+| `LICENSE` | MIT. |
+| `.gitattributes` | Pins LF line endings. |
+| `.shardmindignore` | Repo-only files that `shardmind install` leaves out. |
+| `.shardmind/` | The ShardMind manifest and values schema; never installed. |
+| `.gitignore` | Obsidian and hook runtime state. |
+| `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions; the hooks' vault-root marker. |
+| `.claude/scripts/` | Hook entry points, the extension registry (`core/`) and the vendored obsidian-mind libraries (`lib/`, see `.claude/VENDOR.json`). |
+| `.claude/extensions/` | wiki-mind's own hook extensions. |
+| `.claude/settings.json` | Wires the hooks. |
+| `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod in `wiki-mind/` (vendored). |
+| `.scripts/` | QMD index bootstrap. |
+| `.mcp.json` | Registers the QMD MCP server. |
+
 ## Zones: keeping the core liftable
 
 The hook layer is built to move into a shared core repo. The move should be three steps: `git mv .claude/scripts/core/`, then swapping `.claude/VENDOR.json`'s source, then deleting the duplicated Stop flow. These rules keep it that way.

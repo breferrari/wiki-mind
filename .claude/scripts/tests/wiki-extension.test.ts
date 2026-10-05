@@ -91,7 +91,7 @@ describe("signals", () => {
 	});
 });
 
-describe("validators (SPEC.md §2)", () => {
+describe("validators", () => {
 	const check = (relPath: string, content: string) => runValidators(registry, { relPath, content }, ctx);
 
 	test("a complete note passes", async () => {
@@ -100,7 +100,7 @@ describe("validators (SPEC.md §2)", () => {
 	});
 
 	test("missing frontmatter, missing fields and an out-of-set value are each reported", async () => {
-		assert.deepEqual((await check("questions/Q.md", "# no frontmatter")).result, ["Missing YAML frontmatter (SPEC.md §2)"]);
+		assert.deepEqual((await check("questions/Q.md", "# no frontmatter")).result, ["Missing YAML frontmatter"]);
 		const source = (await check("sources/S.md", fm({ date: "x" }))).result;
 		for (const f of ["description", "tags", "authors", "year", "url"]) assert.ok(source.some((w) => w.includes(`\`${f}\``)), f);
 		const entity = (await check("entities/E.md", fm({ ...BASE, kind: "company" }) + "[[Old Paper]]")).result;
@@ -108,11 +108,11 @@ describe("validators (SPEC.md §2)", () => {
 	});
 
 	test("a concept or entity must cite a note that exists in sources/", async () => {
-		assert.deepEqual((await check("concepts/C.md", fm(BASE) + "[[Ghost Paper]]")).result, ["Cites no source: link at least one note in sources/ (SPEC.md §2)"]);
+		assert.deepEqual((await check("concepts/C.md", fm(BASE) + "[[Ghost Paper]]")).result, ["Cites no source: link at least one note in sources/"]);
 	});
 
 	test("a synthesis needs two sides", async () => {
-		assert.deepEqual((await check("syntheses/S.md", fm({ ...BASE, sides: "[[[A]]]" }))).result, ["A synthesis compares two or more notes: `sides` lists 1 (SPEC.md §2)"]);
+		assert.deepEqual((await check("syntheses/S.md", fm({ ...BASE, sides: "[[[A]]]" }))).result, ["A synthesis compares two or more notes: `sides` lists 1"]);
 	});
 
 	test("files outside the note folders, and READMEs, are not validated", async () => {
@@ -133,7 +133,7 @@ describe("listField", () => {
 
 	test("an empty frontmatter block is frontmatter with missing fields; a byte-order mark is ignored", async () => {
 		const empty = await runValidators(registry, { relPath: "concepts/E.md", content: "---\n---\n[[New Paper]]" }, ctx);
-		assert.ok(!empty.result.includes("Missing YAML frontmatter (SPEC.md §2)"));
+		assert.ok(!empty.result.includes("Missing YAML frontmatter"));
 		assert.ok(empty.result.some((w) => w.includes("`date`")));
 		const bom = await runValidators(registry, { relPath: "entities/B.md", content: "﻿" + fm({ ...BASE, kind: "tool" }) + "[[New Paper]]" }, ctx);
 		assert.deepEqual(bom.result, []);
