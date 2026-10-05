@@ -5,7 +5,7 @@ argument-hint: "<the question>"
 
 # File a question
 
-Files `$ARGUMENTS` as a note in `questions/`: the wiki's intake queue (SPEC.md §2).
+Files `$ARGUMENTS` as a note in `questions/`: the wiki's intake queue (CLAUDE.md, "The wiki").
 
 ## Steps
 
