@@ -46,7 +46,8 @@ Milestone: [Phase 2](https://github.com/breferrari/wiki-mind/milestone/2)
 | ✅ | No obsidian-mind in anything user- or model-facing | [#41](https://github.com/breferrari/wiki-mind/issues/41) |
 | ✅ | Contract test for Invariant 1 and Invariant 2: install --defaults equals a clone | [#11](https://github.com/breferrari/wiki-mind/issues/11) |
 | ✅ | bootstrap hook builds the QMD index, with a test holding Invariant 4 | [#12](https://github.com/breferrari/wiki-mind/issues/12) |
-| ⬜ | QMD session-start work for wiki-mind sessions (S5) | [#42](https://github.com/breferrari/wiki-mind/issues/42) |
+| ✅ | QMD session-start work for wiki-mind sessions (S5) | [#42](https://github.com/breferrari/wiki-mind/issues/42) |
+| ⬜ | Re-vendor lib/session-start.ts when obsidian-mind 9.1.0 fixes applyInjectionBudget. Blocked until 9.1.0 is released | [#53](https://github.com/breferrari/wiki-mind/issues/53) |
 
 ## Phase 3 — the wiki
 

@@ -32,6 +32,8 @@ function run(script: string, stdin: string | object | null, env: Record<string, 
 		STOP_CHECKLIST_STATE: join(state, "checklist.json"),
 		CLASSIFY_HINT_STATE: join(state, "hints.json"),
 		STOP_HANDOFF_DIR: join(state, "handoff"),
+		// Never reach a real QMD: its index store lives in the user's cache.
+		VAULT_QMD: "off",
 		...env,
 	});
 }

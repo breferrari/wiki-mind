@@ -254,7 +254,7 @@ Each wiki-mind entry point (#35) is a dispatcher over the registry (§7.4). It k
 
 | Entry point | Vendored libraries used | Needed and not given |
 |-------------|-------------------------|----------------------|
-| `session-start.ts` | `hook-io` (stdin, `fitWithMeter`, the output cap), `om-mod`, `project-dir`, `lib/session-start` (budget, meter, env export, date header, `injectionMode`) | The optional-stdin read with a 2 s deadline, copied from obsidian-mind's entry point. QMD's session-start work (index update, native-ABI self-heal, minimum-version note) also lives only in that entry point, and is not ported (seam S5); wiki-mind refreshes QMD at Stop and on write instead. |
+| `session-start.ts` | `hook-io` (stdin, `fitWithMeter`, the output cap), `om-mod`, `project-dir`, `lib/session-start` (budget, meter, env export, date header, `injectionMode`) | The optional-stdin read with a 2 s deadline, copied from obsidian-mind's entry point. QMD's session-start work also lived only in that entry point (S5). It is now core code, `core/qmd-session.ts` (#42), composed from the vendored QMD libraries. |
 | `stop-checklist.ts` | `hook-io` (the Stop writers), `hint-state` (`claimChanged`), `om-mod`, `project-dir`, `qmd-refresh`, `report-key`, `stop-handoff`, `stop-report` | The Stop flow itself: standdown, then the re-entry guard, the mod's report, the per-session dedupe, the handoff and its feedback fallback. It is about 40 lines copied from obsidian-mind's entry point, and should be one core function. `stop-report`'s mod preface names "the obsidian-mind plugin" (seam S6). |
 | `classify-message.ts` | `hook-io`, `hint-state` (`claimUnseen`), `project-dir`, `stop-handoff` | Nothing beyond the signal matcher (S3), which the registry now provides. The order (the handoff taken first, whatever the prompt holds) is copied. |
 | `validate-write.ts` | `hook-io`, `frontmatter` (`shouldSkipFile`), `project-dir`, `qmd-refresh` | The vault-root boundary check and the refresh-before-skip order (S4), both copied. obsidian-mind's memory-location guard is not ported: it sends knowledge to `brain/`, which wiki-mind does not have. |
@@ -264,7 +264,7 @@ Every entry point also reads and parses `vault-manifest.json` itself; the core s
 
 | ID | Seam (continued) | What the extraction does with it |
 |----|------------------|----------------------------------|
-| S5 | QMD's session-start work lives in obsidian-mind's `session-start.ts`, not in a library. | A core session-start step, run before the sections, that any vault gets. |
+| S5 | QMD's session-start work lived in obsidian-mind's `session-start.ts`, not in a library. *Resolved in #42:* `core/qmd-session.ts` runs it for any vault's session-start. It covers the background index update (or the idempotent bootstrap when the store is missing or near-empty), the native-ABI self-heal, and the minimum-version note, and its side effects are injectable. `VAULT_QMD=off` turns it off, so tests never touch the user's QMD store. | A core session-start step, run before the sections. It lifts with `core/` as it is. |
 | S6 | `lib/stop-report.ts`'s `MOD_PREFACE` told the agent a notice may come "from the obsidian-mind plugin". *Patched in #7:* `modPreface(modName)` builds it for any vault's mod, and `MOD_PREFACE` keeps obsidian-mind's value. wiki-mind's `stop-checklist.ts` passes `wiki-mind`, and a test holds that equal to the mod's `plugin.json`. | The mod's name comes from the mod's declaration, so no entry point names it. |
 
 ### 7.3 Contracts that must not change
