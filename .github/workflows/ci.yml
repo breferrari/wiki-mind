@@ -43,7 +43,8 @@ jobs:
           # local absolute paths never land in the repo.
           #
           # The path patterns describe a real path, not a mention of one:
-          # - A Windows path has a drive letter that stands alone, followed by
+          # - A Windows path has a drive letter that stands alone (no letter,
+          #   digit or / before it, so file:///c:/ is not one), followed by
           #   at least two segments, each closed by \, \\ or / (C:\Users\me\).
           #   That leaves out regex source like \w+:\s, escaped strings like
           #   tags:\n- x\n, and two-segment examples like C:\vault\note.md.
@@ -57,9 +58,11 @@ jobs:
           # - test files, test helpers and fixtures, which hold paths on
           #   purpose to exercise Windows and POSIX handling;
           # - this workflow, whose pattern line matches itself.
-          pattern='claude\.ai/(code/)?session|^Claude-Session:|(^|[^A-Za-z0-9])[A-Za-z]:(\\{1,2}|/)[A-Za-z0-9_.-]+(\\{1,2}|/)[A-Za-z0-9_.-]+(\\{1,2}|/)|/Users/[^/[:space:]]+/|/home/[^/[:space:]]+/'
+          # The folder excludes need `glob`: without it, `**/` only matches
+          # below another folder, and a top-level tests/ would be scanned.
+          pattern='claude\.ai/(code/)?session|^Claude-Session:|(^|[^A-Za-z0-9/])[A-Za-z]:(\\{1,2}|/)[A-Za-z0-9_.-]+(\\{1,2}|/)[A-Za-z0-9_.-]+(\\{1,2}|/)|/Users/[^/[:space:]]+/|/home/[^/[:space:]]+/'
           hits=$(git grep -nIE "$pattern" -- . \
-            ':(exclude)*.test.*' ':(exclude)**/tests/**' ':(exclude)**/fixtures/**' \
+            ':(exclude)*.test.*' ':(exclude,glob)**/tests/**' ':(exclude,glob)**/fixtures/**' \
             ':(exclude).github/workflows/ci.yml' || true)
           if [ -n "$hits" ]; then
             echo "::error::agent-session artifacts or local paths in tracked files"
