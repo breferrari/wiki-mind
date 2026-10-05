@@ -336,7 +336,7 @@ A module exports an `Extension` (`.claude/scripts/core/types.ts`) as `default` o
 
 1. **One dispatcher per event runs every extension in-process.** Claude Code runs matching hooks in parallel with no order, so order exists only inside these dispatchers.
 2. **Disjoint paths:** see "Where things live".
-3. **Declared, not discovered:** an extension runs only through its declaration, and only for its listed events.
+3. **Declared, not discovered:** an extension runs only through its declaration, and only for its listed events. A hook imports only the extensions declared for its own event, so an extension's top-level code never runs in a hook it doesn't serve, and its load failures are reported only there (#46).
 4. **Order:**
    - The order is a numeric priority, lower first.
    - An unset priority falls back to the declaration's, and otherwise runs last.

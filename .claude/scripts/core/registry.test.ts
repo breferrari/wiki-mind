@@ -5,7 +5,7 @@
  */
 import { after, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyInjectionBudget } from "../lib/session-start.ts";
@@ -286,7 +286,7 @@ describe("loading (rules 3, 5 and 8)", () => {
 	};
 
 	test("good modules load by default or named export; every bad one is one failure; a disabled one is never imported", async () => {
-		const registry = await loadRegistry(root, manifest, {});
+		const registry = await loadRegistry(root, manifest, "stop", {});
 		assert.equal(registry.off, false);
 		assert.deepEqual(registry.loaded.map((l) => l.extension.id), ["good", "named"]);
 		assert.deepEqual(registry.failures.map((f) => f.extension), ["wrong", "empty", "throws", "missing"]);
@@ -296,14 +296,35 @@ describe("loading (rules 3, 5 and 8)", () => {
 	test("a module whose import never settles times out instead of ending the hook", async () => {
 		writeFileSync(join(root, "ext", "hangs.mjs"), "await new Promise(() => {});\nexport default { id: 'hangs' };\n");
 		const started = Date.now();
-		const registry = await loadRegistry(root, { extensions: [{ id: "hangs", module: "ext/hangs.mjs", events: ["stop"], timeoutMs: 100 }] }, {});
+		const registry = await loadRegistry(root, { extensions: [{ id: "hangs", module: "ext/hangs.mjs", events: ["stop"], timeoutMs: 100 }] }, "stop", {});
 		assert.ok(Date.now() - started < 2_000);
 		assert.equal(registry.loaded.length, 0);
 		assert.match(registry.failures[0]?.message ?? "", /timed out after 100 ms/);
 	});
 
+	test("rule 3: an extension is imported only by the hooks it is declared for, and fails only there", async () => {
+		const marker = join(root, "imported.txt");
+		writeFileSync(join(root, "ext", "side.mjs"), `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(marker)}, "x");\nexport default { id: "side" };\n`);
+		const only = {
+			extensions: [
+				{ id: "side", module: "ext/side.mjs", events: ["session-start"] },
+				{ id: "gone", module: "ext/missing.mjs", events: ["session-start"] },
+			],
+		};
+		for (const event of ["stop", "prompt", "write"] as const) {
+			const registry = await loadRegistry(root, only, event, {});
+			assert.equal(existsSync(marker), false, `${event} imported a session-start extension`);
+			assert.deepEqual(registry.loaded, []);
+			assert.deepEqual(registry.failures, [], `${event} reported a session-start extension's failure`);
+		}
+		const registry = await loadRegistry(root, only, "session-start", {});
+		assert.equal(existsSync(marker), true);
+		assert.deepEqual(registry.loaded.map((l) => l.extension.id), ["side"]);
+		assert.deepEqual(registry.failures.map((f) => f.extension), ["gone"]);
+	});
+
 	test(`the kill switch (${KILL_SWITCH}=off) loads nothing and says so`, async () => {
-		const registry = await loadRegistry(root, manifest, { [KILL_SWITCH]: "off" });
+		const registry = await loadRegistry(root, manifest, "stop", { [KILL_SWITCH]: "off" });
 		assert.equal(registry.off, true);
 		assert.equal(registry.loaded.length, 0);
 		assert.equal(registry.failures.length, 0);

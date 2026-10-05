@@ -174,6 +174,34 @@ describe("stop-checklist and the handoff through classify-message", () => {
 	});
 });
 
+describe("rule 3 across the hooks", () => {
+	test("an extension declared for session-start only is imported, and fails, in session-start only", () => {
+		const marker = join(state, "side-imported.txt");
+		mkdirSync(join(vault, ".claude", "extensions", "only"), { recursive: true });
+		writeFileSync(
+			join(vault, ".claude", "extensions", "only", "side.mjs"),
+			`import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(marker)}, "x");\nexport default { id: "side" };\n`,
+		);
+		manifest({}, [
+			{ id: "wiki", module: ".claude/extensions/wiki/index.ts", events: ["session-start", "stop", "prompt", "write"], priority: 100 },
+			{ id: "side", module: ".claude/extensions/only/side.mjs", events: ["session-start"] },
+			{ id: "gone", module: ".claude/extensions/only/missing.mjs", events: ["session-start"] },
+		]);
+		const others = [
+			run("stop-checklist", { hook_event_name: "SessionEnd", session_id: "r3" }).stdout,
+			run("classify-message", { hook_event_name: "UserPromptSubmit", session_id: "r3", prompt: "see https://example.org/paper.pdf" }).stdout,
+			run("validate-write", { hook_event_name: "PostToolUse", tool_input: { file_path: join(vault, "concepts", "Lonely.md") } }).stdout,
+		];
+		const imported = existsSync(marker);
+		const start = run("session-start", { source: "startup" }).stdout;
+		manifest();
+		assert.equal(imported, false, "stop, prompt or write imported a session-start extension");
+		for (const out of others) assert.doesNotMatch(out, /extension (side|gone)/);
+		assert.equal(existsSync(marker), true, "session-start imports it");
+		assert.match(start, /⚠️  extension gone: skipped/);
+	});
+});
+
 describe("classify-message", () => {
 	test("bad input writes nothing", () => {
 		assert.equal(run("classify-message", "not json").stdout, "");
