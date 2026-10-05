@@ -66,10 +66,10 @@ function isOpen(note: Note): boolean {
 }
 
 function frontmatterWarnings(type: NoteType, content: string): string[] {
-	if (frontmatter(content) === null) return ["Missing YAML frontmatter (SPEC.md §2)"];
+	if (frontmatter(content) === null) return ["Missing YAML frontmatter"];
 	const warnings: string[] = [];
 	for (const name of [...GLOBAL_FIELDS, ...TYPE_FIELDS[type]]) {
-		if (!hasField(content, name)) warnings.push(`Missing \`${name}\` in frontmatter (required for ${article(type)} note, SPEC.md §2)`);
+		if (!hasField(content, name)) warnings.push(`Missing \`${name}\` in frontmatter (required for ${article(type)} note)`);
 	}
 	const rule = ENUM_FIELDS[type];
 	if (rule !== undefined && hasField(content, rule.field)) {
@@ -226,7 +226,7 @@ export const extension: Extension = {
 			validate: (target, ctx) =>
 				citesSource(target.content, sourceNames(ctx))
 					? []
-					: ["Cites no source: link at least one note in sources/ (SPEC.md §2)"],
+					: ["Cites no source: link at least one note in sources/"],
 		},
 		{
 			id: "wiki.synthesis-sides",
@@ -234,7 +234,7 @@ export const extension: Extension = {
 			appliesTo: (relPath) => typeOf(relPath) === "synthesis",
 			validate: (target) => {
 				const sides = listField(target.content, "sides").length;
-				return sides >= 2 ? [] : [`A synthesis compares two or more notes: \`sides\` lists ${sides} (SPEC.md §2)`];
+				return sides >= 2 ? [] : [`A synthesis compares two or more notes: \`sides\` lists ${sides}`];
 			},
 		},
 	],

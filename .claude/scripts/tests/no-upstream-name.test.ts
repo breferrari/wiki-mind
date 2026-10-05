@@ -77,6 +77,7 @@ describe("no runtime output names the upstream vault", () => {
 		for (const [name, out] of Object.entries(outputs)) {
 			assert.ok(out.length > 0 || name === "pre-compact", `${name} wrote nothing, so the check would be empty`);
 			assert.doesNotMatch(out, UPSTREAM, name);
+			assert.doesNotMatch(out, /\b(SPEC|ROADMAP|CONTRIBUTING)\.md\b/, `${name} names a repo-only file`);
 		}
 		assert.match(outputs["prompt with the handoff and hints"] ?? "", /Stop hook report/, "the handoff text was checked");
 		assert.match(outputs["stop as the mod's report"] ?? "", /wiki-mind plugin/, "the mod's framing was checked");

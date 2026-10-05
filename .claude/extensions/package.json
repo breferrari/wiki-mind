@@ -1,5 +1,5 @@
 {
   "private": true,
   "type": "module",
-  "description": "wiki-mind's hook extensions (SPEC.md §7.4). ESM, executed by the hook entry points under `node --experimental-strip-types`; this file only marks the .ts files as ESM."
+  "description": "wiki-mind's hook extensions. ESM, executed by the hook entry points under `node --experimental-strip-types`; this file only marks the .ts files as ESM."
 }

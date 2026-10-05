@@ -14,7 +14,7 @@ Read `Index.md` itself before any substantial work: it is the annotated map of t
 
 ## The wiki
 
-Five note types, each with its own folder and template (`templates/`). SPEC.md §2 is the contract, and these are its rules.
+Five note types, each with its own folder and template (`templates/`). These are the rules every note follows; the hooks check them as you write.
 
 | Type | Folder | One note per | Frontmatter beyond `date`, `description`, `tags` | Must link to |
 |------|--------|--------------|---------------------------------------------------|--------------|
@@ -86,7 +86,7 @@ Use the most capable search available, and stop there:
 
 - **A Stop report** comes with the user's next message: a wrap-up checklist, and any drift found (unsourced notes, one-sided syntheses, unannotated notes). Deal with the user's message first. Then act on what bears on the current work, ask about what needs their call, and leave the rest.
 - **A routing hint** (a new source, a comparison, a question) suggests the `wiki-` command that fits. Use it when the user's message calls for it.
-- **A write warning** after you save a note names what SPEC.md §2 expects and the note lacks. Fix it in the same turn.
+- **A write warning** after you save a note names what its note type requires and the note lacks. Fix it in the same turn.
 
 ## Vault layout
 
@@ -114,5 +114,5 @@ The hook layer keeps four zones so its core can be lifted out with a `git mv`. T
 - **`core/`** imports only `lib/`.
 - **`.claude/extensions/`** imports only `core/index.ts`.
 - **The entry points** are thin dispatchers.
-- **Divergence:** every divergence from upstream is a parameter with a VENDOR.json change line and a SPEC.md §7.2 seam row.
+- **Divergence:** every divergence from upstream is a parameter with a VENDOR.json change line and a seam row in the shard's spec (see CONTRIBUTING.md).
 - **General-purpose code** goes in `core/`, never in an entry point or an extension.
