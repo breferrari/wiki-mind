@@ -1,0 +1,9 @@
+# Files in this list belong to the GitHub repo, not the vault. ShardMind
+# leaves them out of `shardmind install`, so an installed vault carries only
+# what an Obsidian user needs. The repo keeps them for contributors.
+#
+# Gitignore semantics, negation included. See ShardMind docs/SHARD-LAYOUT.md
+# §File disposition for the three-tier model.
+
+# Contributor rules. The vault's CLAUDE.md points here for shard development.
+CONTRIBUTING.md
