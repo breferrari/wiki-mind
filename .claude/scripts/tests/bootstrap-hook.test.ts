@@ -10,7 +10,8 @@
  * skip/gate branches that avoid spawning.
  *
  * Each test gets its own `os.tmpdir() + crypto.randomUUID()` directory to
- * avoid the parallel-load flake pattern documented in the take-next skill.
+ * avoid the parallel-load flake pattern (several loops on one machine make
+ * local suites slow and flaky).
  */
 
 import { test, describe, beforeEach, afterEach } from "node:test";

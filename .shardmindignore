@@ -11,10 +11,9 @@ CONTRIBUTING.md
 # The shard's design contract. Describes the repo, not a vault's content.
 SPEC.md
 
-# The build order and the loop that takes it. Both are about developing the
-# shard; a vault has no roadmap and no tracker.
+# The build order. It is about developing the shard; a vault has no roadmap
+# and no tracker.
 ROADMAP.md
-.claude/skills/take-next/
 
 # Tests and their support files. They run in CI, in the repo; nothing runs
 # them in a vault, and some read paths a vault never has (.shardmind/,
