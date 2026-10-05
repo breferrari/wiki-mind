@@ -12,7 +12,9 @@ Turns `$ARGUMENTS` (a URL, or a file in `inbox/`) into wiki notes (CLAUDE.md, "T
 - **A URL:** fetch it with `defuddle parse <url> --md` (the defuddle skill). For a PDF link, download it to `inbox/` first, then read it as a file.
 - **A path in `inbox/`:** read the file. Leave the original where it is: `inbox/` is the raw layer, never cleaned up by ingest.
 
-Read all of it before writing anything. If it can't be read (paywalled, scanned without text, a dead link), say so and stop.
+Read all of it before writing anything. For a long source, such as a book chapter or a 100-page PDF, read it section by section and keep running notes as you go, so the whole never has to fit at once.
+
+If it can't be read at all (paywalled, scanned without text, a dead link), say so and stop. If a part is skipped or can't be read (a figure, an appendix, a garbled page), the source note says which parts were covered. A partial read is never presented as a full one.
 
 ## 2. Check what the wiki already has
 
@@ -25,6 +27,7 @@ Search (QMD first, see CLAUDE.md "Search") for:
 
 From `templates/Source.md`, in `sources/`, named by the work's title:
 - **Frontmatter:** `authors`, `year`, `url` (or the inbox path), and a one-line `description` of what it contributes.
+- **Coverage:** when any part was skipped or unreadable, a line under the title saying which parts were read and which weren't.
 - **What it says:** the source's argument in your words. Report what the source says, not what you think of the field.
 - **Key claims:** one line each, each linked to the concept or entity it informs.
 - **Concepts and entities**, and any **open questions it raises**, linked.
@@ -35,12 +38,12 @@ For each idea or named thing the source bears on:
 - **If its note exists:** add the new claim to it, with a link to this source. Don't rewrite what other sources said. Where this source disagrees with one, say so in both directions, and consider a synthesis.
 - **If it doesn't exist:** create it from `templates/Concept.md` or `templates/Entity.md` (set `kind`). It cites this source, so it is never created without one.
 
-Keep concepts atomic: one idea per note. A comparison belongs in `syntheses/` (`/wiki-synthesize`), never inside a concept.
+Keep concepts atomic: one idea per note. A comparison belongs in a `syntheses/` note, never inside a concept. Suggest one in your report: the user can run `/wiki-synthesize` for it.
 
 ## 5. Questions
 
 - **A question this source answers:** set `status: answered`, write the answer with its sources, and link the question from the source note.
-- **A question it raises:** file it (`/wiki-question`).
+- **A question it raises:** write a `questions/` note from `templates/Question.md`, with `status: open`, linked to this source.
 
 ## 6. Index.md
 
