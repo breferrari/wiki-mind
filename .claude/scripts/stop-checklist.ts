@@ -78,7 +78,7 @@ async function report(): Promise<void> {
 		/* no manifest: no extensions */
 	}
 	const manifest = parseManifest(manifestJson);
-	const registry = await loadRegistry(vaultRoot, manifest);
+	const registry = await loadRegistry(vaultRoot, manifest, "stop");
 	const ctx = { vaultRoot, manifest, now: Date.now() };
 	const checklist = collectChecklist(registry);
 	const detected = await runDetectors(registry, ctx);

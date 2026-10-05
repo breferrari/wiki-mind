@@ -53,7 +53,7 @@ if (typeof prompt === "string" && prompt !== "") {
 		/* no manifest: no extensions */
 	}
 	try {
-		const registry = await loadRegistry(vaultRoot, parseManifest(manifestJson));
+		const registry = await loadRegistry(vaultRoot, parseManifest(manifestJson), "prompt");
 		const matched = await matchSignals(registry, prompt);
 		hints = hasSession && matched.result.length > 0 ? claimUnseen(STATE_PATH, sessionId, matched.result) : matched.result;
 		failureLines = formatFailures([...registry.failures, ...matched.failures]);

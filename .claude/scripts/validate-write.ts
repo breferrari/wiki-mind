@@ -88,7 +88,7 @@ const manifest = parseManifest(manifestJson);
 
 const blocks: string[] = [];
 try {
-	const registry = await loadRegistry(vaultRoot, manifest);
+	const registry = await loadRegistry(vaultRoot, manifest, "write");
 	const validated = await runValidators(registry, { relPath, content }, { vaultRoot, manifest, now: Date.now() });
 	const failureLines = formatFailures([...registry.failures, ...validated.failures]);
 	if (validated.result.length > 0) blocks.push(`⚠️  ${relPath}:\n${validated.result.map((w) => `- ${w}`).join("\n")}`);

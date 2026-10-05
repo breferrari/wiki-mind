@@ -152,7 +152,10 @@ export function fromLoaded(loaded: readonly Loaded[], failures: readonly Failure
 }
 
 /**
- * Load every enabled extension vault-manifest.json declares. A module that
+ * Load the enabled extensions vault-manifest.json declares for `event`, the
+ * hook being run. An extension declared for other events only is never
+ * imported here: its module's top-level code does not run, and its load
+ * failures are reported only by the hooks it serves (rule 3). A module that
  * cannot be imported, that exports no extension (as `default` or as
  * `extension`), or whose id differs from its declaration's is recorded and
  * skipped.
@@ -160,6 +163,7 @@ export function fromLoaded(loaded: readonly Loaded[], failures: readonly Failure
 export async function loadRegistry(
 	vaultRoot: string,
 	manifest: Readonly<Record<string, unknown>> | null,
+	event: HookEvent,
 	env: NodeJS.ProcessEnv = process.env,
 ): Promise<Registry> {
 	if (env[KILL_SWITCH] === "off") return { loaded: [], failures: [], off: true };
@@ -167,7 +171,7 @@ export async function loadRegistry(
 	const failures: Failure[] = [...parseFailures];
 	const loaded: Loaded[] = [];
 	for (const declaration of declarations) {
-		if (declaration.enabled === false) continue;
+		if (declaration.enabled === false || !declaration.events.includes(event)) continue;
 		try {
 			const url = pathToFileURL(resolve(vaultRoot, declaration.module)).href;
 			const mod = (await withTimeout(import(url), declaration.timeoutMs ?? DEFAULT_TIMEOUT_MS)) as Record<string, unknown>;

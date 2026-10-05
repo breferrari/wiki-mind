@@ -89,7 +89,7 @@ const ctx = { vaultRoot, manifest, now: Date.now() };
 let extensionSections: BudgetSection[] = [];
 let notes: string[];
 try {
-	const registry = await loadRegistry(vaultRoot, manifest);
+	const registry = await loadRegistry(vaultRoot, manifest, "session-start");
 	const collected = await collectSections(registry, ctx, mode);
 	extensionSections = collected.result;
 	notes = [
