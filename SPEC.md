@@ -334,3 +334,4 @@ Planned for phases after the first release, so they are scheduled rather than dr
 - **Codex and Gemini** as removable modules, as in obsidian-mind (§5).
 - **Corrections for a retracted or superseded source:** how the wiki updates the concepts, entities and syntheses that cite it. This needs its own spec, not obsidian-mind's sweep (§7.1).
 - **`wrap-up` and `tidy`**, through the extraction rather than as wiki-mind copies (§6.2).
+- **A diagram skill for syntheses** (mermaid). A comparison note is a natural place for a diagram (§7.1).

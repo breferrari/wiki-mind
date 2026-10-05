@@ -79,10 +79,38 @@ jobs:
         # fixture suite is their only test. It is offline: no gh, no network.
         run: sh .claude/skills/take-next/selftest.sh
 
+      # Node 22 only. A node-version matrix axis would rename these jobs, and
+      # branch protection requires them as `check (<os>)`.
       - uses: actions/setup-node@v4
-        if: hashFiles('.shardmind/shard.yaml') != ''
         with:
           node-version: 22
+
+      - name: Install typecheck deps (CI-only, not shipped)
+        shell: bash
+        run: npm install --no-save --silent --prefix .claude/scripts typescript@5.6.3 @types/node@22.9.0
+
+      - name: Typecheck the vendored scripts
+        shell: bash
+        working-directory: .claude/scripts
+        run: npm run typecheck
+
+      - name: Test the vendored scripts
+        shell: bash
+        working-directory: .claude/scripts
+        run: npm test
+
+      - name: No test wrote outside its temp dir
+        shell: bash
+        run: |
+          # --ignored too: hook state files are gitignored, so a test that
+          # wrote a real one would pass a plain status. node_modules is the
+          # CI-only typecheck install, the one tree a run may leave.
+          residue=$(git status --porcelain --untracked-files=all --ignored | grep -v 'node_modules/' || true)
+          if [ -n "$residue" ]; then
+            echo "::error::the test run left files behind in the working tree"
+            echo "$residue"
+            exit 1
+          fi
 
       - name: shardmind validate
         if: hashFiles('.shardmind/shard.yaml') != ''

@@ -15,3 +15,9 @@ SPEC.md
 # shard; a vault has no roadmap and no tracker.
 ROADMAP.md
 .claude/skills/take-next/
+
+# Tests that import repo-only code. bootstrap-hook.test.ts imports
+# .shardmind/hooks/bootstrap.ts, which the engine never installs (Tier 1), so
+# in a vault the whole file would fail to load. obsidian-mind lists it the
+# same way.
+.claude/scripts/tests/bootstrap-hook.test.ts

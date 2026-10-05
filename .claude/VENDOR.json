@@ -1,0 +1,276 @@
+{
+  "commit": "c65062d7d1fc61b628692578d2e87d30c661bab5",
+  "copyright": "Brenno Ferrari",
+  "files": {
+    ".claude/scripts/lib/atomic-write.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/atomic-write.ts"
+    },
+    ".claude/scripts/lib/charcount.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/charcount.ts"
+    },
+    ".claude/scripts/lib/frontmatter.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/frontmatter.ts"
+    },
+    ".claude/scripts/lib/hint-state.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/hint-state.ts"
+    },
+    ".claude/scripts/lib/hook-io.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/hook-io.ts"
+    },
+    ".claude/scripts/lib/main-guard.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/main-guard.ts"
+    },
+    ".claude/scripts/lib/om-mod.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/om-mod.ts"
+    },
+    ".claude/scripts/lib/project-dir.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/project-dir.ts"
+    },
+    ".claude/scripts/lib/qmd-bootstrap.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/qmd-bootstrap.ts"
+    },
+    ".claude/scripts/lib/qmd-ignore.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/qmd-ignore.ts"
+    },
+    ".claude/scripts/lib/qmd-models.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/qmd-models.ts"
+    },
+    ".claude/scripts/lib/qmd-refresh.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/qmd-refresh.ts"
+    },
+    ".claude/scripts/lib/qmd.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/qmd.ts"
+    },
+    ".claude/scripts/lib/read-field.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/read-field.ts"
+    },
+    ".claude/scripts/lib/read-head.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/read-head.ts"
+    },
+    ".claude/scripts/lib/regex.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/regex.ts"
+    },
+    ".claude/scripts/lib/report-key.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/report-key.ts"
+    },
+    ".claude/scripts/lib/session-start.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/session-start.ts"
+    },
+    ".claude/scripts/lib/stop-handoff.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/stop-handoff.ts"
+    },
+    ".claude/scripts/lib/stop-report.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/stop-report.ts"
+    },
+    ".claude/scripts/lib/wikilinks.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/lib/wikilinks.ts"
+    },
+    ".claude/scripts/package.json": {
+      "modified": false,
+      "upstream": ".claude/scripts/package.json"
+    },
+    ".claude/scripts/pre-compact.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/pre-compact.ts"
+    },
+    ".claude/scripts/qmd-mcp.d.mts": {
+      "modified": false,
+      "upstream": ".claude/scripts/qmd-mcp.d.mts"
+    },
+    ".claude/scripts/qmd-mcp.mjs": {
+      "modified": false,
+      "upstream": ".claude/scripts/qmd-mcp.mjs"
+    },
+    ".claude/scripts/qmd-refresh-run.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/qmd-refresh-run.ts"
+    },
+    ".claude/scripts/tests/_helpers.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/_helpers.test.ts"
+    },
+    ".claude/scripts/tests/_helpers.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/_helpers.ts"
+    },
+    ".claude/scripts/tests/atomic-write.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/atomic-write.test.ts"
+    },
+    ".claude/scripts/tests/bootstrap-hook.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/bootstrap-hook.test.ts"
+    },
+    ".claude/scripts/tests/charcount.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/charcount.test.ts"
+    },
+    ".claude/scripts/tests/frontmatter.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/frontmatter.test.ts"
+    },
+    ".claude/scripts/tests/hint-state.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/hint-state.test.ts"
+    },
+    ".claude/scripts/tests/hook-io.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/hook-io.test.ts"
+    },
+    ".claude/scripts/tests/main-guard.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/main-guard.test.ts"
+    },
+    ".claude/scripts/tests/om-mod.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/om-mod.test.ts"
+    },
+    ".claude/scripts/tests/pre-compact.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/pre-compact.test.ts"
+    },
+    ".claude/scripts/tests/project-dir.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/project-dir.test.ts"
+    },
+    ".claude/scripts/tests/qmd-bootstrap.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/qmd-bootstrap.test.ts"
+    },
+    ".claude/scripts/tests/qmd-ignore.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/qmd-ignore.test.ts"
+    },
+    ".claude/scripts/tests/qmd-mcp.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/qmd-mcp.test.ts"
+    },
+    ".claude/scripts/tests/qmd-models.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/qmd-models.test.ts"
+    },
+    ".claude/scripts/tests/qmd-refresh.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/qmd-refresh.test.ts"
+    },
+    ".claude/scripts/tests/qmd.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/qmd.test.ts"
+    },
+    ".claude/scripts/tests/read-head.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/read-head.test.ts"
+    },
+    ".claude/scripts/tests/regex.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/regex.test.ts"
+    },
+    ".claude/scripts/tests/report-key.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/report-key.test.ts"
+    },
+    ".claude/scripts/tests/stop-handoff.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/stop-handoff.test.ts"
+    },
+    ".claude/scripts/tests/wikilinks.test.ts": {
+      "modified": false,
+      "upstream": ".claude/scripts/tests/wikilinks.test.ts"
+    },
+    ".claude/scripts/tsconfig.json": {
+      "modified": false,
+      "upstream": ".claude/scripts/tsconfig.json"
+    },
+    ".claude/skills/defuddle/SKILL.md": {
+      "modified": false,
+      "upstream": ".claude/skills/defuddle/SKILL.md"
+    },
+    ".claude/skills/json-canvas/SKILL.md": {
+      "modified": false,
+      "upstream": ".claude/skills/json-canvas/SKILL.md"
+    },
+    ".claude/skills/json-canvas/references/EXAMPLES.md": {
+      "modified": false,
+      "upstream": ".claude/skills/json-canvas/references/EXAMPLES.md"
+    },
+    ".claude/skills/obsidian-bases/SKILL.md": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-bases/SKILL.md"
+    },
+    ".claude/skills/obsidian-bases/references/FUNCTIONS_REFERENCE.md": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-bases/references/FUNCTIONS_REFERENCE.md"
+    },
+    ".claude/skills/obsidian-cli/SKILL.md": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-cli/SKILL.md"
+    },
+    ".claude/skills/obsidian-markdown/SKILL.md": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-markdown/SKILL.md"
+    },
+    ".claude/skills/obsidian-markdown/references/CALLOUTS.md": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-markdown/references/CALLOUTS.md"
+    },
+    ".claude/skills/obsidian-markdown/references/EMBEDS.md": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-markdown/references/EMBEDS.md"
+    },
+    ".claude/skills/obsidian-markdown/references/PROPERTIES.md": {
+      "modified": false,
+      "upstream": ".claude/skills/obsidian-markdown/references/PROPERTIES.md"
+    },
+    ".claude/skills/qmd/SKILL.md": {
+      "modified": false,
+      "upstream": ".claude/skills/qmd/SKILL.md"
+    },
+    ".mcp.json": {
+      "modified": false,
+      "upstream": ".mcp.json"
+    },
+    ".scripts/package.json": {
+      "modified": false,
+      "upstream": ".scripts/package.json"
+    },
+    ".scripts/qmd-bootstrap.ts": {
+      "modified": false,
+      "upstream": ".scripts/qmd-bootstrap.ts"
+    },
+    ".shardmind/hooks/bootstrap.ts": {
+      "modified": false,
+      "upstream": ".shardmind/hooks/bootstrap.ts"
+    },
+    ".shardmind/hooks/package.json": {
+      "modified": false,
+      "upstream": ".shardmind/hooks/package.json"
+    }
+  },
+  "license": "MIT",
+  "package": "obsidian-mind",
+  "repository": "https://github.com/breferrari/obsidian-mind",
+  "schemaVersion": 1,
+  "tag": "v9.0.1",
+  "version": "9.0.1"
+}

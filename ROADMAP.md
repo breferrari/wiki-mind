@@ -85,3 +85,4 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ⬜ | Codex and Gemini as removable modules | [#25](https://github.com/breferrari/wiki-mind/issues/25) |
 | ⬜ | Spec corrections for a retracted or superseded source | [#26](https://github.com/breferrari/wiki-mind/issues/26) |
 | ⬜ | wrap-up and tidy through the extraction | [#27](https://github.com/breferrari/wiki-mind/issues/27) |
+| ⬜ | Diagram skill for syntheses (mermaid) | [#33](https://github.com/breferrari/wiki-mind/issues/33) |
