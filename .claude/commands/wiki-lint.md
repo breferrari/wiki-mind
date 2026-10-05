@@ -18,7 +18,7 @@ It prints each finding with the notes it names, or `No drift found.` The same ch
 
 | Finding | Fix |
 |---------|-----|
-| Concept or entity cites no source | Find the source it came from and link it. If none in the wiki supports it, say so: the note may need a source ingested (`/wiki-ingest`) or may not belong. |
+| Concept or entity cites no source | Find the source it came from and link it. If none in the wiki supports it, say so: the note may need a source ingested (the user can run `/wiki-ingest`), or may not belong. |
 | Synthesis with fewer than two sides | Add the missing side to `sides`, or, if there is only one, ask whether it belongs in a concept instead. |
 | Notes Index.md doesn't annotate | Add a one-line annotation for each to its section of `Index.md`. |
 | Frontmatter problems | Fill the field the line names, from the note's template. |
