@@ -1,0 +1,13 @@
+{
+  "attachmentFolderPath": "inbox",
+  "userIgnoreFilters": [
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "vault-manifest.json",
+    "shard-values.yaml",
+    ".claude/",
+    ".scripts/",
+    ".shardmind/"
+  ]
+}
