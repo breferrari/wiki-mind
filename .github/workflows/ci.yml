@@ -113,13 +113,16 @@ jobs:
 
       # Invariant 1 and 2 (SPEC.md §8): install this commit from GitHub with
       # `install --defaults` and compare it with the clone, byte for byte.
-      # The PR head is pushed by the time CI runs; the token lifts the GitHub
-      # API's unauthenticated rate limit.
+      # The commit is the one checked out here, `github.sha`: on a pull
+      # request that is the merge commit with main, not the PR head, so the
+      # install and the clone hold the same files even when the branch is
+      # behind main. The token lifts the GitHub API's unauthenticated rate
+      # limit.
       - name: Contract test (install --defaults equals the clone)
         shell: bash
         working-directory: .claude/scripts
         env:
-          WIKI_CONTRACT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          WIKI_CONTRACT_REF: ${{ github.sha }}
           GITHUB_TOKEN: ${{ github.token }}
         run: node --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/contract.test.ts
 
