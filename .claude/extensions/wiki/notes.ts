@@ -6,8 +6,7 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { extractFrontmatterField } from "../../scripts/lib/session-start.ts";
-import { extractWikilinkTargets } from "../../scripts/lib/wikilinks.ts";
+import { extractFrontmatterField, extractWikilinkTargets } from "../../scripts/core/index.ts";
 
 /** Each note type's folder (SPEC.md §2). */
 export const FOLDERS = {
