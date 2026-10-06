@@ -1,0 +1,25 @@
+Description: Skip the charcount cases that need the review template and the charcount entry point
+Forwarded: not-needed: wiki-mind ships neither the review template nor the charcount entry point
+Last-Update: 2026-10-06
+
+diff --git a/.claude/scripts/tests/charcount.test.ts b/.claude/scripts/tests/charcount.test.ts
+--- a/.claude/scripts/tests/charcount.test.ts
++++ b/.claude/scripts/tests/charcount.test.ts
+@@ -150,7 +150,7 @@
+ 		assert.equal(countSection(d, { section: "Summary" }), 3);
+ 	});
+ 
+-	test("every section heading in the shipped review template is found", () => {
++	test("every section heading in the shipped review template is found", { skip: "wiki-mind ships neither obsidian-mind's templates nor its charcount entry point" }, () => {
+ 		const tpl = readFileSync(join(VAULT, "templates", "Review Template.md"), "utf-8");
+ 		for (const s of ["Summary", "Impact", "Competencies", "Principles", "Growth Plan"]) {
+ 			assert.notEqual(countSection(tpl, { section: s }), null, s);
+@@ -158,7 +158,7 @@
+ 	});
+ });
+ 
+-describe("charcount CLI", () => {
++describe("charcount CLI", { skip: "wiki-mind ships neither obsidian-mind's templates nor its charcount entry point" }, () => {
+ 	function run(body: string, ...args: string[]) {
+ 		const dir = mkdtempSync(join(tmpdir(), "charcount-"));
+ 		try {

@@ -110,9 +110,9 @@ This manual installs into every vault. The rules for changing the shard itself l
 
 The hook layer keeps four zones. Its core is vendored from mindframe, and the other vendored libraries from upstream. The full rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md#zones-keeping-the-core-liftable).
 
-- **`lib/`** is vendored upstream code. `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json` say where each file came from. It changes only by recorded, parameterized modifications.
+- **`lib/`** is vendored upstream code. `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json` say where each file came from. It changes only by parameterized changes, each recorded as a patch in `vendor-patches/`. A guard stops a direct edit and names the routes.
 - **`core/`** is vendored from mindframe and imports only `lib/`.
 - **`.claude/extensions/`** imports only `core/index.ts`.
 - **The entry points** are thin dispatchers.
-- **Divergence:** every divergence from upstream is a parameter with a VENDOR.json change line and a seam row in the shard's spec (see CONTRIBUTING.md).
+- **Divergence:** every divergence from upstream is a parameter with a patch and a seam row in the shard's spec (see CONTRIBUTING.md).
 - **General-purpose code** goes in the core, by a change to mindframe, never in an entry point or an extension.

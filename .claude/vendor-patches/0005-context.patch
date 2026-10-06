@@ -1,0 +1,16 @@
+Description: Give the mod's context hook wiki-mind's identity
+Forwarded: not-needed: wiki-mind's own identity, so it does not collide with the upstream vault's
+Last-Update: 2026-10-06
+
+diff --git a/.claude/skills/wiki-mind/hooks/context.ts b/.claude/skills/wiki-mind/hooks/context.ts
+--- a/.claude/skills/wiki-mind/hooks/context.ts
++++ b/.claude/skills/wiki-mind/hooks/context.ts
+@@ -1,7 +1,7 @@
+ import type { PromptContextResult } from "claude-code";
+ 
+ /** The name the context renders under when no instruction file can carry it. */
+-export const CONTEXT_BLOCK = "obsidian-mind";
++export const CONTEXT_BLOCK = "wiki-mind";
+ 
+ /**
+  * The first message's context with the session context added: as a project

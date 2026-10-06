@@ -1,0 +1,76 @@
+Description: Give the mod's register hook wiki-mind's identity, and qualify upstream issue references
+Forwarded: not-needed: wiki-mind's own identity, so it does not collide with the upstream vault's
+Last-Update: 2026-10-06
+
+diff --git a/.claude/skills/wiki-mind/hooks/register.ts b/.claude/skills/wiki-mind/hooks/register.ts
+--- a/.claude/skills/wiki-mind/hooks/register.ts
++++ b/.claude/skills/wiki-mind/hooks/register.ts
+@@ -3,7 +3,7 @@
+ import { carriesReport, fromPerson, parseStopReport, ranIn, summaryLine, withLine } from "./stop.ts";
+ 
+ /**
+- * obsidian-mind's Claude Code mod (#262).
++ * wiki-mind's Claude Code mod (obsidian-mind#262).
+  *
+  * The vault's settings hooks stay the engine: Codex and Gemini run them, and
+  * so does Claude Code wherever this mod does not load (an older CLI, an
+@@ -12,13 +12,13 @@
+  * session, never what it says: it runs the vault's own scripts and delivers
+  * the result through a better channel.
+  *
+- * Session context (#265): `session-start.ts` runs here with
++ * Session context (obsidian-mind#265): `session-start.ts` runs here with
+  * `om_mod: "deliver"`, and its output becomes an instruction file instead of
+  * hook output. Unlike hook output it is not cut at 10,000 characters, it is
+  * re-read whole after compaction and `/clear` instead of shrinking to a
+  * pointer, and general-purpose subagents receive it.
+  *
+- * Stop report (#266): `stop-checklist.ts` runs here with `om_mod: "report"`.
++ * Stop report (obsidian-mind#266): `stop-checklist.ts` runs here with `om_mod: "report"`.
+  * When the findings changed, the user sees one line under the answer and the
+  * agent gets the full report with the next prompt, unseen. A finding marked
+  * urgent gets a turn of its own at once.
+@@ -37,22 +37,22 @@
+ const CONTEXT_FILE = ".claude/session-context.md";
+ 
+ /** The session context this session's instruction file carries; what prompt.context hands the model. */
+-const sessionContext = atom({ plugin: "obsidian-mind", key: "context" } as const, null);
++const sessionContext = atom({ plugin: "wiki-mind", key: "context" } as const, null);
+ /** The report waiting to be delivered: its text, and its line and urgent finding until they are used. */
+-const queued = atom({ plugin: "obsidian-mind", key: "queued" } as const, null);
++const queued = atom({ plugin: "wiki-mind", key: "queued" } as const, null);
+ /** Whether an urgent finding has had its turn since the person last spoke. */
+-const urgentSpent = atom({ plugin: "obsidian-mind", key: "urgentSpent" } as const, false);
++const urgentSpent = atom({ plugin: "wiki-mind", key: "urgentSpent" } as const, false);
+ /** Bumped by every start that begins another conversation, so a report in flight across one is not put back. */
+-const generation = atom({ plugin: "obsidian-mind", key: "generation" } as const, 0);
++const generation = atom({ plugin: "wiki-mind", key: "generation" } as const, 0);
+ /**
+  * The report a prompt took, until a turn starts with that prompt. A prompt
+  * enters when it is queued, not when its turn starts, and a queued prompt can
+  * be pulled back out of the queue; if a turn starts with another prompt
+  * first, this one never ran, and the report goes back in the queue.
+  */
+-const inFlight = atom({ plugin: "obsidian-mind", key: "inFlight" } as const, null);
++const inFlight = atom({ plugin: "wiki-mind", key: "inFlight" } as const, null);
+ 
+-type Queued = NonNullable<PluginState["obsidian-mind"]["queued"]>;
++type Queued = NonNullable<PluginState["wiki-mind"]["queued"]>;
+ 
+ /**
+  * Which report each session was last given, by session id, and whether it
+@@ -259,12 +259,12 @@
+ 	on("turn.start", async ($, e, next) => {
+ 		// Only the main loop's prompts carry the report; a turn begun without a
+ 		// prompt (a continuation, text "") says nothing about the queue.
+-		let held: PluginState["obsidian-mind"]["inFlight"] = null;
++		let held: PluginState["wiki-mind"]["inFlight"] = null;
+ 		await update($, inFlight, (now) => {
+ 			held = now;
+ 			return now === null || e.text === "" ? now : null;
+ 		});
+-		const waiting: PluginState["obsidian-mind"]["inFlight"] = held;
++		const waiting: PluginState["wiki-mind"]["inFlight"] = held;
+ 		if (waiting === null || e.text === "") return next(e);
+ 		// Queued prompts run in order and may be folded into one turn, so a turn
+ 		// whose text holds the prompt's ran it: delivered, and remembered as

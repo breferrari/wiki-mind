@@ -3,396 +3,357 @@
   "copyright": "Brenno Ferrari",
   "files": {
     ".claude/scripts/lib/atomic-write.ts": {
-      "modified": false,
       "sha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8",
       "upstream": ".claude/scripts/lib/atomic-write.ts",
       "upstreamSha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8"
     },
     ".claude/scripts/lib/charcount.ts": {
-      "modified": false,
       "sha256": "b861a181e496c86baad3d9f86af0a75687c3965e8444024964d1712808b57dc8",
       "upstream": ".claude/scripts/lib/charcount.ts",
       "upstreamSha256": "b861a181e496c86baad3d9f86af0a75687c3965e8444024964d1712808b57dc8"
     },
     ".claude/scripts/lib/hint-state.ts": {
-      "modified": false,
       "sha256": "b7e032c1ae6889765831c29f5baa28c7d5a9c2bd8f4604b77b5966e9efec591a",
       "upstream": ".claude/scripts/lib/hint-state.ts",
       "upstreamSha256": "b7e032c1ae6889765831c29f5baa28c7d5a9c2bd8f4604b77b5966e9efec591a"
     },
     ".claude/scripts/lib/main-guard.ts": {
-      "modified": false,
       "sha256": "e76f8a95c5ee9c015f8afe455707660db40e3494405697d528aae5cf6965244c",
       "upstream": ".claude/scripts/lib/main-guard.ts",
       "upstreamSha256": "e76f8a95c5ee9c015f8afe455707660db40e3494405697d528aae5cf6965244c"
     },
     ".claude/scripts/lib/qmd-bootstrap.ts": {
-      "modified": false,
       "sha256": "8e138c5afdd9bfcb41abf4803e8736185f0de0cfe82d12fea93cf388e88268d6",
       "upstream": ".claude/scripts/lib/qmd-bootstrap.ts",
       "upstreamSha256": "8e138c5afdd9bfcb41abf4803e8736185f0de0cfe82d12fea93cf388e88268d6"
     },
     ".claude/scripts/lib/qmd-ignore.ts": {
-      "modified": false,
       "sha256": "55805df8717370491a65d5a1761f401dacbe90f8894a333e63ad1a50d20ed5cc",
       "upstream": ".claude/scripts/lib/qmd-ignore.ts",
       "upstreamSha256": "55805df8717370491a65d5a1761f401dacbe90f8894a333e63ad1a50d20ed5cc"
     },
     ".claude/scripts/lib/qmd-models.ts": {
-      "modified": false,
       "sha256": "b5c6348de27515f16c33dd21a76eb7dc02354421ac3b368923ec5e81da3a9acc",
       "upstream": ".claude/scripts/lib/qmd-models.ts",
       "upstreamSha256": "b5c6348de27515f16c33dd21a76eb7dc02354421ac3b368923ec5e81da3a9acc"
     },
     ".claude/scripts/lib/qmd-refresh.ts": {
-      "modified": false,
       "sha256": "166e54b394011690a9060b2503b5015391d4d1d3c879ded32c8db0d8f447e755",
       "upstream": ".claude/scripts/lib/qmd-refresh.ts",
       "upstreamSha256": "166e54b394011690a9060b2503b5015391d4d1d3c879ded32c8db0d8f447e755"
     },
     ".claude/scripts/lib/read-field.ts": {
-      "modified": false,
       "sha256": "9317f718f038daea673e698eaf3c683eac8d0ed2cdf2fc80d31d1ccdb47c27f2",
       "upstream": ".claude/scripts/lib/read-field.ts",
       "upstreamSha256": "9317f718f038daea673e698eaf3c683eac8d0ed2cdf2fc80d31d1ccdb47c27f2"
     },
     ".claude/scripts/lib/read-head.ts": {
-      "modified": false,
       "sha256": "ef20d9270a50667ee9bc544d625c286ea027225428e0257adacdbc3af4cf81b8",
       "upstream": ".claude/scripts/lib/read-head.ts",
       "upstreamSha256": "ef20d9270a50667ee9bc544d625c286ea027225428e0257adacdbc3af4cf81b8"
     },
     ".claude/scripts/lib/report-key.ts": {
-      "modified": false,
       "sha256": "0ce11d8f7c2b64ba65ea4ccb23cebc033e4e24a7c529bc5fb38a4800fef60f1b",
       "upstream": ".claude/scripts/lib/report-key.ts",
       "upstreamSha256": "0ce11d8f7c2b64ba65ea4ccb23cebc033e4e24a7c529bc5fb38a4800fef60f1b"
     },
     ".claude/scripts/lib/stop-handoff.ts": {
-      "modified": false,
       "sha256": "99ae74c1a100ce06071aaf431a63049e236bfa50a66e14ec6c2416f221636f76",
       "upstream": ".claude/scripts/lib/stop-handoff.ts",
       "upstreamSha256": "99ae74c1a100ce06071aaf431a63049e236bfa50a66e14ec6c2416f221636f76"
     },
     ".claude/scripts/lib/stop-report.ts": {
-      "change": "S6 (SPEC.md §7.2): modPreface(modName) builds the mod-report framing for any vault's mod; MOD_PREFACE stays obsidian-mind's value, so existing callers are unchanged.",
-      "modified": true,
+      "patches": [
+        "0001-stop-report.patch"
+      ],
       "sha256": "187e1fbfe8a0602308bb01b687a84ec369e435a38e324dc7dc5c6f2de0589819",
       "upstream": ".claude/scripts/lib/stop-report.ts",
       "upstreamSha256": "53e6339662dbe5869a415b3b7379e33b1819113dab09b557dcc8a78d0d78d0a0"
     },
     ".claude/scripts/package.json": {
-      "change": "#41: the description names wiki-mind; it installs, so nothing user-facing names the upstream vault.",
-      "modified": true,
+      "patches": [
+        "0002-package.patch"
+      ],
       "sha256": "86f417224a502dfe772c0d7152e910c02a96e7eaedd7f515c4822c17f02c1617",
       "upstream": ".claude/scripts/package.json",
       "upstreamSha256": "11526375fb7a5285bb05d546e8992fcf575a1974b5f4d71e29d91b81a2be940a"
     },
     ".claude/scripts/pre-compact.ts": {
-      "modified": false,
       "sha256": "f618672951a78376f597fd86e62e65617bdec6ff0adeeaf432c35573f5f127a7",
       "upstream": ".claude/scripts/pre-compact.ts",
       "upstreamSha256": "f618672951a78376f597fd86e62e65617bdec6ff0adeeaf432c35573f5f127a7"
     },
     ".claude/scripts/qmd-mcp.d.mts": {
-      "modified": false,
       "sha256": "eeb94ce2c89404a9fbd580e3037d5b1e346e30a928a0b6d713fe26704385b489",
       "upstream": ".claude/scripts/qmd-mcp.d.mts",
       "upstreamSha256": "eeb94ce2c89404a9fbd580e3037d5b1e346e30a928a0b6d713fe26704385b489"
     },
     ".claude/scripts/qmd-mcp.mjs": {
-      "modified": false,
       "sha256": "b8091246afac2176ef5ae19695f555fcada3c8447d1ebc53286a9b9e6ccf9d17",
       "upstream": ".claude/scripts/qmd-mcp.mjs",
       "upstreamSha256": "b8091246afac2176ef5ae19695f555fcada3c8447d1ebc53286a9b9e6ccf9d17"
     },
     ".claude/scripts/qmd-refresh-run.ts": {
-      "modified": false,
       "sha256": "1b62c0894cbad537ddbcf0f194bed612f7b7aeadefe9a0eb895472f46bc69ed8",
       "upstream": ".claude/scripts/qmd-refresh-run.ts",
       "upstreamSha256": "1b62c0894cbad537ddbcf0f194bed612f7b7aeadefe9a0eb895472f46bc69ed8"
     },
     ".claude/scripts/tests/_helpers.test.ts": {
-      "modified": false,
       "sha256": "7f360d0ffd65b5af135d4aae97caa5e05ff283ff7bc403196683a267574309fc",
       "upstream": ".claude/scripts/tests/_helpers.test.ts",
       "upstreamSha256": "7f360d0ffd65b5af135d4aae97caa5e05ff283ff7bc403196683a267574309fc"
     },
     ".claude/scripts/tests/_helpers.ts": {
-      "modified": false,
       "sha256": "10dbb2de1e4f224a37a3c6f266fe6cac59d7468d5e920af48e0c6c1634e1336b",
       "upstream": ".claude/scripts/tests/_helpers.ts",
       "upstreamSha256": "10dbb2de1e4f224a37a3c6f266fe6cac59d7468d5e920af48e0c6c1634e1336b"
     },
     ".claude/scripts/tests/_qmd-cache-guard.ts": {
-      "modified": false,
       "sha256": "c32ecc66c93c5e5703f79e31f7ad4b52cb121775ff7a2e3a69987dd38ce6f82c",
       "upstream": ".claude/scripts/tests/_qmd-cache-guard.ts",
       "upstreamSha256": "c32ecc66c93c5e5703f79e31f7ad4b52cb121775ff7a2e3a69987dd38ce6f82c"
     },
     ".claude/scripts/tests/_run-tests.ts": {
-      "modified": false,
       "sha256": "2f115b04cfd0c8ebc1138f5126d647b8163556b5bd300fa8790e95086da2c74b",
       "upstream": ".claude/scripts/tests/_run-tests.ts",
       "upstreamSha256": "2f115b04cfd0c8ebc1138f5126d647b8163556b5bd300fa8790e95086da2c74b"
     },
     ".claude/scripts/tests/atomic-write.test.ts": {
-      "modified": false,
       "sha256": "80a3ea928bb2d7b83c1c23b4fdf3553f70c4963f80606fda254edc064885e6e1",
       "upstream": ".claude/scripts/tests/atomic-write.test.ts",
       "upstreamSha256": "80a3ea928bb2d7b83c1c23b4fdf3553f70c4963f80606fda254edc064885e6e1"
     },
     ".claude/scripts/tests/bootstrap-hook.test.ts": {
-      "modified": false,
       "sha256": "1c24fd35c38117d849a639df593808b7f1352f46b4dc6af542c1471e345a1990",
       "upstream": ".claude/scripts/tests/bootstrap-hook.test.ts",
       "upstreamSha256": "1c24fd35c38117d849a639df593808b7f1352f46b4dc6af542c1471e345a1990"
     },
     ".claude/scripts/tests/charcount.test.ts": {
-      "change": "#53: the cases that read obsidian-mind's review template and run its charcount entry point are skipped; wiki-mind ships neither.",
-      "modified": true,
+      "patches": [
+        "0003-charcount-test.patch"
+      ],
       "sha256": "7c6d5dacbc2a64f33cf978d77ae6ecd51be56fb0b9d0b297470ef02e3a577afb",
       "upstream": ".claude/scripts/tests/charcount.test.ts",
       "upstreamSha256": "f1136e861d90a72f18c1f973944e1e35807c9f8d240cebc256237f4568dd3c92"
     },
     ".claude/scripts/tests/hint-state.test.ts": {
-      "modified": false,
       "sha256": "c4423274c7be5e6e933027cf9afe96a999a105946d39b90533394db6f39cf28d",
       "upstream": ".claude/scripts/tests/hint-state.test.ts",
       "upstreamSha256": "c4423274c7be5e6e933027cf9afe96a999a105946d39b90533394db6f39cf28d"
     },
     ".claude/scripts/tests/main-guard.test.ts": {
-      "modified": false,
       "sha256": "11c030c708423358a78248fc7a4f308584c1b7e808985cf85de6a8ea83d74ff5",
       "upstream": ".claude/scripts/tests/main-guard.test.ts",
       "upstreamSha256": "11c030c708423358a78248fc7a4f308584c1b7e808985cf85de6a8ea83d74ff5"
     },
     ".claude/scripts/tests/pre-compact.test.ts": {
-      "modified": false,
       "sha256": "d65eba1d321931f749f7c8bbc53a1d2f672d06dbc7fdca8f2a401019b9e37c5f",
       "upstream": ".claude/scripts/tests/pre-compact.test.ts",
       "upstreamSha256": "d65eba1d321931f749f7c8bbc53a1d2f672d06dbc7fdca8f2a401019b9e37c5f"
     },
     ".claude/scripts/tests/qmd-bootstrap.test.ts": {
-      "modified": false,
       "sha256": "7e73090b04c9891bc63d9462a5f295c21883f2a8fff1eea6035886f6627d0083",
       "upstream": ".claude/scripts/tests/qmd-bootstrap.test.ts",
       "upstreamSha256": "7e73090b04c9891bc63d9462a5f295c21883f2a8fff1eea6035886f6627d0083"
     },
     ".claude/scripts/tests/qmd-ignore.test.ts": {
-      "modified": false,
       "sha256": "b3051c74b655ae9c88b6a38f01396b63759fcecbc47d3a43307224c64be02a56",
       "upstream": ".claude/scripts/tests/qmd-ignore.test.ts",
       "upstreamSha256": "b3051c74b655ae9c88b6a38f01396b63759fcecbc47d3a43307224c64be02a56"
     },
     ".claude/scripts/tests/qmd-mcp.test.ts": {
-      "modified": false,
       "sha256": "0af9552e9ab007c88e0e8ca5e004ebc7fba966cb48ab64becd1dff6c3a0bc463",
       "upstream": ".claude/scripts/tests/qmd-mcp.test.ts",
       "upstreamSha256": "0af9552e9ab007c88e0e8ca5e004ebc7fba966cb48ab64becd1dff6c3a0bc463"
     },
     ".claude/scripts/tests/qmd-models.test.ts": {
-      "modified": false,
       "sha256": "14b32f5cd0c684953ead688a1260cf82d36937bbea7b2216da8e426db65fa44e",
       "upstream": ".claude/scripts/tests/qmd-models.test.ts",
       "upstreamSha256": "14b32f5cd0c684953ead688a1260cf82d36937bbea7b2216da8e426db65fa44e"
     },
     ".claude/scripts/tests/qmd-refresh.test.ts": {
-      "modified": false,
       "sha256": "e6bd95e5749898497e58f6bd5b70cb01f8c787d24338a66ea96fb3e6232701fe",
       "upstream": ".claude/scripts/tests/qmd-refresh.test.ts",
       "upstreamSha256": "e6bd95e5749898497e58f6bd5b70cb01f8c787d24338a66ea96fb3e6232701fe"
     },
     ".claude/scripts/tests/qmd.test.ts": {
-      "modified": false,
       "sha256": "67045e5d18eba5de1dab700fc066a962626996b8eb8afab09c6f25d026ccfe9c",
       "upstream": ".claude/scripts/tests/qmd.test.ts",
       "upstreamSha256": "67045e5d18eba5de1dab700fc066a962626996b8eb8afab09c6f25d026ccfe9c"
     },
     ".claude/scripts/tests/read-head.test.ts": {
-      "modified": false,
       "sha256": "ef16a5727d6a06e4b326af85da94a573fadbbe88777543fd308a12bf127b97d5",
       "upstream": ".claude/scripts/tests/read-head.test.ts",
       "upstreamSha256": "ef16a5727d6a06e4b326af85da94a573fadbbe88777543fd308a12bf127b97d5"
     },
     ".claude/scripts/tests/report-key.test.ts": {
-      "modified": false,
       "sha256": "37e391711a18e7e7552388a5e203327b3c966196a589480fe82eebff1dbe2ac8",
       "upstream": ".claude/scripts/tests/report-key.test.ts",
       "upstreamSha256": "37e391711a18e7e7552388a5e203327b3c966196a589480fe82eebff1dbe2ac8"
     },
     ".claude/scripts/tests/stop-handoff.test.ts": {
-      "modified": false,
       "sha256": "b1920a4419a1221310b04e352bae9f9e0e17642a7747e6281303e422f205c45d",
       "upstream": ".claude/scripts/tests/stop-handoff.test.ts",
       "upstreamSha256": "b1920a4419a1221310b04e352bae9f9e0e17642a7747e6281303e422f205c45d"
     },
     ".claude/scripts/tsconfig.json": {
-      "modified": false,
       "sha256": "136fe3cba1d400f6b66ce7fc7365160a78a74bcc1bc9801cb233c9db3b9d4105",
       "upstream": ".claude/scripts/tsconfig.json",
       "upstreamSha256": "136fe3cba1d400f6b66ce7fc7365160a78a74bcc1bc9801cb233c9db3b9d4105"
     },
     ".claude/settings.json": {
-      "modified": false,
-      "sha256": "b8c86edb29ba542cefd4b969b0628587a53cc363dc9a63a58b9479d1ff01020d",
+      "patches": [
+        "0012-wire-vendor-guard.patch"
+      ],
+      "sha256": "21d23bb8ad8666f157cf60a18529971bb68e0704095e29847f1b2516e7259b28",
       "upstream": ".claude/settings.json",
       "upstreamSha256": "b8c86edb29ba542cefd4b969b0628587a53cc363dc9a63a58b9479d1ff01020d"
     },
     ".claude/skills/defuddle/SKILL.md": {
-      "modified": false,
       "sha256": "10673a4dc70a0a057612d443243ab7a5aa4abdd4a0fadc3f6eec5fd71ad5a971",
       "upstream": ".claude/skills/defuddle/SKILL.md",
       "upstreamSha256": "10673a4dc70a0a057612d443243ab7a5aa4abdd4a0fadc3f6eec5fd71ad5a971"
     },
     ".claude/skills/json-canvas/SKILL.md": {
-      "modified": false,
       "sha256": "97d1ae0728955c4203922753d5656890e5e4dd371b8306ea11884f9b510f1b85",
       "upstream": ".claude/skills/json-canvas/SKILL.md",
       "upstreamSha256": "97d1ae0728955c4203922753d5656890e5e4dd371b8306ea11884f9b510f1b85"
     },
     ".claude/skills/json-canvas/references/EXAMPLES.md": {
-      "modified": false,
       "sha256": "f5ce15a4b74643122396265e8c37c828874a4005794de2aee7030662968768eb",
       "upstream": ".claude/skills/json-canvas/references/EXAMPLES.md",
       "upstreamSha256": "f5ce15a4b74643122396265e8c37c828874a4005794de2aee7030662968768eb"
     },
     ".claude/skills/obsidian-bases/SKILL.md": {
-      "modified": false,
       "sha256": "c0037f20926c7d8591cdd040365e4c0e4c0c4146386a506f28f241faee9a27d9",
       "upstream": ".claude/skills/obsidian-bases/SKILL.md",
       "upstreamSha256": "c0037f20926c7d8591cdd040365e4c0e4c0c4146386a506f28f241faee9a27d9"
     },
     ".claude/skills/obsidian-bases/references/FUNCTIONS_REFERENCE.md": {
-      "modified": false,
       "sha256": "208fd63aead9bca1975626fea52605e6ab9434dc0529d923feb36b18b8877d3b",
       "upstream": ".claude/skills/obsidian-bases/references/FUNCTIONS_REFERENCE.md",
       "upstreamSha256": "208fd63aead9bca1975626fea52605e6ab9434dc0529d923feb36b18b8877d3b"
     },
     ".claude/skills/obsidian-cli/SKILL.md": {
-      "modified": false,
       "sha256": "20cb8d69f7dc698f3cc7318db69b1fba744b8f591042684675d6f0706af0e83e",
       "upstream": ".claude/skills/obsidian-cli/SKILL.md",
       "upstreamSha256": "20cb8d69f7dc698f3cc7318db69b1fba744b8f591042684675d6f0706af0e83e"
     },
     ".claude/skills/obsidian-markdown/SKILL.md": {
-      "modified": false,
       "sha256": "7ad72e1f0a9081ed325e76b6402ad5de50a00e63e2341fd403a92f147234a007",
       "upstream": ".claude/skills/obsidian-markdown/SKILL.md",
       "upstreamSha256": "7ad72e1f0a9081ed325e76b6402ad5de50a00e63e2341fd403a92f147234a007"
     },
     ".claude/skills/obsidian-markdown/references/CALLOUTS.md": {
-      "modified": false,
       "sha256": "9912ec2e3f8711f65b8ceb82cc19cbffc5e6f8ccf2ab627e18926c522c383d8b",
       "upstream": ".claude/skills/obsidian-markdown/references/CALLOUTS.md",
       "upstreamSha256": "9912ec2e3f8711f65b8ceb82cc19cbffc5e6f8ccf2ab627e18926c522c383d8b"
     },
     ".claude/skills/obsidian-markdown/references/EMBEDS.md": {
-      "modified": false,
       "sha256": "63b6205507e28fb58cf200bc348a2b139e50ae739743e2e6316732148973cb7a",
       "upstream": ".claude/skills/obsidian-markdown/references/EMBEDS.md",
       "upstreamSha256": "63b6205507e28fb58cf200bc348a2b139e50ae739743e2e6316732148973cb7a"
     },
     ".claude/skills/obsidian-markdown/references/PROPERTIES.md": {
-      "modified": false,
       "sha256": "392953b5838c3ab3df135b5a914f100ae7b95e4501b6a2e5c8dc63da3ac7558b",
       "upstream": ".claude/skills/obsidian-markdown/references/PROPERTIES.md",
       "upstreamSha256": "392953b5838c3ab3df135b5a914f100ae7b95e4501b6a2e5c8dc63da3ac7558b"
     },
     ".claude/skills/qmd/SKILL.md": {
-      "modified": false,
       "sha256": "fbd8ff35d49cf673aaf611226cee9dbcbd1ee76ad645ef2fa2be12df2a66dba0",
       "upstream": ".claude/skills/qmd/SKILL.md",
       "upstreamSha256": "fbd8ff35d49cf673aaf611226cee9dbcbd1ee76ad645ef2fa2be12df2a66dba0"
     },
     ".claude/skills/wiki-mind/.claude-plugin/plugin.json": {
-      "change": "P1: name wiki-mind, version 0.1.0 (wiki-mind's), description and author URL for wiki-mind.",
-      "modified": true,
+      "patches": [
+        "0004-plugin.patch"
+      ],
       "sha256": "950651ab30640eca486ded0929c254bba4e6f45dfd0676ce4c5aaeb95003e65a",
       "upstream": ".claude/skills/obsidian-mind/.claude-plugin/plugin.json",
       "upstreamSha256": "d536d7e5d8e159ea1e79d43b860c2c3c09f2149aac786239f5edf14b96a550ea"
     },
     ".claude/skills/wiki-mind/hooks/context.ts": {
-      "change": "P1 (SPEC.md §7.2): the mod's identity is wiki-mind (plugin name, state keys, context block, its own origin check), so it does not collide with obsidian-mind's mod in a user who runs both vaults; the om_mod protocol is unchanged.",
-      "modified": true,
+      "patches": [
+        "0005-context.patch"
+      ],
       "sha256": "7012894331264f60506fe6c26c627828de5c006bb457e7d1ce37b198aee12ebc",
       "upstream": ".claude/skills/obsidian-mind/hooks/context.ts",
       "upstreamSha256": "98f489c44db5671492a20702ef57e7f18b7bdfdd15e0fd1da838fc14342ed935"
     },
     ".claude/skills/wiki-mind/hooks/hooks.json": {
-      "modified": false,
       "sha256": "c835c92d8e1159d20a40ca78ad654da7433942c3694ffeda0b376b0c4dfd52cf",
       "upstream": ".claude/skills/obsidian-mind/hooks/hooks.json",
       "upstreamSha256": "c835c92d8e1159d20a40ca78ad654da7433942c3694ffeda0b376b0c4dfd52cf"
     },
     ".claude/skills/wiki-mind/hooks/register.test.ts": {
-      "change": "P1: the tests read the wiki-mind state keys; issue references qualified.",
-      "modified": true,
+      "patches": [
+        "0006-register-test.patch"
+      ],
       "sha256": "a170218034e52e46747779e587a68b5d55bbdb9c742661a28ba9e70707bd2610",
       "upstream": ".claude/skills/obsidian-mind/hooks/register.test.ts",
       "upstreamSha256": "0f4cb12336f738e1cc62ce2cdaf2aab8a781b85c44b9b8376cefd6d0daf7591e"
     },
     ".claude/skills/wiki-mind/hooks/register.ts": {
-      "change": "P1 (SPEC.md §7.2): the mod's identity is wiki-mind (plugin name, state keys, context block, its own origin check), so it does not collide with obsidian-mind's mod in a user who runs both vaults; the om_mod protocol is unchanged. obsidian-mind issue references are qualified (obsidian-mind#NNN).",
-      "modified": true,
+      "patches": [
+        "0007-register.patch"
+      ],
       "sha256": "fd8518f34ced3a5968eb187102b2640820b426f91cae8c9484131e9c9c945af6",
       "upstream": ".claude/skills/obsidian-mind/hooks/register.ts",
       "upstreamSha256": "4f08abdf8f61310c9e8cae87b9f5ef46d4cddcf852208f1eb3f45eee2f451c1a"
     },
     ".claude/skills/wiki-mind/hooks/stop.test.ts": {
-      "change": "P1: the tests expect the wiki-mind origin; issue references qualified.",
-      "modified": true,
+      "patches": [
+        "0008-stop-test.patch"
+      ],
       "sha256": "6d1730c25638521a5ec9ddae627315e08304029ae434493789e039b274d952e4",
       "upstream": ".claude/skills/obsidian-mind/hooks/stop.test.ts",
       "upstreamSha256": "9fc2960ee28f511be3e6989b38c66c01b9ad6803b446d42cc5b9b3b2eefb9ed3"
     },
     ".claude/skills/wiki-mind/hooks/stop.ts": {
-      "change": "P1 (SPEC.md §7.2): the mod's identity is wiki-mind (plugin name, state keys, context block, its own origin check), so it does not collide with obsidian-mind's mod in a user who runs both vaults; the om_mod protocol is unchanged. obsidian-mind issue references are qualified (obsidian-mind#NNN).",
-      "modified": true,
+      "patches": [
+        "0009-stop.patch"
+      ],
       "sha256": "7a6f9b01913fd65d68cffdb86de76ac7a4e360eb6ebe4d179e2df15447d4f44f",
       "upstream": ".claude/skills/obsidian-mind/hooks/stop.ts",
       "upstreamSha256": "ce2ceb2ef7062378c5594e16daea045ab5eeb667c8585899c27b5d6090602df5"
     },
     ".claude/skills/wiki-mind/hooks/world.ts": {
-      "modified": false,
       "sha256": "58bd5fa678adbde030270dd167fa199357db082f6c87967a0116b1724c922aaa",
       "upstream": ".claude/skills/obsidian-mind/hooks/world.ts",
       "upstreamSha256": "58bd5fa678adbde030270dd167fa199357db082f6c87967a0116b1724c922aaa"
     },
     ".claude/skills/wiki-mind/types/index.d.ts": {
-      "change": "P1: the plugin state is declared under wiki-mind.",
-      "modified": true,
+      "patches": [
+        "0010-index-d.patch"
+      ],
       "sha256": "04050692330f587c48f77a1b1175054294835a85fca092471c35c1f4ee42fb1d",
       "upstream": ".claude/skills/obsidian-mind/types/index.d.ts",
       "upstreamSha256": "e8aa98c5f8c1a4e7b566c583cd1b386e08da246befbe2db0747fc7bb47fd31e7"
     },
     ".mcp.json": {
-      "modified": false,
       "sha256": "63eb78e663f3d2e69b68c99e792b6645fe66a29cfd8fd741122a454fd182bdc3",
       "upstream": ".mcp.json",
       "upstreamSha256": "63eb78e663f3d2e69b68c99e792b6645fe66a29cfd8fd741122a454fd182bdc3"
     },
     ".scripts/package.json": {
-      "modified": false,
       "sha256": "0fd7f42d27d2716345c9df69594276f3eff908bdf44bdf7618b8d792e770f6fb",
       "upstream": ".scripts/package.json",
       "upstreamSha256": "0fd7f42d27d2716345c9df69594276f3eff908bdf44bdf7618b8d792e770f6fb"
     },
     ".scripts/qmd-bootstrap.ts": {
-      "modified": false,
       "sha256": "fd203bb14cfc88acf43a03753062f895f2bd32cf846fc66360c31d8c0a5d36be",
       "upstream": ".scripts/qmd-bootstrap.ts",
       "upstreamSha256": "fd203bb14cfc88acf43a03753062f895f2bd32cf846fc66360c31d8c0a5d36be"
     },
     ".shardmind/hooks/bootstrap.ts": {
-      "modified": false,
       "sha256": "086959b6539d9d804ba7f8cf5af21f21040999d140e426618ad89070f42b7886",
       "upstream": ".shardmind/hooks/bootstrap.ts",
       "upstreamSha256": "086959b6539d9d804ba7f8cf5af21f21040999d140e426618ad89070f42b7886"
     },
     ".shardmind/hooks/package.json": {
-      "change": "#41: the description names wiki-mind.",
-      "modified": true,
+      "patches": [
+        "0011-package.patch"
+      ],
       "sha256": "33a61e06862d3b8d2ccdb0015441618e98bf2bbd8c3733e590a4c486b55b78e8",
       "upstream": ".shardmind/hooks/package.json",
       "upstreamSha256": "d98aa5ade92d38d491ce466f0cc49f7df5f55a7aedb0e75f5cee0d9a053246ef"
@@ -401,7 +362,7 @@
   "license": "MIT",
   "package": "obsidian-mind",
   "repository": "https://github.com/breferrari/obsidian-mind",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "tag": "v9.1.0",
   "version": "9.1.0"
 }

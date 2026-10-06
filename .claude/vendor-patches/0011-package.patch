@@ -1,0 +1,14 @@
+Description: Name wiki-mind in the hooks package description
+Forwarded: not-needed: wiki-mind's own identity, so it does not collide with the upstream vault's
+Last-Update: 2026-10-06
+
+diff --git a/.shardmind/hooks/package.json b/.shardmind/hooks/package.json
+--- a/.shardmind/hooks/package.json
++++ b/.shardmind/hooks/package.json
+@@ -1,5 +1,5 @@
+ {
+   "private": true,
+   "type": "module",
+-  "description": "ShardMind lifecycle hooks for obsidian-mind. Runtime has zero dependencies — executed by ShardMind's hook runner via the bundled tsx loader. The `type: module` field exists so TypeScript's verbatimModuleSyntax treats these .ts files as ESM during typecheck (run from `.claude/scripts/`), matching their runtime behavior."
++  "description": "ShardMind lifecycle hooks for wiki-mind. Runtime has zero dependencies — executed by ShardMind's hook runner via the bundled tsx loader. The `type: module` field exists so TypeScript's verbatimModuleSyntax treats these .ts files as ESM during typecheck (run from `.claude/scripts/`), matching their runtime behavior."
+ }

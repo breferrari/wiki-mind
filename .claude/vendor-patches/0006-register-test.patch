@@ -1,0 +1,34 @@
+Description: Read wiki-mind's state keys in the register tests
+Forwarded: not-needed: wiki-mind's own identity, so it does not collide with the upstream vault's
+Last-Update: 2026-10-06
+
+diff --git a/.claude/skills/wiki-mind/hooks/register.test.ts b/.claude/skills/wiki-mind/hooks/register.test.ts
+--- a/.claude/skills/wiki-mind/hooks/register.test.ts
++++ b/.claude/skills/wiki-mind/hooks/register.test.ts
+@@ -2,7 +2,7 @@
+ import { CONTEXT_BLOCK, withSessionContext } from "./context.ts";
+ import { engine, ROOT, type On, type Reply } from "./world.ts";
+ 
+-// Run with `claude plugin test .claude/skills/obsidian-mind`. Each test's own
++// Run with `claude plugin test .claude/skills/wiki-mind`. Each test's own
+ // `on` hooks sit beneath the mod and stand in for the engine and the vault.
+ 
+ const CONTEXT = "## Session Context\n\n### Date\n2026-10-03 (Saturday)\n\n_context injected: 0.1kB / 20.0kB budget_\n";
+@@ -16,7 +16,7 @@
+ 	const context: unknown[] = [];
+ 	on("state.set", (_$, e, next) => {
+ 		const write = e as { plugin?: string; key?: string; value?: unknown };
+-		if (write.plugin === "obsidian-mind" && write.key === "context") context.push(write.value);
++		if (write.plugin === "wiki-mind" && write.key === "context") context.push(write.value);
+ 		return next(e);
+ 	});
+ 	const world = engine(on, typeof script === "function" ? script : () => script, options);
+@@ -24,7 +24,7 @@
+ }
+ const lastContext = (seen: { context: unknown[] }) => seen.context.at(-1) ?? null;
+ 
+-describe("session context (#265)", () => {
++describe("session context (obsidian-mind#265)", () => {
+ 	test("runs the vault script in deliver mode, writes the context file, and stands the settings hook down", async ($, on) => {
+ 		const seen = vault(on, { exitCode: 0, stdout: CONTEXT });
+ 		await $.classic.SessionStart({ source: "startup" });
