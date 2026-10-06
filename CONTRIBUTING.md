@@ -64,17 +64,18 @@ The hook core now comes from mindframe (`core/scripts/`), recorded in `.claude/s
 
    | Zone | Holds | May import |
    |------|-------|------------|
-   | `.claude/scripts/lib/` | vendored libraries, from mindframe or obsidian-mind, untouched except for recorded, parameterized modifications | `lib/` only |
+   | `.claude/scripts/lib/` | vendored libraries, from mindframe or obsidian-mind, untouched except for parameterized changes, each a patch in `vendor-patches/` | `lib/` only |
    | `.claude/scripts/core/` | the extension registry and its API, vendored from mindframe | `core/` and `lib/` |
    | `.claude/extensions/` | wiki-mind's behaviour | itself and `core/index.ts`, the core's one public entry point |
    | `.claude/scripts/*.ts` | the entry points: thin dispatchers | `lib/` and `core/` |
 
 2. **Every divergence from obsidian-mind is a parameter, never a fork of logic.**
    - Make a vendored string or behaviour configurable, as `modPreface(modName)` does. Don't copy and edit it.
-   - Each one gets a change line in `.claude/VENDOR.json` and a seam row in SPEC.md §7.2.
-   - mindframe's vendor tool writes the record: `node --experimental-strip-types <mindframe>/core/vendor/cli.ts record --upstream <obsidian-mind checkout> --change <path>=<one line>`. CI runs its `check` at the commit `.github/pins.json` records, and fails on any vendored file edited without a record.
+   - Each one is a patch (SPEC.md §7.1) and a seam row in SPEC.md §7.2.
+   - The vendor guard stops an edit to a vendored file. Open it with `node --experimental-strip-types <mindframe>/core/vendor/cli.ts patch begin <path>`, edit, then make the patch: `node --experimental-strip-types <mindframe>/core/vendor/cli.ts patch new <slug> <path> --upstream <checkout at the record's commit> --description "<the change to make>"` with `--issue`, `--forward <url>` or `--not-needed "<reason>"`.
+   - CI runs `check` at the commit `.github/pins.json` records, and fails on any vendored file edited without a patch, or a patch that doesn't say where it went upstream.
 3. **No general-purpose code in an entry point or an extension.**
-   - If it would serve another vault, it belongs in the core. Make the change in mindframe, then vendor it back with `record --vault .claude/scripts --record VENDOR.json --upstream <mindframe checkout>`.
+   - If it would serve another vault, it belongs in the core. Make the change in mindframe, then vendor it back with `update --vault .claude/scripts --record VENDOR.json --upstream <mindframe checkout>` (a new file also needs `record` with its path), and move `.github/pins.json` to the same commit.
    - If an extension needs a helper, the core exports it from `core/index.ts`.
 4. **Keep SPEC.md §7.2's API-gap table current.** Update it in the same PR that finds a gap.
 

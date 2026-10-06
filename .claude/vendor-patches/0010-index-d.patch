@@ -1,0 +1,16 @@
+Description: Declare the plugin state under wiki-mind
+Forwarded: not-needed: wiki-mind's own identity, so it does not collide with the upstream vault's
+Last-Update: 2026-10-06
+
+diff --git a/.claude/skills/wiki-mind/types/index.d.ts b/.claude/skills/wiki-mind/types/index.d.ts
+--- a/.claude/skills/wiki-mind/types/index.d.ts
++++ b/.claude/skills/wiki-mind/types/index.d.ts
+@@ -4,7 +4,7 @@
+ 
+ declare module "claude-code" {
+ 	interface PluginState {
+-		"obsidian-mind": {
++		"wiki-mind": {
+ 			/** The session context this session's instruction file carries; null when none was delivered. */
+ 			context: string | null;
+ 			/**

@@ -1,0 +1,26 @@
+Description: Run the vendor guard before edits to vendored files
+Forwarded: not-needed: wiki-mind vendors its core from mindframe, and the guard is mindframe's; the upstream vault doesn't carry it
+Last-Update: 2026-10-06
+
+diff --git a/.claude/settings.json b/.claude/settings.json
+--- a/.claude/settings.json
++++ b/.claude/settings.json
+@@ -23,6 +23,18 @@
+         ]
+       }
+     ],
++    "PreToolUse": [
++      {
++        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
++        "hooks": [
++          {
++            "type": "command",
++            "command": "node --disable-warning=ExperimentalWarning --experimental-strip-types \"$(r=\"${CLAUDE_PROJECT_DIR:-.}\"; d=\"$r\"; while [ ! -f \"$d/vault-manifest.json\" ] && p=\"$(dirname \"$d\")\" && [ \"$d\" != \"$p\" ]; do d=\"$p\"; done; [ -f \"$d/vault-manifest.json\" ] || d=\"$r\"; printf %s \"$d\")/.claude/scripts/vendor-guard.ts\"",
++            "timeout": 10
++          }
++        ]
++      }
++    ],
+     "PostToolUse": [
+       {
+         "matcher": "Write|Edit",

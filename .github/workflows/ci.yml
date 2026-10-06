@@ -98,9 +98,9 @@ jobs:
         run: npm run typecheck
 
       # The vendored files match their records, .claude/VENDOR.json
-      # (obsidian-mind) and .claude/scripts/VENDOR.json (mindframe): every file's bytes
-      # against its recorded hash, and `modified` and `change` against the
-      # hashes (SPEC.md §7.1, §7.5). mindframe's vendor tool, fetched at the commit
+      # (obsidian-mind) and .claude/scripts/VENDOR.json (mindframe): every file is
+      # exactly upstream plus its patches in vendor-patches/, and every patch says
+      # where it went upstream (SPEC.md §7.1, §7.5). mindframe's vendor tool, fetched at the commit
       # .github/pins.json records; the check itself is offline.
       - name: Vendor check (VENDOR.json matches the vendored bytes)
         shell: bash

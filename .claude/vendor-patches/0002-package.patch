@@ -1,0 +1,16 @@
+Description: Name wiki-mind in the scripts package description
+Forwarded: not-needed: wiki-mind's own identity, so it does not collide with the upstream vault's
+Last-Update: 2026-10-06
+
+diff --git a/.claude/scripts/package.json b/.claude/scripts/package.json
+--- a/.claude/scripts/package.json
++++ b/.claude/scripts/package.json
+@@ -1,7 +1,7 @@
+ {
+   "private": true,
+   "type": "module",
+-  "description": "Hook scripts for obsidian-mind. Runtime has zero dependencies — executed by `node --experimental-strip-types`. This file exists only to mark .ts files as ESM for Node's module resolution and for CI typecheck (devDependencies installed ad hoc via `npm install --no-save typescript @types/node`).",
++  "description": "Hook scripts for wiki-mind. Runtime has zero dependencies — executed by `node --experimental-strip-types`. This file exists only to mark .ts files as ESM for Node's module resolution and for CI typecheck (devDependencies installed ad hoc via `npm install --no-save typescript @types/node`).",
+   "scripts": {
+     "test": "node --experimental-strip-types tests/_run-tests.ts",
+     "typecheck": "tsc --noEmit"

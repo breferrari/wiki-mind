@@ -25,6 +25,14 @@ ROADMAP.md
 .claude/skills/wiki-mind/hooks/*.test.ts
 .claude/skills/wiki-mind/hooks/world.ts
 
+# Vendor records and patches describe the repo's sources; an installed vault
+# is the user's own, and updates through ShardMind. Without a record the
+# vendor guard, which does install, allows every edit and prints nothing.
+.claude/VENDOR.json
+.claude/scripts/VENDOR.json
+.claude/vendor-patches/
+.claude/scripts/vendor-patches/
+
 # Development dependencies (the CI typecheck install). A vault never gets
 # them, and on POSIX their .bin entries are symbolic links, which the engine
 # rejects anywhere in a shard (WALK_SYMLINK_REJECTED).

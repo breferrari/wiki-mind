@@ -1,0 +1,35 @@
+Description: Give the mod's stop hook wiki-mind's identity, and qualify upstream issue references
+Forwarded: not-needed: wiki-mind's own identity, so it does not collide with the upstream vault's
+Last-Update: 2026-10-06
+
+diff --git a/.claude/skills/wiki-mind/hooks/stop.ts b/.claude/skills/wiki-mind/hooks/stop.ts
+--- a/.claude/skills/wiki-mind/hooks/stop.ts
++++ b/.claude/skills/wiki-mind/hooks/stop.ts
+@@ -2,7 +2,7 @@
+ 
+ /**
+  * The Stop report as the mod receives it from `stop-checklist.ts` run with
+- * `om_mod: "report"` (#264), and how it is shown (#266).
++ * `om_mod: "report"` (obsidian-mind#264), and how it is shown (obsidian-mind#266).
+  */
+ export type StopReport = {
+ 	/** The report's identity: the same findings give the same key. */
+@@ -38,7 +38,8 @@
+ /**
+  * The line drawn under the answer when the report changed: what drifted, in
+  * the report's own words, and where the rest went. Claude Code shows it after
+- * the mod's name (observed on 2.1.288: `obsidian-mind: …`).
++ * the mod's name: observed in obsidian-mind on 2.1.288 as `obsidian-mind: …`,
++ * and `wiki-mind: …` here on 2.1.289 (the real-session test bed asserts it).
+  */
+ export function summaryLine(report: StopReport): string {
+ 	const what = report.claims.length > 0 ? report.claims.join(" · ") : "wrap-up checklist";
+@@ -73,7 +74,7 @@
+ }
+ 
+ export function carriesReport(origin: PromptOrigin | undefined): boolean {
+-	return fromPerson(origin) || (origin?.kind === "plugin" && origin.name === "obsidian-mind");
++	return fromPerson(origin) || (origin?.kind === "plugin" && origin.name === "wiki-mind");
+ }
+ 
+ /** Whether the person sent this prompt: typed, over Remote Control, through the SDK, or as the session's owner pinging it from Slack. */
