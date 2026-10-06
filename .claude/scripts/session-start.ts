@@ -35,7 +35,8 @@ import {
 	type BudgetSection,
 	type InjectionBudget,
 } from "./lib/session-start.ts";
-import { collectSections, formatFailures, loadRegistry, parseManifest, undispatched } from "./core/registry.ts";
+import { openVault } from "./core/context.ts";
+import { collectSections, formatFailures, undispatched } from "./core/registry.ts";
 import { qmdSessionStart } from "./core/qmd-session.ts";
 
 type HookInput = { readonly source?: unknown };
@@ -76,21 +77,22 @@ const delivering = omMod === "deliver";
 const mode = delivering ? "full" : injectionMode(hookInput?.source);
 
 process.chdir(vaultRoot);
+// The budgets and QMD read the manifest's raw text; openVault parses it for
+// the registry.
 let manifestJson: string | null = null;
 try {
 	manifestJson = readFileSync("vault-manifest.json", "utf-8");
 } catch {
-	/* no manifest: no extensions, default budgets */
+	/* no manifest: default budgets */
 }
-const manifest = parseManifest(manifestJson);
-const ctx = { vaultRoot, manifest, now: Date.now() };
+const now = Date.now();
 
 // The extensions' sections and the notices about them. If anything here
 // throws unexpectedly, the session still gets the core sections and says why.
 let extensionSections: BudgetSection[] = [];
 let notes: string[];
 try {
-	const registry = await loadRegistry(vaultRoot, manifest, "session-start");
+	const { registry, ctx } = await openVault(vaultRoot, "session-start", process.env, now);
 	const collected = await collectSections(registry, ctx, mode);
 	extensionSections = collected.result;
 	notes = [
@@ -104,7 +106,7 @@ try {
 
 const sections: BudgetSection[] = [
 	{ header: "", body: "## Session Context", priority: 0 },
-	{ header: "### Date", body: formatDateHeader(new Date(ctx.now)), priority: 0 },
+	{ header: "### Date", body: formatDateHeader(new Date(now)), priority: 0 },
 ];
 
 // QMD's session-start work (core/qmd-session.ts): the index refresh in the

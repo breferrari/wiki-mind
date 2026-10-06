@@ -14,47 +14,17 @@
       "upstream": ".claude/scripts/lib/charcount.ts",
       "upstreamSha256": "b861a181e496c86baad3d9f86af0a75687c3965e8444024964d1712808b57dc8"
     },
-    ".claude/scripts/lib/frontmatter.ts": {
-      "modified": false,
-      "sha256": "cbfca1040a6866a83c4b6ac17519bd69f3ca050efbbf2ab6054e4b0d689570b8",
-      "upstream": ".claude/scripts/lib/frontmatter.ts",
-      "upstreamSha256": "cbfca1040a6866a83c4b6ac17519bd69f3ca050efbbf2ab6054e4b0d689570b8"
-    },
     ".claude/scripts/lib/hint-state.ts": {
       "modified": false,
       "sha256": "b7e032c1ae6889765831c29f5baa28c7d5a9c2bd8f4604b77b5966e9efec591a",
       "upstream": ".claude/scripts/lib/hint-state.ts",
       "upstreamSha256": "b7e032c1ae6889765831c29f5baa28c7d5a9c2bd8f4604b77b5966e9efec591a"
     },
-    ".claude/scripts/lib/hook-io.ts": {
-      "modified": false,
-      "sha256": "6eddaeb3e73c7d31af51264974c998b28433c9051fc21d4d4d6aefdad91f4822",
-      "upstream": ".claude/scripts/lib/hook-io.ts",
-      "upstreamSha256": "6eddaeb3e73c7d31af51264974c998b28433c9051fc21d4d4d6aefdad91f4822"
-    },
     ".claude/scripts/lib/main-guard.ts": {
       "modified": false,
       "sha256": "e76f8a95c5ee9c015f8afe455707660db40e3494405697d528aae5cf6965244c",
       "upstream": ".claude/scripts/lib/main-guard.ts",
       "upstreamSha256": "e76f8a95c5ee9c015f8afe455707660db40e3494405697d528aae5cf6965244c"
-    },
-    ".claude/scripts/lib/om-mod.ts": {
-      "modified": false,
-      "sha256": "90221c42785ca6d1bc581f6255a1f786093bd7c612da9a3d724b90c526dbdca7",
-      "upstream": ".claude/scripts/lib/om-mod.ts",
-      "upstreamSha256": "90221c42785ca6d1bc581f6255a1f786093bd7c612da9a3d724b90c526dbdca7"
-    },
-    ".claude/scripts/lib/project-dir.ts": {
-      "modified": false,
-      "sha256": "fcd33c92325e685ac31754f32d6a9519509133ccc469094a82f0783930e09e38",
-      "upstream": ".claude/scripts/lib/project-dir.ts",
-      "upstreamSha256": "fcd33c92325e685ac31754f32d6a9519509133ccc469094a82f0783930e09e38"
-    },
-    ".claude/scripts/lib/prose-width.ts": {
-      "modified": false,
-      "sha256": "2d0fa9c392ed77ece98b10d4fe0634139570b66f6425aa95e3aacf64450e99ed",
-      "upstream": ".claude/scripts/lib/prose-width.ts",
-      "upstreamSha256": "2d0fa9c392ed77ece98b10d4fe0634139570b66f6425aa95e3aacf64450e99ed"
     },
     ".claude/scripts/lib/qmd-bootstrap.ts": {
       "modified": false,
@@ -80,12 +50,6 @@
       "upstream": ".claude/scripts/lib/qmd-refresh.ts",
       "upstreamSha256": "166e54b394011690a9060b2503b5015391d4d1d3c879ded32c8db0d8f447e755"
     },
-    ".claude/scripts/lib/qmd.ts": {
-      "modified": false,
-      "sha256": "887487cc52b17e8494c248d65faaba6b2006e9844acfe67164c78fb06af86848",
-      "upstream": ".claude/scripts/lib/qmd.ts",
-      "upstreamSha256": "887487cc52b17e8494c248d65faaba6b2006e9844acfe67164c78fb06af86848"
-    },
     ".claude/scripts/lib/read-field.ts": {
       "modified": false,
       "sha256": "9317f718f038daea673e698eaf3c683eac8d0ed2cdf2fc80d31d1ccdb47c27f2",
@@ -98,23 +62,11 @@
       "upstream": ".claude/scripts/lib/read-head.ts",
       "upstreamSha256": "ef20d9270a50667ee9bc544d625c286ea027225428e0257adacdbc3af4cf81b8"
     },
-    ".claude/scripts/lib/regex.ts": {
-      "modified": false,
-      "sha256": "4bdbbb1e83027db42d459cb17c3d71af7a91e09e3b53356c02188e2feb093c96",
-      "upstream": ".claude/scripts/lib/regex.ts",
-      "upstreamSha256": "4bdbbb1e83027db42d459cb17c3d71af7a91e09e3b53356c02188e2feb093c96"
-    },
     ".claude/scripts/lib/report-key.ts": {
       "modified": false,
       "sha256": "0ce11d8f7c2b64ba65ea4ccb23cebc033e4e24a7c529bc5fb38a4800fef60f1b",
       "upstream": ".claude/scripts/lib/report-key.ts",
       "upstreamSha256": "0ce11d8f7c2b64ba65ea4ccb23cebc033e4e24a7c529bc5fb38a4800fef60f1b"
-    },
-    ".claude/scripts/lib/session-start.ts": {
-      "modified": false,
-      "sha256": "3593de22dfe5f8dfa5e78663717c06c4ff82001abfe5dc6e0421a78d2564a27d",
-      "upstream": ".claude/scripts/lib/session-start.ts",
-      "upstreamSha256": "3593de22dfe5f8dfa5e78663717c06c4ff82001abfe5dc6e0421a78d2564a27d"
     },
     ".claude/scripts/lib/stop-handoff.ts": {
       "modified": false,
@@ -128,12 +80,6 @@
       "sha256": "187e1fbfe8a0602308bb01b687a84ec369e435a38e324dc7dc5c6f2de0589819",
       "upstream": ".claude/scripts/lib/stop-report.ts",
       "upstreamSha256": "53e6339662dbe5869a415b3b7379e33b1819113dab09b557dcc8a78d0d78d0a0"
-    },
-    ".claude/scripts/lib/wikilinks.ts": {
-      "modified": false,
-      "sha256": "876c6ed61fe0d2e38adcf5d4678643955037e7e1e4a03845e7a883e8a565754b",
-      "upstream": ".claude/scripts/lib/wikilinks.ts",
-      "upstreamSha256": "876c6ed61fe0d2e38adcf5d4678643955037e7e1e4a03845e7a883e8a565754b"
     },
     ".claude/scripts/package.json": {
       "change": "#41: the description names wiki-mind; it installs, so nothing user-facing names the upstream vault.",
@@ -209,24 +155,11 @@
       "upstream": ".claude/scripts/tests/charcount.test.ts",
       "upstreamSha256": "f1136e861d90a72f18c1f973944e1e35807c9f8d240cebc256237f4568dd3c92"
     },
-    ".claude/scripts/tests/frontmatter.test.ts": {
-      "change": "#53: the case that reads obsidian-mind's Work Note template against its manifest is skipped; wiki-mind ships neither.",
-      "modified": true,
-      "sha256": "7f36d89088f5e0e7df4fdb20e09bb58c34cbfc5b33feaa8ddf5e97275e0c3aa3",
-      "upstream": ".claude/scripts/tests/frontmatter.test.ts",
-      "upstreamSha256": "24b6715cc36188d86700aab9705bb23e74125d584559644020c4ac91fcf63291"
-    },
     ".claude/scripts/tests/hint-state.test.ts": {
       "modified": false,
       "sha256": "c4423274c7be5e6e933027cf9afe96a999a105946d39b90533394db6f39cf28d",
       "upstream": ".claude/scripts/tests/hint-state.test.ts",
       "upstreamSha256": "c4423274c7be5e6e933027cf9afe96a999a105946d39b90533394db6f39cf28d"
-    },
-    ".claude/scripts/tests/hook-io.test.ts": {
-      "modified": false,
-      "sha256": "9b3f3cc1399b67116a8ebb08f12110117dc06300b251ef57c1061a212096f9c7",
-      "upstream": ".claude/scripts/tests/hook-io.test.ts",
-      "upstreamSha256": "9b3f3cc1399b67116a8ebb08f12110117dc06300b251ef57c1061a212096f9c7"
     },
     ".claude/scripts/tests/main-guard.test.ts": {
       "modified": false,
@@ -234,29 +167,11 @@
       "upstream": ".claude/scripts/tests/main-guard.test.ts",
       "upstreamSha256": "11c030c708423358a78248fc7a4f308584c1b7e808985cf85de6a8ea83d74ff5"
     },
-    ".claude/scripts/tests/om-mod.test.ts": {
-      "modified": false,
-      "sha256": "ca15b12d08609ed8e698ffdda449afb6ee53de9bdc95e1457a5cfc7562cecd99",
-      "upstream": ".claude/scripts/tests/om-mod.test.ts",
-      "upstreamSha256": "ca15b12d08609ed8e698ffdda449afb6ee53de9bdc95e1457a5cfc7562cecd99"
-    },
     ".claude/scripts/tests/pre-compact.test.ts": {
       "modified": false,
       "sha256": "d65eba1d321931f749f7c8bbc53a1d2f672d06dbc7fdca8f2a401019b9e37c5f",
       "upstream": ".claude/scripts/tests/pre-compact.test.ts",
       "upstreamSha256": "d65eba1d321931f749f7c8bbc53a1d2f672d06dbc7fdca8f2a401019b9e37c5f"
-    },
-    ".claude/scripts/tests/project-dir.test.ts": {
-      "modified": false,
-      "sha256": "e738d5af8410a60c3f3f0965b1728ac903b0c5b1ef43456af13b1be545abda28",
-      "upstream": ".claude/scripts/tests/project-dir.test.ts",
-      "upstreamSha256": "e738d5af8410a60c3f3f0965b1728ac903b0c5b1ef43456af13b1be545abda28"
-    },
-    ".claude/scripts/tests/prose-width.test.ts": {
-      "modified": false,
-      "sha256": "7627ad4666aa52e32099e5f20bbeed7f734dc10f5b1d9a5797d3bee2237957be",
-      "upstream": ".claude/scripts/tests/prose-width.test.ts",
-      "upstreamSha256": "7627ad4666aa52e32099e5f20bbeed7f734dc10f5b1d9a5797d3bee2237957be"
     },
     ".claude/scripts/tests/qmd-bootstrap.test.ts": {
       "modified": false,
@@ -300,12 +215,6 @@
       "upstream": ".claude/scripts/tests/read-head.test.ts",
       "upstreamSha256": "ef16a5727d6a06e4b326af85da94a573fadbbe88777543fd308a12bf127b97d5"
     },
-    ".claude/scripts/tests/regex.test.ts": {
-      "modified": false,
-      "sha256": "2a405bbcbd2ada4b3382d39a6c89efd9610852a67647423c0bae05bb2e9d8894",
-      "upstream": ".claude/scripts/tests/regex.test.ts",
-      "upstreamSha256": "2a405bbcbd2ada4b3382d39a6c89efd9610852a67647423c0bae05bb2e9d8894"
-    },
     ".claude/scripts/tests/report-key.test.ts": {
       "modified": false,
       "sha256": "37e391711a18e7e7552388a5e203327b3c966196a589480fe82eebff1dbe2ac8",
@@ -317,12 +226,6 @@
       "sha256": "b1920a4419a1221310b04e352bae9f9e0e17642a7747e6281303e422f205c45d",
       "upstream": ".claude/scripts/tests/stop-handoff.test.ts",
       "upstreamSha256": "b1920a4419a1221310b04e352bae9f9e0e17642a7747e6281303e422f205c45d"
-    },
-    ".claude/scripts/tests/wikilinks.test.ts": {
-      "modified": false,
-      "sha256": "db63042a973a284e01722e2981d11f63cc43a8a32ddf2143bc5769f1639352ad",
-      "upstream": ".claude/scripts/tests/wikilinks.test.ts",
-      "upstreamSha256": "db63042a973a284e01722e2981d11f63cc43a8a32ddf2143bc5769f1639352ad"
     },
     ".claude/scripts/tsconfig.json": {
       "modified": false,

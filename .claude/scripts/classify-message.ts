@@ -12,14 +12,14 @@
  *   is neither a hint nor a report.
  */
 
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { debug, readStdinJson, writeHookOutput } from "./lib/hook-io.ts";
 import { claimUnseen } from "./lib/hint-state.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
 import { HANDOFF_DIR, takeHandoff } from "./lib/stop-handoff.ts";
-import { formatFailures, loadRegistry, matchSignals, parseManifest } from "./core/registry.ts";
+import { openVault } from "./core/context.ts";
+import { formatFailures, matchSignals } from "./core/registry.ts";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 // CLASSIFY_HINT_STATE routes the state file to a tmp path for tests.
@@ -46,14 +46,8 @@ let hints: string[] = [];
 let failureLines: string[] = [];
 if (typeof prompt === "string" && prompt !== "") {
 	const vaultRoot = resolveProjectDir(process.cwd());
-	let manifestJson: string | null = null;
 	try {
-		manifestJson = readFileSync(join(vaultRoot, "vault-manifest.json"), "utf-8");
-	} catch {
-		/* no manifest: no extensions */
-	}
-	try {
-		const registry = await loadRegistry(vaultRoot, parseManifest(manifestJson), "prompt");
+		const { registry } = await openVault(vaultRoot, "prompt");
 		const matched = await matchSignals(registry, prompt);
 		hints = hasSession && matched.result.length > 0 ? claimUnseen(STATE_PATH, sessionId, matched.result) : matched.result;
 		failureLines = formatFailures([...registry.failures, ...matched.failures]);

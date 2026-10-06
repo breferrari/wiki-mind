@@ -58,14 +58,14 @@ Update this table in the same PR that adds or removes a top-level path.
 
 ## Zones: keeping the core liftable
 
-The hook layer is built to move into a shared core repo. The move should be three steps: `git mv .claude/scripts/core/`, then swapping `.claude/VENDOR.json`'s source, then deleting the duplicated Stop flow. These rules keep it that way.
+The hook core now comes from mindframe (`core/scripts/`), recorded in `.claude/scripts/VENDOR.json`. The rest of the vendored machinery comes from obsidian-mind, recorded in `.claude/VENDOR.json` (SPEC.md §7.5). These rules keep the two sources and wiki-mind's own code apart.
 
 1. **Four zones, never mixed.** `tests/zones.test.ts` holds the imports.
 
    | Zone | Holds | May import |
    |------|-------|------------|
-   | `.claude/scripts/lib/` | obsidian-mind's vendored libraries, untouched except for recorded, parameterized modifications | `lib/` only |
-   | `.claude/scripts/core/` | the extension registry and its API; lift-ready | `core/` and `lib/` |
+   | `.claude/scripts/lib/` | vendored libraries, from mindframe or obsidian-mind, untouched except for recorded, parameterized modifications | `lib/` only |
+   | `.claude/scripts/core/` | the extension registry and its API, vendored from mindframe | `core/` and `lib/` |
    | `.claude/extensions/` | wiki-mind's behaviour | itself and `core/index.ts`, the core's one public entry point |
    | `.claude/scripts/*.ts` | the entry points: thin dispatchers | `lib/` and `core/` |
 
@@ -74,7 +74,7 @@ The hook layer is built to move into a shared core repo. The move should be thre
    - Each one gets a change line in `.claude/VENDOR.json` and a seam row in SPEC.md §7.2.
    - mindframe's vendor tool writes the record: `node --experimental-strip-types <mindframe>/core/vendor/cli.ts record --upstream <obsidian-mind checkout> --change <path>=<one line>`. CI runs its `check` at the commit `.github/pins.json` records, and fails on any vendored file edited without a record.
 3. **No general-purpose code in an entry point or an extension.**
-   - If it would serve another vault, it goes in `core/`, with a comment flagging it as a lift candidate.
+   - If it would serve another vault, it belongs in the core. Make the change in mindframe, then vendor it back with `record --vault .claude/scripts --record VENDOR.json --upstream <mindframe checkout>`.
    - If an extension needs a helper, the core exports it from `core/index.ts`.
 4. **Keep SPEC.md §7.2's API-gap table current.** Update it in the same PR that finds a gap.
 

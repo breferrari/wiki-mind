@@ -183,7 +183,7 @@ wiki-mind is also the test bed for the extensible layer. Its entry points are th
 
 `modified` is computed from the bytes against upstream at the recorded commit, never typed by hand. mindframe's vendor tool writes the record (`record --upstream <checkout>`) and checks the copy against it (`check`), with text hashed as LF so a CRLF checkout matches. **Decided (2026-10-05, maintainer may overrule):** the record installs, at `.claude/VENDOR.json` (Q11). A vault should know where its machinery came from: a later vendor update in an installed vault reads it.
 
-**The vendored set: 80 files from obsidian-mind v9.1.0.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. #53 re-vendored the set from v9.1.0 (the session-start budget restores sections that fit, and degrades by levels). It added `lib/prose-width.ts`, which `lib/frontmatter.ts` now imports, with its test, and the test runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts`: `npm test` redirects QMD's cache and config to a temp folder and fails if the run wrote into the user's own. Three upstream test cases read obsidian-mind's own templates or run its `charcount` entry point, which wiki-mind ships neither of, so they are skipped, recorded as changes. `.claude/VENDOR.json` lists each file.
+**The vendored set: 80 files from obsidian-mind v9.1.0.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. #53 re-vendored the set from v9.1.0 (the session-start budget restores sections that fit, and degrades by levels). It added `lib/prose-width.ts`, which `lib/frontmatter.ts` now imports, with its test, and the test runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts`: `npm test` redirects QMD's cache and config to a temp folder and fails if the run wrote into the user's own. Three upstream test cases read obsidian-mind's own templates or run its `charcount` entry point, which wiki-mind ships neither of, so they are skipped, recorded as changes. `.claude/VENDOR.json` lists each file. #78 moved 16 of them, 9 libraries and their 7 tests, to the mindframe record (§7.5), so `.claude/VENDOR.json` now records 64.
 
 | Group | Files |
 |-------|-------|
@@ -261,7 +261,7 @@ Each wiki-mind entry point (#35) is a dispatcher over the registry (§7.4). It k
 | `pre-compact.ts` | vendored whole | — |
 | `lint.ts` | `project-dir` | Nothing: it is a thin dispatcher over the registry's Stop detectors, for `/wiki-lint` (#22). It lifts with the core. |
 
-Every entry point also reads and parses `vault-manifest.json` itself; the core should hand the parsed manifest in.
+Every entry point used to read and parse `vault-manifest.json` itself. *Resolved in #78:* `core/context.ts`'s `openVault(vaultRoot, event)` hands each one the parsed manifest, the registry for its event, and the extension context. `session-start.ts` still reads the manifest's raw text, because the budget parsers and `qmdSessionStart` take the JSON string.
 
 | ID | Seam (continued) | What the extraction does with it |
 |----|------------------|----------------------------------|
@@ -296,8 +296,8 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 | Path | Holds | Written by |
 |------|-------|------------|
-| `.claude/scripts/core/` | `types.ts` (the API), `registry.ts` (loading and dispatch), and their tests. Imports only `../lib`, so a `git mv` lifts it out. | a vendor update, once extracted |
-| `.claude/scripts/lib/` | the vendored libraries (§7.1) | a vendor update only |
+| `.claude/scripts/core/` | `types.ts` (the API), `registry.ts` (loading and dispatch), `context.ts` (opening the vault), `qmd-session.ts`, and their tests. Imports only `../lib`. | a vendor update from mindframe (§7.5) |
+| `.claude/scripts/lib/` | the vendored libraries (§7.1) | a vendor update only, from mindframe or obsidian-mind (§7.5) |
 | `.claude/scripts/*.ts` | the entry points `.claude/settings.json` runs | wiki-mind now; the core once extracted |
 | `.claude/extensions/` | the vault's own extensions | the vault only |
 
@@ -395,6 +395,17 @@ Each rule that can be tested has a test in `core/registry.test.ts`: declaration,
   They run at every Stop. `.claude/scripts/lint.ts` runs them on demand for `/wiki-lint` (#22), and prints the findings as plain text.
 - **Signals:** a new source (a URL, arXiv, DOI or PDF), a comparison, a question.
 - **Validators:** the §2 frontmatter (global fields, type fields, the `kind` and `status` value sets), the source-link rule, and two `sides` for a synthesis.
+
+### 7.5 The core comes from mindframe (#78)
+
+The core has been lifted into mindframe (`core/scripts/`), as §7.4 planned. wiki-mind now vendors it from there, so the core has one source, and a change to it is made in mindframe and vendored back.
+
+| Record | Source | Files |
+|--------|--------|-------|
+| `.claude/scripts/VENDOR.json` | mindframe, `sourceRoot: core/scripts` | `core/`: `index`, `types`, `registry`, `context`, `qmd-session`, with their tests; `lib/`: `hook-io`, `session-start`, `project-dir`, `om-mod`, `frontmatter`, `prose-width`, `qmd`, `wikilinks`, `regex`; and those seven libraries' tests. 24 files, none modified. |
+| `.claude/VENDOR.json` | obsidian-mind v9.1.0 | everything else §7.1 lists. 64 files. |
+
+Each record has one repository, and each vendored file is in exactly one record. The lift changed no bytes: the 22 files wiki-mind already had were identical to mindframe's, and only `core/context.ts` and its test are new. CI checks both records against their hashes, with mindframe's vendor tool at the commit `.github/pins.json` records.
 
 ## 8. Invariants
 

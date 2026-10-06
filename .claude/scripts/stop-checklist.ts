@@ -16,7 +16,6 @@
  * - the debounced QMD refresh runs on every path that reports.
  */
 
-import { readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -34,7 +33,8 @@ import { triggerDebouncedRefresh } from "./lib/qmd-refresh.ts";
 import { reportKey } from "./lib/report-key.ts";
 import { HANDOFF_DIR, pruneHandoffs, writeHandoff } from "./lib/stop-handoff.ts";
 import { AGENT_PREFACE, FEEDBACK_PREFACE, FEEDBACK_TRAILER, modPreface, stopSummary } from "./lib/stop-report.ts";
-import { collectChecklist, formatFailures, loadRegistry, parseManifest, runDetectors } from "./core/registry.ts";
+import { openVault } from "./core/context.ts";
+import { collectChecklist, formatFailures, runDetectors } from "./core/registry.ts";
 
 /**
  * The vault's Claude Code mod, as its plugin.json names it. The mod's report
@@ -71,15 +71,7 @@ if (input?.stop_hook_active === true && omMod !== "report") {
 
 async function report(): Promise<void> {
 	const vaultRoot = resolveProjectDir(process.cwd());
-	let manifestJson: string | null = null;
-	try {
-		manifestJson = readFileSync(join(vaultRoot, "vault-manifest.json"), "utf-8");
-	} catch {
-		/* no manifest: no extensions */
-	}
-	const manifest = parseManifest(manifestJson);
-	const registry = await loadRegistry(vaultRoot, manifest, "stop");
-	const ctx = { vaultRoot, manifest, now: Date.now() };
+	const { registry, ctx } = await openVault(vaultRoot, "stop");
 	const checklist = collectChecklist(registry);
 	const detected = await runDetectors(registry, ctx);
 	const failures = [...registry.failures, ...checklist.failures, ...detected.failures];
