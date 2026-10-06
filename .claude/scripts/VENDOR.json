@@ -1,5 +1,5 @@
 {
-  "commit": "9e2782fff6315df7e43756d9000ce837b7955bb8",
+  "commit": "6f1244f8c9e36ea88d253e8f23f71c9d6a8b1ffd",
   "copyright": "Brenno Ferrari",
   "files": {
     "core/context.test.ts": {
@@ -43,12 +43,9 @@
       "upstreamSha256": "3416b8cf8fb7f1913ece0b16685eb3b7d4e1ceee89d40f821e1f5996ac01beb2"
     },
     "lib/frontmatter.ts": {
-      "patches": [
-        "0001-fix-frontmatter-delimiters.patch"
-      ],
       "sha256": "6ddd9bbb99ca760c02595d7119c81973291ebd0a07c48c88fa955f6563913da1",
       "upstream": "lib/frontmatter.ts",
-      "upstreamSha256": "cbfca1040a6866a83c4b6ac17519bd69f3ca050efbbf2ab6054e4b0d689570b8"
+      "upstreamSha256": "6ddd9bbb99ca760c02595d7119c81973291ebd0a07c48c88fa955f6563913da1"
     },
     "lib/hook-io.ts": {
       "sha256": "6eddaeb3e73c7d31af51264974c998b28433c9051fc21d4d4d6aefdad91f4822",
@@ -91,12 +88,9 @@
       "upstreamSha256": "876c6ed61fe0d2e38adcf5d4678643955037e7e1e4a03845e7a883e8a565754b"
     },
     "tests/frontmatter.test.ts": {
-      "patches": [
-        "0001-fix-frontmatter-delimiters.patch"
-      ],
       "sha256": "7199a67da0c3e063b66e32b2158bb519f67af63e18648847533be47f43560e95",
       "upstream": "tests/frontmatter.test.ts",
-      "upstreamSha256": "7f36d89088f5e0e7df4fdb20e09bb58c34cbfc5b33feaa8ddf5e97275e0c3aa3"
+      "upstreamSha256": "7199a67da0c3e063b66e32b2158bb519f67af63e18648847533be47f43560e95"
     },
     "tests/hook-io.test.ts": {
       "sha256": "9b3f3cc1399b67116a8ebb08f12110117dc06300b251ef57c1061a212096f9c7",
@@ -124,9 +118,9 @@
       "upstreamSha256": "2a405bbcbd2ada4b3382d39a6c89efd9610852a67647423c0bae05bb2e9d8894"
     },
     "tests/vendor-guard.test.ts": {
-      "sha256": "6a351fca7f6e0583b071f158df9ea4f5f9f2b0788157381ce2acce3d822204d6",
+      "sha256": "3859925c90e41ee42664ce657c29b46bc02fd1e4e0f23f78f19f8bedd56ed14e",
       "upstream": "tests/vendor-guard.test.ts",
-      "upstreamSha256": "6a351fca7f6e0583b071f158df9ea4f5f9f2b0788157381ce2acce3d822204d6"
+      "upstreamSha256": "3859925c90e41ee42664ce657c29b46bc02fd1e4e0f23f78f19f8bedd56ed14e"
     },
     "tests/wikilinks.test.ts": {
       "sha256": "db63042a973a284e01722e2981d11f63cc43a8a32ddf2143bc5769f1639352ad",

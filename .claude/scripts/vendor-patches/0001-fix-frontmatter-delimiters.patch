@@ -2,6 +2,7 @@ Description: Find frontmatter by its delimiter lines, not every ---
 Forwarded: https://github.com/breferrari/mindframe/pull/64
 Last-Update: 2026-10-06
 Origin: https://github.com/breferrari/mindframe/issues/63
+Applied-Upstream: 6f1244f
 
 diff --git a/lib/frontmatter.ts b/lib/frontmatter.ts
 --- a/lib/frontmatter.ts
