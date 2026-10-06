@@ -75,16 +75,15 @@ A synthesis sits above concepts: it never replaces one, and a concept never hold
 | `.claude/scripts/` | The vendored libraries and QMD MCP server, wiki-mind's entry points, and the extension registry in `core/` (§7). |
 | `.claude/extensions/` | wiki-mind's own sections, detectors, signals and validators (§7.4). |
 | `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod at `.claude/skills/wiki-mind/` (§6.4), vendored. |
-| `.claude/settings.json` | The hook wiring, vendored with one patch that adds the vendor guard (§7.1): wiki-mind's entry points keep obsidian-mind's script names and walk-up (§7.3). |
+| `.claude/settings.json` | The hook wiring, vendored with one patch that adds the vendor guard (§7.1; inert in an installed vault, which has no record): wiki-mind's entry points keep obsidian-mind's script names and walk-up (§7.3). |
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
 | `.scripts/qmd-bootstrap.ts` | Builds the QMD index on a fresh clone. |
-| `.claude/VENDOR.json` | Where the vendored machinery came from (§7.1). |
 | `AGENTS.md` + `.codex/`, `GEMINI.md` + `.gemini/` | Not in the first release: a later roadmap phase (§5). |
 
 ### 3.3 Repo-only (in `.shardmindignore`)
 
-`CONTRIBUTING.md`, `SPEC.md`, `ROADMAP.md`, tests of repo-only scripts, and any media. `.github/` and `.shardmind/` are excluded by the engine itself.
+`CONTRIBUTING.md`, `SPEC.md`, `ROADMAP.md`, tests of repo-only scripts, the vendor records and their patches (§7.1), and any media. `.github/` and `.shardmind/` are excluded by the engine itself.
 
 ### 3.4 Static vs templated
 
@@ -181,7 +180,7 @@ wiki-mind is also the test bed for the extensible layer. Its entry points are th
 - `repository`, `commit`, `version`, `tag`, `license`;
 - `files`: each vendored path mapped to its upstream path, with `sha256` (its bytes as vendored), `upstreamSha256` (upstream's bytes at `commit`), and `patches`, its local changes in order, when it has any (schema 3).
 
-A vendored file is upstream plus patches, nothing else. A local change is a patch in `vendor-patches/` beside its record, never a hand edit: a short header over a unified diff. `Description` is the change to make, and `Forwarded` is the upstream issue or PR it went to, or `not-needed: <reason>`. mindframe's vendor tool makes the patches (`patch begin`, then `patch new`), and `check` verifies the copy offline: each file must be exactly upstream plus its patches, and every patch must say where it went. Text is hashed as LF so a CRLF checkout matches. `update` moves a record to a new upstream commit, carrying its patches, and retires the ones upstream has taken. `.claude/scripts/vendor-guard.ts`, a PreToolUse hook, stops an edit to a vendored file and names the routes: an extension, a fix upstream, or a patch. It fails open; CI's `check` is the guarantee. **Decided (2026-10-05, maintainer may overrule):** the record installs, at `.claude/VENDOR.json` (Q11), with its patches. A vault should know where its machinery came from: a later vendor update in an installed vault reads both.
+A vendored file is upstream plus patches, nothing else. A local change is a patch in `vendor-patches/` beside its record, never a hand edit: a short header over a unified diff. `Description` is the change to make, and `Forwarded` is the upstream issue or PR it went to, or `not-needed: <reason>`. mindframe's vendor tool makes the patches (`patch begin`, then `patch new`), and `check` verifies the copy offline: each file must be exactly upstream plus its patches, and every patch must say where it went. Text is hashed as LF so a CRLF checkout matches. `update` moves a record to a new upstream commit, carrying its patches, and retires the ones upstream has taken. `.claude/scripts/vendor-guard.ts`, a PreToolUse hook, stops an edit to a vendored file and names the routes: an extension, a fix upstream, or a patch. It fails open; CI's `check` is the guarantee. **Decided (2026-10-06, the maintainer, replacing 2026-10-05):** provenance and vendor updates are repo-only (Q11). The records and their patches stay in the repo, through `.shardmindignore`. An installed vault is its user's own, and updates through ShardMind, which merges the user's edits. The guard and its wiring still install, but with no record the guard allows every edit and prints nothing, so a user is never sent to a vendor tool their vault doesn't have.
 
 **The vendored set: 80 files from obsidian-mind v9.1.0.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. #53 re-vendored the set from v9.1.0 (the session-start budget restores sections that fit, and degrades by levels). It added `lib/prose-width.ts`, which `lib/frontmatter.ts` now imports, with its test, and the test runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts`: `npm test` redirects QMD's cache and config to a temp folder and fails if the run wrote into the user's own. Three upstream test cases read obsidian-mind's own templates or run its `charcount` entry point, which wiki-mind ships neither of, so they are skipped, recorded as patches. `.claude/VENDOR.json` lists each file. #78 moved 16 of them, 9 libraries and their 7 tests, to the mindframe record (§7.5), so `.claude/VENDOR.json` now records 64.
 
@@ -218,7 +217,7 @@ The mod is vendored at `.claude/skills/wiki-mind/` (upstream `.claude/skills/obs
 - the test helpers under `.claude/scripts/tests/`;
 - the mod's test engine stand-in, `hooks/world.ts`.
 
-Nothing installed imports them, and `tests/install-set.test.ts` holds that. `.claude/VENDOR.json` still records the vendored tests, because the record describes the vendored source, not the install. A vendor update in an installed vault skips the files that vault doesn't have.
+Nothing installed imports them, and `tests/install-set.test.ts` holds that. `.claude/VENDOR.json` still records the vendored tests, because the record describes the vendored source, not the install. The records themselves are repo-only too (§7.1).
 
 Two things a vendor update has to keep in step:
 
@@ -445,7 +444,7 @@ The draft's open questions, all answered 2026-10-05. The maintainer may overrule
 | Q8 | Command prefix | `wiki-`. | §6.2 |
 | Q9 | Generic obsidian-mind commands | Not in v0.1. | §6.2 |
 | Q10 | Mod name and flag | Mod `wiki-mind`; `om_mod` protocol unchanged. | §6.4, §7.3 |
-| Q11 | Where `VENDOR.json` lives | `.claude/VENDOR.json`, installed. | §3.2, §7.1 |
+| Q11 | Where `VENDOR.json` lives | `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json`, with their patches, repo-only; installs update through ShardMind. | §3.3, §7.1 |
 | Q12 | Correction sweep | Not in v0.1; specified separately later. | §7.1 |
 
 ## Later

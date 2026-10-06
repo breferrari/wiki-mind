@@ -4,15 +4,20 @@
  * minus .shardmindignore. Two promises are held over that set:
  * - no test file installs: tests run in the repo, never in a vault;
  * - no installed module imports a file that does not install, so leaving
- *   tests out cannot break a hook.
+ *   tests out cannot break a hook;
+ * - no vendor record or patch installs, and the vendor guard that does
+ *   install allows an edit to a vendored path (SPEC.md §7.1, Q11).
  *
  * Repo-only itself (it lives in tests/, which .shardmindignore excludes).
  */
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { rmTemp } from "./_helpers.ts";
 import { RELATIVE_IMPORT, installSet as installSetOf, matcher } from "./_shard.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -43,6 +48,33 @@ describe("what a vault gets", () => {
 			}
 		}
 		assert.deepEqual(broken, []);
+	});
+
+	test("no vendor record or patch installs: provenance is repo-only", () => {
+		const leaked = [...installed].filter((f) => f.endsWith("VENDOR.json") || f.includes("vendor-patches/"));
+		assert.deepEqual(leaked, []);
+	});
+
+	test("the installed vendor guard allows an edit to a vendored path, and prints nothing", () => {
+		assert.ok(installed.has(".claude/scripts/vendor-guard.ts"), "the guard installs, wired in settings.json");
+		const vault = mkdtempSync(join(tmpdir(), "wiki-install-guard-"));
+		try {
+			for (const file of installed) {
+				if (!file.startsWith(".claude/") && file !== "vault-manifest.json") continue;
+				mkdirSync(dirname(join(vault, file)), { recursive: true });
+				cpSync(join(REPO, file), join(vault, file));
+			}
+			const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", join(vault, ".claude", "scripts", "vendor-guard.ts")], {
+				input: JSON.stringify({ tool_name: "Edit", tool_input: { file_path: join(vault, ".claude", "settings.json") } }),
+				cwd: vault,
+				encoding: "utf8",
+				env: { ...process.env, CLAUDE_PROJECT_DIR: vault },
+			});
+			assert.equal(r.status, 0, r.stderr);
+			assert.equal(r.stdout, "", "no deny in an installed vault");
+		} finally {
+			rmTemp(vault);
+		}
 	});
 });
 
