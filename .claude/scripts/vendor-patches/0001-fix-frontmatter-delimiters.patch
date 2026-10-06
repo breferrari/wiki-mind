@@ -1,0 +1,42 @@
+Description: Find frontmatter by its delimiter lines, not every ---
+Forwarded: https://github.com/breferrari/mindframe/pull/64
+Last-Update: 2026-10-06
+Origin: https://github.com/breferrari/mindframe/issues/63
+
+diff --git a/lib/frontmatter.ts b/lib/frontmatter.ts
+--- a/lib/frontmatter.ts
++++ b/lib/frontmatter.ts
+@@ -200,9 +200,12 @@
+ 	if (!content.startsWith("---")) {
+ 		warnings.push("Missing YAML frontmatter");
+ 	} else {
+-		const parts = content.split("---");
+-		if (parts.length >= 3) {
+-			const { keys, tags } = readFrontmatterKeys(parts[1] ?? "");
++		// The frontmatter ends at the first `---` line, as prose-width.ts reads
++		// it: a `---` inside a value doesn't end it.
++		const lines = content.split(/\r?\n/);
++		const close = lines.indexOf("---", 1);
++		if (close > 0) {
++			const { keys, tags } = readFrontmatterKeys(lines.slice(1, close).join("\n"));
+ 			for (const field of requiredFieldsFor(opts.required ?? {}, opts.relPath ?? null, tags)) {
+ 				if (keys.has(field)) continue;
+ 				warnings.push(
+diff --git a/tests/frontmatter.test.ts b/tests/frontmatter.test.ts
+--- a/tests/frontmatter.test.ts
++++ b/tests/frontmatter.test.ts
+@@ -265,6 +265,14 @@
+ 		// All three field checks should accept the alternate spacing.
+ 		assert.deepEqual(validateContent(c), []);
+ 	});
++
++	test("a value containing --- doesn't end the frontmatter", () => {
++		const c = "---\ndate: 2026-04-05\ndescription: before --- after\ntags: [x]\n---\nShort note.";
++		assert.deepEqual(validateContent(c), []);
++		assert.deepEqual(validateContent(c.replaceAll("\n", "\r\n")), []);
++		// Unclosed frontmatter is not checked for fields, as before.
++		assert.deepEqual(validateContent("---\ndate: 2026-04-05\n\nShort note.").filter((w) => w.startsWith("Missing")), []);
++	});
+ });
+ 
+ describe("isBlockedMemoryPath", () => {

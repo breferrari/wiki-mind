@@ -43,7 +43,10 @@
       "upstreamSha256": "3416b8cf8fb7f1913ece0b16685eb3b7d4e1ceee89d40f821e1f5996ac01beb2"
     },
     "lib/frontmatter.ts": {
-      "sha256": "cbfca1040a6866a83c4b6ac17519bd69f3ca050efbbf2ab6054e4b0d689570b8",
+      "patches": [
+        "0001-fix-frontmatter-delimiters.patch"
+      ],
+      "sha256": "6ddd9bbb99ca760c02595d7119c81973291ebd0a07c48c88fa955f6563913da1",
       "upstream": "lib/frontmatter.ts",
       "upstreamSha256": "cbfca1040a6866a83c4b6ac17519bd69f3ca050efbbf2ab6054e4b0d689570b8"
     },
@@ -88,7 +91,10 @@
       "upstreamSha256": "876c6ed61fe0d2e38adcf5d4678643955037e7e1e4a03845e7a883e8a565754b"
     },
     "tests/frontmatter.test.ts": {
-      "sha256": "7f36d89088f5e0e7df4fdb20e09bb58c34cbfc5b33feaa8ddf5e97275e0c3aa3",
+      "patches": [
+        "0001-fix-frontmatter-delimiters.patch"
+      ],
+      "sha256": "7199a67da0c3e063b66e32b2158bb519f67af63e18648847533be47f43560e95",
       "upstream": "tests/frontmatter.test.ts",
       "upstreamSha256": "7f36d89088f5e0e7df4fdb20e09bb58c34cbfc5b33feaa8ddf5e97275e0c3aa3"
     },
