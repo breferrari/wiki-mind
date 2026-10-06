@@ -72,6 +72,7 @@ The hook layer is built to move into a shared core repo. The move should be thre
 2. **Every divergence from obsidian-mind is a parameter, never a fork of logic.**
    - Make a vendored string or behaviour configurable, as `modPreface(modName)` does. Don't copy and edit it.
    - Each one gets a change line in `.claude/VENDOR.json` and a seam row in SPEC.md §7.2.
+   - mindframe's vendor tool writes the record: `node --experimental-strip-types <mindframe>/core/vendor/cli.ts record --upstream <obsidian-mind checkout> --change <path>=<one line>`. CI runs its `check` at the commit `.github/pins.json` records, and fails on any vendored file edited without a record.
 3. **No general-purpose code in an entry point or an extension.**
    - If it would serve another vault, it goes in `core/`, with a comment flagging it as a lift candidate.
    - If an extension needs a helper, the core exports it from `core/index.ts`.
