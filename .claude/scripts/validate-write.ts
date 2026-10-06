@@ -24,7 +24,8 @@ import { debug, readStdinJson, writeHookOutput } from "./lib/hook-io.ts";
 import { shouldSkipFile } from "./lib/frontmatter.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
 import { shouldRefreshForPath, triggerDebouncedRefresh } from "./lib/qmd-refresh.ts";
-import { formatFailures, loadRegistry, parseManifest, runValidators } from "./core/registry.ts";
+import { openVault } from "./core/context.ts";
+import { formatFailures, runValidators } from "./core/registry.ts";
 
 type HookInput = {
 	readonly tool_input?: unknown;
@@ -78,18 +79,10 @@ try {
 	process.exit(0);
 }
 
-let manifestJson: string | null = null;
-try {
-	manifestJson = readFileSync(join(vaultRoot, "vault-manifest.json"), "utf-8");
-} catch {
-	/* no manifest: no extensions */
-}
-const manifest = parseManifest(manifestJson);
-
 const blocks: string[] = [];
 try {
-	const registry = await loadRegistry(vaultRoot, manifest, "write");
-	const validated = await runValidators(registry, { relPath, content }, { vaultRoot, manifest, now: Date.now() });
+	const { registry, ctx } = await openVault(vaultRoot, "write");
+	const validated = await runValidators(registry, { relPath, content }, ctx);
 	const failureLines = formatFailures([...registry.failures, ...validated.failures]);
 	if (validated.result.length > 0) blocks.push(`⚠️  ${relPath}:\n${validated.result.map((w) => `- ${w}`).join("\n")}`);
 	if (failureLines.length > 0) blocks.push(`Extensions:\n${failureLines.join("\n")}`);

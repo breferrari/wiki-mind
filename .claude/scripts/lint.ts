@@ -10,21 +10,13 @@
  * output, and a vault with drift is not an error.
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { resolveProjectDir } from "./lib/project-dir.ts";
-import { formatFailures, loadRegistry, parseManifest, runDetectors } from "./core/registry.ts";
+import { openVault } from "./core/context.ts";
+import { formatFailures, runDetectors } from "./core/registry.ts";
 
 const vaultRoot = resolveProjectDir(process.cwd());
-let manifestJson: string | null = null;
-try {
-	manifestJson = readFileSync(join(vaultRoot, "vault-manifest.json"), "utf-8");
-} catch {
-	/* no manifest: no extensions */
-}
-const manifest = parseManifest(manifestJson);
-const registry = await loadRegistry(vaultRoot, manifest, "stop");
-const detected = await runDetectors(registry, { vaultRoot, manifest, now: Date.now() });
+const { registry, ctx } = await openVault(vaultRoot, "stop");
+const detected = await runDetectors(registry, ctx);
 const failures = formatFailures([...registry.failures, ...detected.failures]);
 
 const lines: string[] = [];

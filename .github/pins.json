@@ -2,7 +2,7 @@
   "description": "Tools CI fetches at a pinned commit. Moving a pin is a reviewed change.",
   "mindframe": {
     "repository": "https://github.com/breferrari/mindframe",
-    "commit": "81223c68850f96deea5e91bd78251ddcb66e5049",
-    "why": "core/vendor/cli.ts check: the vendored files match .claude/VENDOR.json"
+    "commit": "7565b5d697dca71a320e7480b0edca9412850bca",
+    "why": "the core vendored into .claude/scripts/ (.claude/scripts/VENDOR.json), and core/vendor/cli.ts check for both records"
   }
 }

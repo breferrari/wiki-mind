@@ -97,9 +97,10 @@ jobs:
         working-directory: .claude/scripts
         run: npm run typecheck
 
-      # The vendored files match .claude/VENDOR.json: every file's bytes
+      # The vendored files match their records, .claude/VENDOR.json
+      # (obsidian-mind) and .claude/scripts/VENDOR.json (mindframe): every file's bytes
       # against its recorded hash, and `modified` and `change` against the
-      # hashes (SPEC.md §7.1). mindframe's vendor tool, fetched at the commit
+      # hashes (SPEC.md §7.1, §7.5). mindframe's vendor tool, fetched at the commit
       # .github/pins.json records; the check itself is offline.
       - name: Vendor check (VENDOR.json matches the vendored bytes)
         shell: bash
@@ -111,6 +112,7 @@ jobs:
           git -C "$dir" fetch -q --depth 1 "$repo" "$sha"
           git -C "$dir" -c advice.detachedHead=false checkout -q FETCH_HEAD
           node --disable-warning=ExperimentalWarning --experimental-strip-types "$dir/core/vendor/cli.ts" check --vault .
+          node --disable-warning=ExperimentalWarning --experimental-strip-types "$dir/core/vendor/cli.ts" check --vault .claude/scripts --record VENDOR.json
 
       - name: Test the vendored scripts
         shell: bash
