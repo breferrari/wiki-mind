@@ -31,16 +31,18 @@ Claude Code hooks keep the wiki honest as you work. The session starts with the 
 
 ## Install
 
-You need [Obsidian](https://obsidian.md) 1.12 or later, [Node.js](https://nodejs.org) 22.6 or later, and Claude Code.
+You need [Obsidian](https://obsidian.md) 1.12 or later, [Node.js](https://nodejs.org) 22.6 or later, ShardMind 0.2.1 or later (`npx` fetches it), and Claude Code.
 
 ```sh
 mkdir my-wiki && cd my-wiki
-npx shardmind install github:breferrari/wiki-mind
+npx shardmind install breferrari/wiki-mind
 ```
+
+If your ShardMind can't find it by name, use the full GitHub reference: `npx shardmind install github:breferrari/wiki-mind`.
 
 The installer asks three questions: your name, what the wiki is about, and whether to use QMD search. Then open the folder as a vault in Obsidian, and start Claude Code in it.
 
-**Or clone it.** `git clone https://github.com/breferrari/wiki-mind my-wiki` gives the same vault with the defaults, but no updates.
+**Or clone it.** `git clone https://github.com/breferrari/wiki-mind my-wiki` gives the same vault with the defaults. To receive updates, run `npx shardmind adopt breferrari/wiki-mind` in it.
 
 **Updates.** In a vault installed with ShardMind, `npx shardmind update` brings in a new release and merges it with your edits. A file you changed is never overwritten without asking.
 
