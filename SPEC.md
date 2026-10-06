@@ -179,19 +179,19 @@ wiki-mind is also the test bed for the extensible layer. Its entry points are th
 `.claude/VENDOR.json` records the obsidian-mind commit the copy came from, in the shape of ShardMind's `source/ui-kit/VENDOR.json`:
 
 - `repository`, `commit`, `version`, `tag`, `license`;
-- `files`: each vendored path mapped to its upstream path, with `modified`. When `modified` is true, a one-line `change` says what changed and why.
+- `files`: each vendored path mapped to its upstream path, with `modified`. When `modified` is true, a one-line `change` says what changed and why. Each file also carries `sha256` (its bytes as vendored) and `upstreamSha256` (upstream's bytes at `commit`), so the record can be checked offline.
 
-`modified` is computed from the bytes against upstream at the recorded commit, never typed by hand. **Decided (2026-10-05, maintainer may overrule):** the record installs, at `.claude/VENDOR.json` (Q11). A vault should know where its machinery came from: a later vendor update in an installed vault reads it.
+`modified` is computed from the bytes against upstream at the recorded commit, never typed by hand. mindframe's vendor tool writes the record (`record --upstream <checkout>`) and checks the copy against it (`check`), with text hashed as LF so a CRLF checkout matches. **Decided (2026-10-05, maintainer may overrule):** the record installs, at `.claude/VENDOR.json` (Q11). A vault should know where its machinery came from: a later vendor update in an installed vault reads it.
 
-**The vendored set: 76 files from obsidian-mind v9.0.1.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. `.claude/VENDOR.json` lists each one.
+**The vendored set: 80 files from obsidian-mind v9.1.0.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. #53 re-vendored the set from v9.1.0 (the session-start budget restores sections that fit, and degrades by levels). It added `lib/prose-width.ts`, which `lib/frontmatter.ts` now imports, with its test, and the test runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts`: `npm test` redirects QMD's cache and config to a temp folder and fails if the run wrote into the user's own. Three upstream test cases read obsidian-mind's own templates or run its `charcount` entry point, which wiki-mind ships neither of, so they are skipped, recorded as changes. `.claude/VENDOR.json` lists each file.
 
 | Group | Files |
 |-------|-------|
-| Generic libraries (`.claude/scripts/lib/`) | `hook-io`, `main-guard`, `project-dir`, `om-mod`, `frontmatter`, `wikilinks`, `regex`, `read-field`, `read-head`, `charcount`, `atomic-write`, `report-key`, `hint-state`, `stop-handoff`, `stop-report`, `qmd`, `qmd-bootstrap`, `qmd-refresh`, `qmd-ignore`, `qmd-models`, `session-start` (21) |
+| Generic libraries (`.claude/scripts/lib/`) | `hook-io`, `main-guard`, `project-dir`, `om-mod`, `frontmatter`, `wikilinks`, `regex`, `read-field`, `read-head`, `charcount`, `atomic-write`, `report-key`, `hint-state`, `stop-handoff`, `stop-report`, `qmd`, `qmd-bootstrap`, `qmd-refresh`, `qmd-ignore`, `qmd-models`, `session-start`, `prose-width` (22) |
 | Generic scripts | `pre-compact.ts`, `qmd-mcp.mjs` (+ `.d.mts`), `qmd-refresh-run.ts`, `.scripts/qmd-bootstrap.ts`, `.shardmind/hooks/bootstrap.ts` |
 | Config | `.claude/scripts/package.json` and `tsconfig.json`, `.scripts/package.json`, `.shardmind/hooks/package.json`, `.mcp.json` |
 | Skills | `obsidian-markdown`, `obsidian-bases`, `obsidian-cli`, `json-canvas`, `defuddle`, `qmd` |
-| Tests | the 22 obsidian-mind tests whose subject is a vendored file, plus `tests/_helpers.ts` |
+| Tests | the 23 obsidian-mind tests whose subject is a vendored file, plus `tests/_helpers.ts`, and the runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts` |
 
 How the set was chosen:
 

@@ -3,7 +3,7 @@
  * Stop (SessionEnd on Gemini): the wrap-up checklist and the vault's
  * hygiene findings, assembled from its extensions (SPEC.md §7.4).
  *
- * The protocol is obsidian-mind's (its stop-checklist.ts at c65062d):
+ * The protocol is obsidian-mind's (its stop-checklist.ts at v9.1.0):
  * - always exactly one JSON object on stdout, `{}` when silent;
  * - under the mod, `standdown` writes `{}` and nothing else, and `report`
  *   writes the report as data (`{"report": {key, claims, agentText}}`);

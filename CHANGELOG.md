@@ -18,7 +18,7 @@ The first release.
   - `/wiki-question` files a question;
   - `/wiki-lint` checks the wiki for drift.
 - **Claude Code hooks:**
-  - each session starts with the wiki's counts, open questions, newest sources and the head of `Index.md`;
+  - each session starts with the wiki's counts, open questions, newest sources and the head of `Index.md`. Over the context budget, only the sections that don't fit become pointers, and the meter says which;
   - each note write is checked against its type's rules;
   - each answer ends with a drift report for notes that cite no source, one-sided comparisons, orphans, notes `Index.md` doesn't annotate, and stale questions;
   - routing hints suggest the command a message calls for.
@@ -28,3 +28,4 @@ The first release.
   - the index refreshes as notes change;
   - a broken native module is repaired at session start.
 - **Install-time personalization:** your name and the wiki's focus head `Index.md`.
+- **Requires** ShardMind 0.2.1 or later.

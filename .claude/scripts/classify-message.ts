@@ -4,7 +4,7 @@
  * prompt signals, and the previous turn's Stop report when one is waiting
  * (SPEC.md §7.4).
  *
- * The protocol is obsidian-mind's (its classify-message.ts at c65062d):
+ * The protocol is obsidian-mind's (its classify-message.ts at v9.1.0):
  * - the waiting Stop report is taken first, whatever the prompt holds;
  * - each hint fires once per session (lib/hint-state.ts), failing open
  *   without a session id;

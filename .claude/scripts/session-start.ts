@@ -3,7 +3,7 @@
  * SessionStart: the session context, assembled from the vault's extensions
  * (SPEC.md §7.4).
  *
- * The protocol is obsidian-mind's (its session-start.ts at c65062d); the
+ * The protocol is obsidian-mind's (its session-start.ts at v9.1.0); the
  * sections are the vault's:
  * - stdin is optional, read with a deadline;
  * - `VAULT_PATH` is exported to `CLAUDE_ENV_FILE` before anything else;
@@ -133,6 +133,8 @@ process.stdout.write(
 			formatInjectionSize(bodyBytes, {
 				budgetBytes: budget.bytes,
 				collapsed: budgeted.collapsed,
+				degraded: budgeted.degraded,
+				cutSections: budgeted.cut,
 				clampedFrom: budget.clampedFrom,
 				cut,
 				cutTo: limit.name,

@@ -124,6 +124,20 @@ describe("rule 6: the core owns the budget", () => {
 		assert.ok(all.text.includes(big), "the load-bearing section stays whole");
 	});
 
+	test("an oversized section collapses alone, and the sections that fit stay, whatever their priority (#53)", async () => {
+		// The worst priorities go first, but a section that would fit is restored: before obsidian-mind
+		// 9.1.0 the budget stopped at the first fit, so collapsing "huge" last had already given up both.
+		const small = "s".repeat(100);
+		const ext: Extension = {
+			id: "a",
+			sections: [section("huge", 5, "h".repeat(5000), "(ptr 5)"), section("one", 10, small, "(ptr 10)"), section("two", 20, small, "(ptr 20)")],
+		};
+		const { result } = await collectSections(fromLoaded([declared(ext)]), ctx, "full");
+		const fitted = applyInjectionBudget(result, 600);
+		assert.deepEqual(fitted.collapsed, ["huge"]);
+		assert.equal(fitted.text.split(small).length - 1, 2, "both small sections stay whole");
+	});
+
 	test("on a re-entry, a section with a pointer renders as its pointer and is not run", async () => {
 		let ran = false;
 		const ext: Extension = {

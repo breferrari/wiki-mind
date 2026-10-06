@@ -3,7 +3,7 @@
  * PostToolUse on Write or Edit (AfterTool on Gemini): the vault's write
  * validators, run over the file just written (SPEC.md §7.4).
  *
- * The protocol is obsidian-mind's (its validate-write.ts at c65062d):
+ * The protocol is obsidian-mind's (its validate-write.ts at v9.1.0):
  * - no `tool_input.file_path`, no output;
  * - the debounced QMD refresh runs before any skip, so every Markdown
  *   write refreshes the index;
