@@ -19,7 +19,7 @@ jobs:
     env:
       # The engine version CI validates with, equal to the `requires.shardmind`
       # floor in .shardmind/shard.yaml (tests/shard-manifest.test.ts holds it).
-      SHARDMIND_VERSION: 0.2.0
+      SHARDMIND_VERSION: 0.2.1
     steps:
       - uses: actions/checkout@v4
 
