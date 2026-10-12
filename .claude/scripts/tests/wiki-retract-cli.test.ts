@@ -41,10 +41,15 @@ function vault(): string {
 }
 
 function run(root: string, ...args: string[]) {
-	const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PROJECT_DIR: root };
+	return runIn(root, root, ...args);
+}
+
+/** Run the script with CLAUDE_PROJECT_DIR naming `projectDir`, from the working directory `cwd`. */
+function runIn(projectDir: string, cwd: string, ...args: string[]) {
+	const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PROJECT_DIR: projectDir };
 	delete env["CODEX_PROJECT_DIR"];
 	delete env["GEMINI_PROJECT_DIR"];
-	const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", RUNNER, ...args], { cwd: root, env, encoding: "utf-8" });
+	const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", RUNNER, ...args], { cwd, env, encoding: "utf-8" });
 	return { code: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
@@ -67,6 +72,21 @@ describe("wiki-retract.ts", () => {
 		assert.match(r.stdout, /Written: concepts\/RAG\.md, Index\.md, sources\/Smith 2024\.md/);
 		assert.match(read(root, "sources/Smith 2024.md"), /- 2026-10-12: retracted\. Notice: https:\/\/notice\. Reason: fabricated/);
 		assert.ok(read(root, "concepts/RAG.md").includes("(withdrawn 2026-10-12)"));
+	});
+
+	test("finds the vault from a subfolder: a session started in concepts/ still finds sources/ (#89)", () => {
+		const root = vault();
+		writeFileSync(join(root, "vault-manifest.json"), "{}\n");
+		const r = runIn(join(root, "concepts"), join(root, "concepts"), "Smith 2024", "--date", "2026-10-12");
+		assert.equal(r.code, 0, r.stdout + r.stderr);
+		assert.ok(read(root, "concepts/RAG.md").includes("(withdrawn 2026-10-12)"));
+	});
+
+	test("outside any vault, the folder named is used as given", () => {
+		const root = vault();
+		const r = run(root, "Smith 2024", "--dry-run", "--date", "2026-10-12");
+		assert.equal(r.code, 0, r.stderr);
+		assert.match(r.stdout, /WITHDRAWN\s+concepts\/RAG\.md:6/);
 	});
 
 	test("exit 2, with the reason, for a call the pass can't run", () => {
