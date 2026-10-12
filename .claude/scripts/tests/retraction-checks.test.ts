@@ -54,6 +54,8 @@ before(() => {
 	// Behind a byte-order mark the core reads frontmatter as body (until mindframe #82):
 	// lint leaves the note alone rather than report a frontmatter link as a stale claim.
 	write("concepts/Bom.md", "\uFEFF" + fm({ ...BASE, sources: '"[[Gone (2024)]]"' }) + `- [[Live]] and [[Gone (2024)]]${MARK}.\n`);
+	// A wikilink inside a mermaid diagram is in a fence: no claim, so never stale (SPEC.md §6.2).
+	write("syntheses/Drawn.md", fm({ ...BASE, sides: '["[[Held]]", "[[Clean]]"]' }) + "Per [[Live]].\n\n## Diagram\n\n```mermaid\ngraph LR\n  A[\"[[Gone (2024)]]\"] --> B\n```\n");
 	// A question reopened on a retracted source: its answer's link is expected, not stale.
 	write("questions/Reopened.md", fm({ ...BASE, status: "open" }) + "Per [[Gone (2024)]].\n\n- 2026-10-12: reopened: the answer rested on [[Gone (2024)]], retracted.\n");
 	write("Index.md", "# Index\n- [[Gone (2024)]] (retracted)\n");

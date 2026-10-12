@@ -20,6 +20,13 @@ describe("the slash commands", () => {
 		for (const file of commands) assert.match(file, /^wiki-[a-z]+\.md$/);
 	});
 
+	test("wiki-synthesize offers a diagram through the vendored mermaid-visualizer skill, and says a diagram adds no claim (SPEC.md §6.2)", () => {
+		const text = readFileSync(join(DIR, "wiki-synthesize.md"), "utf-8");
+		assert.match(text, /`\.claude\/skills\/mermaid-visualizer\/`/);
+		assert.match(text, /## Diagram/);
+		assert.match(text, /adds no claim/);
+	});
+
 	for (const file of commands) {
 		test(`${file}: a description, an argument hint if it takes arguments, and real paths`, () => {
 			const text = readFileSync(join(DIR, file), "utf-8");
@@ -29,6 +36,7 @@ describe("the slash commands", () => {
 			for (const m of text.matchAll(/`(templates\/[A-Za-z ]+\.md)`/g)) assert.ok(existsSync(join(REPO, m[1] ?? "")), `${m[1]} exists`);
 			for (const m of text.matchAll(/`(sources|concepts|entities|syntheses|questions|inbox)\/`/g)) assert.ok(existsSync(join(REPO, m[1] ?? "")), `${m[1]}/ exists`);
 			for (const m of text.matchAll(/(\.claude\/[\w./-]+\.ts)\b/g)) assert.ok(existsSync(join(REPO, m[1] ?? "")), `${m[1]} exists`);
+			for (const m of text.matchAll(/`(\.claude\/skills\/[\w-]+)\/`/g)) assert.ok(existsSync(join(REPO, m[1] ?? "", "SKILL.md")), `${m[1]}/SKILL.md exists`);
 		});
 	}
 });
