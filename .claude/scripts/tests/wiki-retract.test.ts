@@ -316,6 +316,66 @@ describe("--undo (a retraction that is itself withdrawn)", () => {
 	});
 });
 
+describe("review fixes", () => {
+	test("a claim whose sources fall one at a time is marked, then withdrawn", () => {
+		const root = wiki();
+		run(root, { source: "Lee 2025" });
+		assert.ok(read(root, "concepts/RAG.md").includes(`- Retrieval helps [[Smith 2024]] and [[Lee 2025]]${MARK}.\n`));
+		run(root, { source: "Smith 2024", date: LATER });
+		const note = read(root, "concepts/RAG.md");
+		assert.ok(note.includes(`- Retrieval helps [[Smith 2024]] and [[Lee 2025]]${MARK}. (withdrawn ${LATER})\n`), note);
+	});
+
+	test("only the annotation whose first link is the source gets the Index suffix, so a chain keeps its own", () => {
+		const root = vault({
+			"sources/A 2020.md": fm({ ...SOURCE, status: "superseded", superseded_by: '"[[B 2022]]"' }) + "# A\n",
+			"sources/B 2022.md": fm(SOURCE) + "# B\n",
+			"concepts/X.md": fm(BASE) + "- From [[B 2022]].\n",
+			"Index.md": "# Index\n- [[A 2020]] older (superseded by [[B 2022]])\n- [[B 2022]] newer\n- [[X]] an idea from [[B 2022]]\n",
+		});
+		run(root, { source: "B 2022" });
+		assert.equal(read(root, "Index.md"), "# Index\n- [[A 2020]] older (superseded by [[B 2022]])\n- [[B 2022]] newer (retracted)\n- [[X]] an idea from [[B 2022]]\n");
+	});
+
+	test("RESTATE names where the restated claim goes in the note as written", () => {
+		const root = wiki({
+			"concepts/Two.md": fm(BASE) + "- First only [[Smith 2024]].\n- Kept [[Lee 2025]].\n- Second only [[Smith 2024]].\n",
+		});
+		const { plan } = run(root, { source: "Smith 2024", supersededBy: "Lee 2025" });
+		const lines = plan.outcomes.filter((o) => o.kind === "RESTATE" && o.relPath === "concepts/Two.md").map((o) => o.line);
+		assert.deepEqual(lines, [6, 7], "the second goes after the kept line, once the first is gone");
+		assert.equal(read(root, "concepts/Two.md").split("\n")[5], "- Kept [[Lee 2025]].");
+	});
+
+	test("a withdrawn bullet of any kind becomes a dash entry, and a restored line loses its old marker", () => {
+		const root = wiki({ "concepts/Bullets.md": fm(BASE) + "* Star only [[Smith 2024]].\n1. Numbered only [[Smith 2024]].\n" });
+		run(root, { source: "Smith 2024" });
+		const note = read(root, "concepts/Bullets.md");
+		assert.ok(note.includes(`- Star only [[Smith 2024]]. (withdrawn ${DATE})\n- Numbered only [[Smith 2024]]. (withdrawn ${DATE})\n`), note);
+		const marked = wiki();
+		run(marked, { source: "Lee 2025" });
+		run(marked, { source: "Smith 2024", date: LATER });
+		run(marked, { source: "Smith 2024", undo: true, date: LATER });
+		assert.ok(read(marked, "concepts/RAG.md").includes(`- Retrieval helps [[Smith 2024]] and [[Lee 2025]]${MARK}.\n`), "Lee's marker stays; Smith's line is back");
+	});
+
+	test("an --undo that fails midway finishes on a re-run: the source note is written last", () => {
+		const root = wiki({ "entities/Locked.md": fm({ ...BASE, kind: "tool" }) + "- Only [[Smith 2024]].\n" });
+		run(root, { source: "Smith 2024" });
+		const plan = planRetraction(root, { date: LATER, source: "Smith 2024", undo: true });
+		assert.equal(plan.writes.at(-1)?.relPath, "sources/Smith 2024.md");
+		const applied = applyRetraction(root, plan, (abs, text) => {
+			if (abs.endsWith(join("entities", "Locked.md"))) throw new Error("EBUSY: resource busy or locked");
+			plainWrite(abs, text);
+		});
+		assert.ok(applied.notWritten.includes("sources/Smith 2024.md"));
+		const rerun = run(root, { source: "Smith 2024", undo: true, date: LATER });
+		assert.equal(rerun.applied.error, undefined);
+		assert.ok(read(root, "entities/Locked.md").includes(`restored ${LATER}`));
+		assert.equal(/\nstatus:/.test(read(root, "sources/Smith 2024.md")), false);
+	});
+});
+
 describe("writes (SPEC.md §2.1, Writes)", () => {
 	test("CRLF notes keep CRLF", () => {
 		const crlf = (s: string) => s.replaceAll("\n", "\r\n");

@@ -51,6 +51,8 @@ before(() => {
 		"concepts/Clean.md",
 		fm(BASE) + `- Still [[Live]], once [[Old#Results]]${MARK}.\n\`[[Gone (2024)]]\`\n\n## Withdrawn claims\n\n- A claim [[Gone (2024)]] (withdrawn 2026-10-12)\n`,
 	);
+	// A question reopened on a retracted source: its answer's link is expected, not stale.
+	write("questions/Reopened.md", fm({ ...BASE, status: "open" }) + "Per [[Gone (2024)]].\n\n- 2026-10-12: reopened: the answer rested on [[Gone (2024)]], retracted.\n");
 	write("Index.md", "# Index\n- [[Gone (2024)]] (retracted)\n");
 });
 after(() => rmTemp(root));
@@ -85,6 +87,17 @@ describe("validate-write: a source's status and superseded_by (SPEC.md §2.1)", 
 	test("superseded_by links a source note that exists", async () => {
 		assert.deepEqual((await check("sources/S.md", fm({ ...SOURCE, status: "superseded", superseded_by: '"[[Ghost]]"' }))).result, [
 			"`superseded_by` links [[Ghost]], which is not a note in sources/",
+		]);
+		assert.deepEqual((await check("sources/S.md", fm({ ...SOURCE, status: "superseded", superseded_by: "Live" }))).result, [
+			'`superseded_by` names no note: write it as "[[Source]]"',
+		]);
+	});
+
+	test("CRLF frontmatter reads the same", async () => {
+		const crlf = (s: string) => s.replaceAll("\n", "\r\n");
+		assert.deepEqual((await check("sources/S.md", crlf(fm({ ...SOURCE, status: "superseded", superseded_by: '"[[Live]]"' })))).result, []);
+		assert.deepEqual((await check("sources/S.md", crlf(fm({ ...SOURCE, status: "withdrawn" })))).result, [
+			'`status` is "withdrawn"; a source note\'s status is one of retracted, superseded',
 		]);
 	});
 
