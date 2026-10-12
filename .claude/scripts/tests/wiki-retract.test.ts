@@ -6,12 +6,13 @@
  */
 import { afterEach, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmTemp } from "./_helpers.ts";
 import { applyRetraction, formatReport, planRetraction, RetractError, type Outcome, type RetractOptions } from "../../extensions/wiki/retract.ts";
 import { MARK } from "../../extensions/wiki/claims.ts";
+import { writeFileAtomic } from "../core/index.ts";
 
 const DATE = "2026-10-12";
 const LATER = "2026-11-02";
@@ -435,7 +436,47 @@ describe("code-review fixes", () => {
 	});
 });
 
+describe("a note that starts with a byte-order mark (until mindframe #82)", () => {
+	const BOM = "\uFEFF";
+	const snapshot = (root: string) => Object.fromEntries(["sources/Smith 2024.md", "concepts/RAG.md", "Index.md", "entities/Cites.md"].map((r) => [r, (() => { try { return read(root, r); } catch { return null; } })()]));
+
+	test("a source note with a BOM stops the pass before any write, and names it", () => {
+		const root = wiki({ "sources/Smith 2024.md": BOM + fm(SOURCE) + "# Smith 2024\n" });
+		const before = snapshot(root);
+		assert.throws(
+			() => planRetraction(root, { date: DATE, source: "Smith 2024" }),
+			(e: unknown) => e instanceof RetractError && e.code === "BOM" && /sources\/Smith 2024\.md/.test(e.message) && /remove the BOM first/.test(e.message),
+		);
+		assert.deepEqual(snapshot(root), before);
+	});
+
+	test("a citing note with a BOM, its link in frontmatter, stops the pass too, and every note is listed", () => {
+		const root = wiki({ "entities/Cites.md": BOM + fm({ ...BASE, kind: "tool", sources: '"[[Smith 2024]]"' }) + "- [[Lee 2025]].\n" });
+		const before = snapshot(root);
+		assert.throws(
+			() => planRetraction(root, { date: DATE, source: "Smith 2024" }),
+			(e: unknown) => e instanceof RetractError && e.code === "BOM" && /entities\/Cites\.md/.test(e.message),
+		);
+		assert.deepEqual(snapshot(root), before);
+	});
+});
+
 describe("writes (SPEC.md §2.1, Writes)", () => {
+	test("with the core's atomic write, a rename that fails stops the pass, and no note is half-written", () => {
+		const root = wiki({ "entities/Locked.md": fm({ ...BASE, kind: "tool" }) + "- Only [[Smith 2024]].\n" });
+		const plan = planRetraction(root, { date: DATE, source: "Smith 2024" });
+		// Between plan and apply, the note becomes a folder: renaming a file onto it fails on every system.
+		rmSync(join(root, "entities", "Locked.md"));
+		mkdirSync(join(root, "entities", "Locked.md"));
+		const applied = applyRetraction(root, plan, writeFileAtomic);
+		assert.equal(applied.error?.relPath, "entities/Locked.md");
+		assert.ok(applied.written.includes("concepts/RAG.md"));
+		assert.ok(applied.notWritten.includes("sources/Smith 2024.md"), "the source note, written last, is not written");
+		assert.deepEqual(readdirSync(join(root, "entities")).sort(), ["Locked.md"], "no temporary file left beside it");
+		assert.ok(read(root, "concepts/RAG.md").includes(`(withdrawn ${DATE})`), "what was written is whole");
+		assert.equal(read(root, "sources/Smith 2024.md").includes("status:"), false);
+	});
+
 	test("CRLF notes keep CRLF", () => {
 		const crlf = (s: string) => s.replaceAll("\n", "\r\n");
 		const root = wiki({

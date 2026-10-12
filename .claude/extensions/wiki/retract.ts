@@ -84,7 +84,7 @@ export type Applied = {
 };
 
 export class RetractError extends Error {
-	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "BAD_NEWER";
+	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "BAD_NEWER" | "BOM";
 	constructor(code: RetractError["code"], message: string) {
 		super(message);
 		this.code = code;
@@ -179,6 +179,13 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 	}
 	const sourceNote = editSourceNote(pass);
 	if (sourceNote !== target.content) writes.push({ relPath: target.relPath, content: sourceNote });
+	// The core reads a block behind a byte-order mark as body, not frontmatter, until
+	// mindframe #82: rewriting such a note would put frontmatter in the wrong place.
+	const touched = new Map([...notes.values()].flat().map((n) => [n.relPath, n.content] as const));
+	const bom = [...new Set([target.relPath, ...writes.map((w) => w.relPath)])].filter((rel) => /^\uFEFF---/.test(touched.get(rel) ?? ""));
+	if (bom.length > 0) {
+		throw new RetractError("BOM", `${bom.join(", ")} ${bom.length === 1 ? "starts" : "start"} with a byte-order mark before its frontmatter: remove the BOM first. Nothing was written.`);
+	}
 	return { source: target.name, options, outcomes: pass.outcomes, writes };
 }
 
