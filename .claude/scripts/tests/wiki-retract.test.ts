@@ -450,6 +450,13 @@ describe("a note that starts with a byte-order mark (until mindframe #82)", () =
 		assert.deepEqual(snapshot(root), before);
 	});
 
+	test("a source note with a BOM and no frontmatter stops the pass too", () => {
+		const root = wiki({ "sources/Smith 2024.md": BOM + "# Smith 2024\n\nBody.\n" });
+		const before = snapshot(root);
+		assert.throws(() => planRetraction(root, { date: DATE, source: "Smith 2024" }), (e: unknown) => e instanceof RetractError && e.code === "BOM");
+		assert.deepEqual(snapshot(root), before);
+	});
+
 	test("a citing note with a BOM, its link in frontmatter, stops the pass too, and every note is listed", () => {
 		const root = wiki({ "entities/Cites.md": BOM + fm({ ...BASE, kind: "tool", sources: '"[[Smith 2024]]"' }) + "- [[Lee 2025]].\n" });
 		const before = snapshot(root);

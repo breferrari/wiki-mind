@@ -31,7 +31,7 @@ import {
 	statusOf,
 	typeOf,
 } from "./notes.ts";
-import { currentSourceNames, linkSpans, noLongerCurrent, regions, splitLines, unmarkedLinks } from "./claims.ts";
+import { currentSourceNames, linkSpans, noLongerCurrent, regions, splitLines, startsWithBom, unmarkedLinks } from "./claims.ts";
 
 /** Every note's frontmatter (SPEC.md §2). */
 const GLOBAL_FIELDS = ["date", "description", "tags"] as const;
@@ -86,6 +86,7 @@ function supersededByWarnings(content: string, sources: ReadonlySet<string>): st
 /** Each unmarked link in a note to a source that is no longer current, outside Withdrawn claims, as "[[Name]] on line N". */
 function staleLinks(note: Note, stale: ReadonlyMap<string, string>): string[] {
 	// Most notes name no stale source: skip them before reading line by line.
+	if (startsWithBom(note.content)) return []; // its frontmatter would read as body (claims.ts)
 	const lower = note.content.toLowerCase();
 	// A question reopened on a source (§2.1) cites it on purpose until it is re-answered.
 	const names = new Set([...stale.keys()].filter((name) => lower.includes(name) && !lower.includes(`reopened: the answer rested on [[${name}]]`)));

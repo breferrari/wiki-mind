@@ -6,7 +6,7 @@
 import { afterEach, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -76,7 +76,9 @@ describe("wiki-retract.ts", () => {
 			[["Smith 2024", "--superseded-by", "Park 2026"], /ingest Park 2026 first/],
 			[["Smith 2024", "--superseded-by", "Smith 2024"], /can't supersede itself/],
 			[["Smith 2024", "--undo", "--superseded-by", "Lee 2025"], /--undo takes no --superseded-by/],
-			[["Smith 2024", "--date", "12/10/2026"], /--date takes YYYY-MM-DD/],
+			[["Smith 2024", "--date", "12/10/2026"], /--date takes a real date as YYYY-MM-DD/],
+			[["Smith 2024", "--date", "2026-13-45"], /--date takes a real date as YYYY-MM-DD/],
+			[["Smith 2024", "--date", "2026-02-30"], /--date takes a real date as YYYY-MM-DD/],
 			[[], /usage: wiki-retract\.ts/],
 			[["Smith 2024", "--bogus"], /usage: wiki-retract\.ts/],
 		];
@@ -86,5 +88,15 @@ describe("wiki-retract.ts", () => {
 			assert.match(r.stderr, message, args.join(" "));
 		}
 		assert.equal(read(root, "concepts/RAG.md"), fm(BASE) + "- Only [[Smith 2024]].\n", "nothing was written");
+	});
+
+	test("a planning failure that isn't the pass's own is exit 2 too: nothing was written", () => {
+		const root = vault();
+		rmSync(join(root, "Index.md"));
+		mkdirSync(join(root, "Index.md"));
+		const r = run(root, "Smith 2024");
+		assert.equal(r.code, 2, r.stdout + r.stderr);
+		assert.match(r.stderr, /Nothing was written/);
+		assert.equal(read(root, "concepts/RAG.md"), fm(BASE) + "- Only [[Smith 2024]].\n");
 	});
 });

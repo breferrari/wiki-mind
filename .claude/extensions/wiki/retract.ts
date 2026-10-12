@@ -30,6 +30,7 @@ import {
 	type Region,
 	regions,
 	splitLines,
+	startsWithBom,
 	trimTrailingBlanks,
 	unmarkedLinks,
 	WITHDRAWN_HEADING,
@@ -182,9 +183,9 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 	// The core reads a block behind a byte-order mark as body, not frontmatter, until
 	// mindframe #82: rewriting such a note would put frontmatter in the wrong place.
 	const touched = new Map([...notes.values()].flat().map((n) => [n.relPath, n.content] as const));
-	const bom = [...new Set([target.relPath, ...writes.map((w) => w.relPath)])].filter((rel) => /^\uFEFF---/.test(touched.get(rel) ?? ""));
+	const bom = [...new Set([target.relPath, ...writes.map((w) => w.relPath)])].filter((rel) => startsWithBom(touched.get(rel) ?? ""));
 	if (bom.length > 0) {
-		throw new RetractError("BOM", `${bom.join(", ")} ${bom.length === 1 ? "starts" : "start"} with a byte-order mark before its frontmatter: remove the BOM first. Nothing was written.`);
+		throw new RetractError("BOM", `${bom.join(", ")} ${bom.length === 1 ? "starts" : "start"} with a byte-order mark: remove the BOM first. Nothing was written.`);
 	}
 	return { source: target.name, options, outcomes: pass.outcomes, writes };
 }

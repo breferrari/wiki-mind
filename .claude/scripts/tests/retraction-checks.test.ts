@@ -51,6 +51,9 @@ before(() => {
 		"concepts/Clean.md",
 		fm(BASE) + `- Still [[Live]], once [[Old#Results]]${MARK}.\n\`[[Gone (2024)]]\`\n\n## Withdrawn claims\n\n- A claim [[Gone (2024)]] (withdrawn 2026-10-12)\n`,
 	);
+	// Behind a byte-order mark the core reads frontmatter as body (until mindframe #82):
+	// lint leaves the note alone rather than report a frontmatter link as a stale claim.
+	write("concepts/Bom.md", "\uFEFF" + fm({ ...BASE, sources: '"[[Gone (2024)]]"' }) + `- [[Live]] and [[Gone (2024)]]${MARK}.\n`);
 	// A question reopened on a retracted source: its answer's link is expected, not stale.
 	write("questions/Reopened.md", fm({ ...BASE, status: "open" }) + "Per [[Gone (2024)]].\n\n- 2026-10-12: reopened: the answer rested on [[Gone (2024)]], retracted.\n");
 	write("Index.md", "# Index\n- [[Gone (2024)]] (retracted)\n");
