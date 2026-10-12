@@ -22,8 +22,9 @@ function readmeSteps(readme: string) {
 	const close = section.findIndex((l, i) => i > open && l === "```");
 	const block = open === -1 ? [] : section.slice(open + 1, close);
 	const install = block.find((l) => l.startsWith("npx shardmind install "));
-	// The folder is the first argument after the shard reference that isn't a flag.
-	const folder = install?.split(/\s+/).slice(4).find((w) => !w.startsWith("-"));
+	// After `install`, flags aside: the shard reference, then the folder.
+	const args = install?.split(/\s+/).slice(3).filter((w) => !w.startsWith("-")) ?? [];
+	const folder = args[1];
 	return {
 		install,
 		folder,
@@ -54,18 +55,25 @@ describe("the install steps", () => {
 		assert.deepEqual(cds, [folder], "the block enters the folder the install made, and only it");
 	});
 
+	const fallback = `npx shardmind install github:breferrari/wiki-mind ${folder}`;
+
 	test("the github: fallback installs into the same folder", () => {
-		assert.match(readme, new RegExp(`\`npx shardmind install github:breferrari/wiki-mind ${folder}\``));
+		assert.ok(readme.includes(`\`${fallback}\``), `the README gives \`${fallback}\``);
 	});
 
 	test("the newest release notes carry the same install command", () => {
 		const notes = newestNotes(read("CHANGELOG.md"));
 		assert.ok(install !== undefined && notes.includes(install), `CHANGELOG's newest notes give \`${install}\``);
 		assert.ok(notes.includes(`cd ${folder}`), `CHANGELOG's newest notes enter ${folder}`);
+		assert.ok(notes.includes(fallback), `CHANGELOG's newest notes give the fallback \`${fallback}\``);
 	});
 
 	test("the reader sees the pre-1.0 form, so the first test can fail", () => {
 		const old = readmeSteps("## Install\n\n```sh\r\nmkdir my-wiki && cd my-wiki\r\nnpx shardmind install breferrari/wiki-mind\r\n```\r\n");
 		assert.deepEqual(old, { install: "npx shardmind install breferrari/wiki-mind", folder: undefined, cds: ["my-wiki"], mkdir: true });
+		const flagged = readmeSteps("## Install\n\n```sh\nnpx shardmind install --yes breferrari/wiki-mind my-wiki\n```\n");
+		assert.equal(flagged.folder, "my-wiki", "a flag before the shard reference doesn't shift the folder");
+		const crlf = "# Changelog\r\n\r\n## [Unreleased]\r\n\r\n## [0.2.0] - 2026-11-01\r\n\r\n- x\r\n";
+		assert.equal(newestNotes(crlf).trim(), "- x", "an empty Unreleased falls through to the latest release, CRLF or not");
 	});
 });

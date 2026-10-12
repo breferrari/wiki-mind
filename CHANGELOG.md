@@ -6,11 +6,11 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Changed
 
-- **Install names its folder, and needs ShardMind 1.0 or later.** ShardMind 1.0 makes the vault's folder itself:
+- **Install names its folder, and needs ShardMind 1.0 or later.** ShardMind 1.0 makes the vault's folder itself, so these steps replace 0.1.0's `mkdir` first:
   1. `npx shardmind install breferrari/wiki-mind my-wiki`
   2. `cd my-wiki`
 
-  Upgrade with `npm i -g shardmind@latest` if your ShardMind is older: an older one stops with a version error.
+  If your ShardMind can't find the shard by name, use the full GitHub reference: `npx shardmind install github:breferrari/wiki-mind my-wiki`. An older ShardMind stops with a version error: run `npx shardmind@latest`, or upgrade a global install with `npm i -g shardmind@latest`.
 
 ### Fixed
 

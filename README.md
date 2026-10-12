@@ -38,7 +38,7 @@ npx shardmind install breferrari/wiki-mind my-wiki
 cd my-wiki
 ```
 
-The installer makes the `my-wiki` folder. If your ShardMind can't find the shard by name, use the full GitHub reference: `npx shardmind install github:breferrari/wiki-mind my-wiki`.
+The installer makes the `my-wiki` folder; give `.` instead to install into the current one. If your ShardMind can't find the shard by name, use the full GitHub reference: `npx shardmind install github:breferrari/wiki-mind my-wiki`.
 
 The installer asks three questions: your name, what the wiki is about, and whether to use QMD search. Then open the folder as a vault in Obsidian, and start Claude Code in it.
 
