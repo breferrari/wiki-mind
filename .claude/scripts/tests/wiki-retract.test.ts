@@ -310,9 +310,26 @@ describe("--undo (a retraction that is itself withdrawn)", () => {
 		assert.ok(kinds(plan.outcomes).some((k) => k.startsWith("KEPT concepts/RAG.md")));
 	});
 
-	test("undo on a current source is an error", () => {
+	test("undo on a current source writes nothing and says so", () => {
 		const root = wiki();
-		assert.throws(() => planRetraction(root, { date: DATE, source: "Smith 2024", undo: true }), (e: unknown) => e instanceof RetractError && e.code === "CURRENT");
+		const { plan, applied } = run(root, { source: "Smith 2024", undo: true });
+		assert.deepEqual(applied.written, []);
+		assert.match(formatReport(plan, applied), /No note cites \[\[Smith 2024\]\]/);
+	});
+
+	test("undo after a retraction that stopped midway reverses what it wrote, though the source note was never marked", () => {
+		const root = wiki({ "entities/Locked.md": fm({ ...BASE, kind: "tool" }) + "- Only [[Smith 2024]].\n" });
+		const plan = planRetraction(root, { date: DATE, source: "Smith 2024" });
+		applyRetraction(root, plan, (abs, text) => {
+			if (abs.endsWith("Index.md")) throw new Error("EBUSY: resource busy or locked");
+			plainWrite(abs, text);
+		});
+		assert.ok(read(root, "concepts/RAG.md").includes(MARK));
+		run(root, { source: "Smith 2024", undo: true, date: LATER });
+		const rag = read(root, "concepts/RAG.md");
+		assert.equal(rag.includes(MARK), false, rag);
+		assert.ok(rag.includes(`restored ${LATER}`));
+		assert.equal(read(root, "sources/Smith 2024.md").includes("## Retracted"), false, "the source note was never marked, so it gains no dated line");
 	});
 });
 
@@ -373,6 +390,48 @@ describe("review fixes", () => {
 		assert.equal(rerun.applied.error, undefined);
 		assert.ok(read(root, "entities/Locked.md").includes(`restored ${LATER}`));
 		assert.equal(/\nstatus:/.test(read(root, "sources/Smith 2024.md")), false);
+	});
+});
+
+describe("code-review fixes", () => {
+	test("the same supersession twice is a no-op the second time", () => {
+		const root = wiki();
+		run(root, { source: "Smith 2024", supersededBy: "Lee 2025" });
+		const before = read(root, "sources/Smith 2024.md");
+		const { applied } = run(root, { source: "Smith 2024", supersededBy: "Lee 2025", date: LATER });
+		assert.deepEqual(applied.written, []);
+		assert.equal(read(root, "sources/Smith 2024.md"), before);
+	});
+
+	test("retracted, then superseded: the dated section gains a line, and --undo knows it was superseded", () => {
+		const root = wiki();
+		run(root, { source: "Smith 2024" });
+		run(root, { source: "Smith 2024", supersededBy: "Lee 2025", date: LATER });
+		const note = read(root, "sources/Smith 2024.md");
+		assert.ok(note.includes(`## Retracted\n\n- ${DATE}: retracted.\n- ${LATER}: superseded by [[Lee 2025]].\n`), note);
+		const { plan } = run(root, { source: "Smith 2024", undo: true, date: "2026-12-01" });
+		assert.equal(read(root, "concepts/RAG.md").includes("restored"), false);
+		assert.ok(plan.outcomes.some((o) => o.kind === "KEPT" && o.relPath === "concepts/RAG.md"));
+	});
+
+	test("a source note with no frontmatter gets a frontmatter block", () => {
+		const root = wiki({ "sources/Smith 2024.md": "# Smith 2024\n\nBody line.\n" });
+		run(root, { source: "Smith 2024" });
+		assert.equal(read(root, "sources/Smith 2024.md"), `---\nstatus: retracted\n---\n# Smith 2024\n\n## Retracted\n\n- ${DATE}: retracted.\n\nBody line.\n`);
+	});
+
+	test("a restored line marks its other links to sources that are no longer current", () => {
+		const root = wiki({ "sources/Park 2023.md": fm({ ...SOURCE, status: "retracted" }) + "# Park\n" });
+		writeFileSync(join(root, "concepts/Pair.md"), fm(BASE) + "- Both [[Smith 2024]] and [[Park 2023]].\n");
+		run(root, { source: "Smith 2024" });
+		run(root, { source: "Smith 2024", undo: true, date: LATER });
+		assert.ok(read(root, "concepts/Pair.md").includes(`- Both [[Smith 2024]] and [[Park 2023]]${MARK}.\n`));
+	});
+
+	test("--superseded-by can't name the source itself, or a source that is no longer current", () => {
+		const root = wiki({ "sources/Gone 2019.md": fm({ ...SOURCE, status: "retracted" }) + "# Gone\n" });
+		assert.throws(() => planRetraction(root, { date: DATE, source: "Smith 2024", supersededBy: "Smith 2024" }), (e: unknown) => e instanceof RetractError && e.code === "BAD_NEWER");
+		assert.throws(() => planRetraction(root, { date: DATE, source: "Smith 2024", supersededBy: "Gone 2019" }), (e: unknown) => e instanceof RetractError && e.code === "BAD_NEWER" && /no longer current/.test(e.message));
 	});
 });
 

@@ -19,7 +19,7 @@ It prints each finding with the notes it names, or `No drift found.` The same ch
 | Finding | Fix |
 |---------|-----|
 | Concept or entity cites no source | Find the source it came from and link it. If none in the wiki supports it, say so: the note may need a source ingested (the user can run `/wiki-ingest`), or may not belong. A note whose sources are all retracted or superseded counts here too. |
-| Links a source that is no longer current with no marker | The source was marked retracted or superseded by hand, or the note changed since. Run `/wiki-retract` for that source: it marks or withdraws each claim, and touches nothing twice. |
+| Links a source that is no longer current with no marker | In a concept or entity, the source was marked retracted or superseded by hand, or the note changed since: run `/wiki-retract` for that source, which marks or withdraws each claim and touches nothing twice. In a synthesis, `/wiki-retract` flagged it and never edits it: review the verdict with the user, then mark the link or rewrite the claim from a current source. |
 | Synthesis with fewer than two sides | Add the missing side to `sides`, or, if there is only one, ask whether it belongs in a concept instead. |
 | Notes Index.md doesn't annotate | Add a one-line annotation for each to its section of `Index.md`. |
 | Frontmatter problems | Fill the field the line names, from the note's template. |

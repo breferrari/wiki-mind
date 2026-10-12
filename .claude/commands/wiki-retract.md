@@ -40,7 +40,7 @@ Run the same command without `--dry-run`. Each note is written whole, atomically
 
 ## 4. Restate, for a supersession
 
-For each RESTATE line, read the newer source and write its claim at that place in the note, as one line linked to the newer source. If the newer source doesn't make the claim, leave the line withdrawn. Never write a claim the newer source doesn't support.
+For each RESTATE line, read the newer source and write its claim at that place in the note, as one line linked to the newer source. Work through a note's RESTATE lines from the bottom up: each line number holds only while nothing above it has been inserted. If the newer source doesn't make the claim, leave the line withdrawn. Never write a claim the newer source doesn't support.
 
 ## 5. Report
 

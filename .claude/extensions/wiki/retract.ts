@@ -84,7 +84,7 @@ export type Applied = {
 };
 
 export class RetractError extends Error {
-	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "CURRENT";
+	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "BAD_NEWER";
 	constructor(code: RetractError["code"], message: string) {
 		super(message);
 		this.code = code;
@@ -109,8 +109,10 @@ type Pass = {
 	readonly newStatus: Status | null;
 	readonly oldStatus: Status | null;
 	readonly newer: Note | undefined;
-	/** The source has been superseded at some point, so its withdrawn lines were restated and --undo leaves them. */
+	/** The source has been superseded at some point, so its withdrawn lines may have been restated and --undo leaves them. */
 	readonly everSuperseded: boolean;
+	/** The sources that are not current once this pass has run, other than the target. */
+	readonly stale: ReadonlySet<string>;
 	/** The link names of each concept and entity, by its lowercased name, for the synthesis check. */
 	readonly sideLinks: ReadonlyMap<string, { readonly name: string; readonly links: ReadonlySet<string> }>;
 	readonly outcomes: Outcome[];
@@ -122,14 +124,17 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 	const target = byName(options.source);
 	if (target === undefined) throw new RetractError("NO_SOURCE", `No note in sources/ is named ${options.source}.`);
 	const undo = options.undo === true;
+	// An --undo on a current source still runs: a retraction that stopped midway
+	// wrote markers and withdrawals before it reached the source note.
 	const oldStatus = noLongerCurrent(target.content) ? (statusOf(target.content) as Status) : null;
-	if (undo && oldStatus === null) throw new RetractError("CURRENT", `[[${target.name}]] is current: there is nothing to undo.`);
 	let newer: Note | undefined;
 	if (options.supersededBy !== undefined && !undo) {
 		newer = byName(options.supersededBy);
 		if (newer === undefined) {
 			throw new RetractError("NO_NEWER_SOURCE", `No note in sources/ is named ${options.supersededBy}: ingest ${options.supersededBy} first, then supersede [[${target.name}]] by it.`);
 		}
+		if (newer === target) throw new RetractError("BAD_NEWER", `[[${target.name}]] can't supersede itself.`);
+		if (noLongerCurrent(newer.content)) throw new RetractError("BAD_NEWER", `[[${newer.name}]] is no longer current itself: it can't supersede [[${target.name}]].`);
 	}
 
 	const key = target.name.toLowerCase();
@@ -148,7 +153,8 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 		newStatus: undo ? null : newer !== undefined ? "superseded" : "retracted",
 		oldStatus,
 		newer,
-		everSuperseded: splitLines(target.content).lines.some((l) => l.trim() === "## Superseded"),
+		everSuperseded: /^- \d{4}-\d{2}-\d{2}: superseded by \[\[/m.test(target.content),
+		stale: new Set(sources.map((n) => n.name.toLowerCase()).filter((n) => n !== key && !current.has(n))),
 		sideLinks: new Map(sides.map((n) => [n.name.toLowerCase(), { name: n.name, links: linkedNames(n.content) }])),
 		outcomes: [],
 	};
@@ -225,9 +231,9 @@ const emit = (pass: Pass, kind: Kind, relPath: string, line: number | undefined,
 function editSourceNote(pass: Pass): string {
 	const { target, options } = pass;
 	const supersededBy = pass.newer === undefined ? null : `"[[${pass.newer.name}]]"`;
-	const unchanged =
-		pass.newStatus !== null && pass.newStatus === pass.oldStatus && (pass.newStatus === "retracted" || field(target.content, "superseded_by") === supersededBy);
-	if (unchanged) return target.content;
+	const sameNewer = linkSpans(field(target.content, "superseded_by") ?? "")[0]?.name === pass.newer?.name.toLowerCase();
+	const unchanged = pass.newStatus === pass.oldStatus && (pass.newStatus !== "superseded" || sameNewer);
+	if (unchanged) return target.content; // the same status again, or an --undo of a source never marked
 
 	const doc = splitLines(target.content);
 	setField(doc.lines, "status", pass.newStatus);
@@ -258,12 +264,15 @@ function editSourceNote(pass: Pass): string {
 function setField(lines: string[], name: string, value: string | null): void {
 	const kinds = regions(lines);
 	const at = lines.findIndex((l, i) => kinds[i] === "frontmatter" && l.startsWith(`${name}:`));
+	const close = kinds.lastIndexOf("frontmatter");
 	if (value === null) {
 		if (at !== -1) lines.splice(at, 1);
 	} else if (at !== -1) {
 		lines[at] = `${name}: ${value}`;
+	} else if (close === -1) {
+		lines.unshift("---", `${name}: ${value}`, "---");
 	} else {
-		lines.splice(kinds.lastIndexOf("frontmatter"), 0, `${name}: ${value}`);
+		lines.splice(close, 0, `${name}: ${value}`);
 	}
 }
 
@@ -362,7 +371,9 @@ function editClaims(pass: Pass, note: Note, { doc, kinds, spans }: Read, withdra
 						emit(pass, "KEPT", note.relPath, i + 1, "the source was superseded, so this line may have been restated: not restored. Restore it by hand if it wasn't");
 					} else {
 						const claim = line.replace(WITHDRAWN_SUFFIX, "");
-						restored.push(unmark(claim, linkSpans(claim).filter((s) => s.name === pass.key)));
+						const back = unmark(claim, linkSpans(claim).filter((s) => s.name === pass.key));
+						// Its other links to sources that are no longer current get their marker now.
+						restored.push(mark(back, unmarkedLinks(back, linkSpans(back), pass.stale)));
 						doc.lines[i] = `${line} restored ${pass.options.date}`;
 						emit(pass, "RESTORED", note.relPath, i + 1, "back in the note's text");
 					}
