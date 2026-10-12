@@ -310,6 +310,14 @@ function spawnDetachedWorker(
 }
 
 /**
+ * True when the index refresh is turned off: `VAULT_QMD_REFRESH=off`. The
+ * test runner sets it, so no test leaves a detached worker behind.
+ */
+export function refreshDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
+	return env["VAULT_QMD_REFRESH"] === "off";
+}
+
+/**
  * The end-to-end refresh trigger both hook entries call: check the
  * debounce window, bail if qmd isn't resolvable, otherwise stamp the
  * sentinel and fire the detached worker. Returns immediately — every
@@ -348,9 +356,14 @@ export function triggerDebouncedRefresh(opts: {
 		debug(`${opts.logPrefix}: qmd not resolvable; skipping`);
 		return;
 	}
+	// With refresh off, the real spawn is a no-op: every decision and stamp still
+	// runs, so tests that observe the sentinel and pending marker hold, and no
+	// detached worker outlives a test. An explicit spawnWorker seam still runs.
 	const spawnWorker =
 		opts.spawnWorker ??
-		((path: string, args: readonly string[]) => spawnDetachedWorker(path, opts.logPrefix, args));
+		(refreshDisabled()
+			? () => debug(`${opts.logPrefix}: refresh off (VAULT_QMD_REFRESH)`)
+			: (path: string, args: readonly string[]) => spawnDetachedWorker(path, opts.logPrefix, args));
 
 	if (plan === "now") {
 		touchSentinel(opts.sentinelPath);

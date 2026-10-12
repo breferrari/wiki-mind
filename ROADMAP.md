@@ -97,7 +97,7 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Retract or supersede a source, as SPEC §2.1 specifies | [#86](https://github.com/breferrari/wiki-mind/issues/86) |
 | ✅ | Find the vault from a subfolder in /wiki-retract | [#89](https://github.com/breferrari/wiki-mind/issues/89) |
 | ⬜ | Run the effects extensions declare from wiki-mind's entry points | [#90](https://github.com/breferrari/wiki-mind/issues/90) |
-| ⬜ | Stop the test suite from leaving detached QMD refresh workers running | [#93](https://github.com/breferrari/wiki-mind/issues/93) |
+| ✅ | Stop the test suite from leaving detached QMD refresh workers running | [#93](https://github.com/breferrari/wiki-mind/issues/93) |
 | ⬜ | wrap-up and tidy through the extraction | [#27](https://github.com/breferrari/wiki-mind/issues/27) |
 | ✅ | Diagram skill for syntheses (mermaid) | [#33](https://github.com/breferrari/wiki-mind/issues/33) |
 | ✅ | Vendor the core from mindframe | [#78](https://github.com/breferrari/wiki-mind/issues/78) |

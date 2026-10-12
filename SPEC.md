@@ -351,6 +351,7 @@ Every entry point used to read and parse `vault-manifest.json` itself. *Resolved
 |----|------------------|----------------------------------|
 | S5 | QMD's session-start work lived in obsidian-mind's `session-start.ts`, not in a library. *Resolved in #42:* `core/qmd-session.ts` runs it for any vault's session-start. It covers the background index update (or the idempotent bootstrap when the store is missing or near-empty), the native-ABI self-heal, and the minimum-version note, and its side effects are injectable. `VAULT_QMD=off` turns it off, so tests never touch the user's QMD store. | A core session-start step, run before the sections. It lifts with `core/` as it is. |
 | S6 | `lib/stop-report.ts`'s `MOD_PREFACE` told the agent a notice may come "from the obsidian-mind plugin". *Patched in #7:* `modPreface(modName)` builds it for any vault's mod, and `MOD_PREFACE` keeps obsidian-mind's value. wiki-mind's `stop-checklist.ts` passes `wiki-mind`, and a test holds that equal to the mod's `plugin.json`. | The mod's name comes from the mod's declaration, so no entry point names it. |
+| S7 | `lib/qmd-refresh.ts`'s trigger gave tests no way to stop its detached worker. A fresh test sentinel only debounced it, so a trailing worker still spawned, outlived the test, and called qmd about 30 s later; suites run at once piled them up (#93). *Patched in #93 (`0013-vault-qmd-refresh-switch.patch`, forwarded to obsidian-mind#337):* with `VAULT_QMD_REFRESH=off` and no test seam, the trigger's spawn is a no-op; its decisions and its sentinel and pending writes still run, as obsidian-mind#337 rules. `runScript` sets it for every hook it spawns, `tests/_run-tests.ts` for every test file, and `tests/_qmd-cache-guard.ts` for a direct run. The runner points TMPDIR, TEMP and TMP into its temp folder, and after the run names each refresh worker that names that folder, kills it with its children, and fails. | mindframe #70 moves the refresh into an extension as effects; the switch moves with it, and the patch retires when obsidian-mind takes #337. |
 
 #### Live run (#36)
 
@@ -486,8 +487,8 @@ The core has been lifted into mindframe (`core/scripts/`), as §7.4 planned. wik
 
 | Record | Source | Files |
 |--------|--------|-------|
-| `.claude/scripts/VENDOR.json` | mindframe, `sourceRoot: core/scripts` | `core/`: `index`, `types`, `registry`, `context`, `qmd-session`, with their tests; `lib/`: `hook-io`, `session-start`, `project-dir`, `om-mod`, `frontmatter`, `prose-width`, `qmd`, `wikilinks`, `regex`; and those seven libraries' tests. 26 files, with `vendor-guard.ts` and its test, none patched. |
-| `.claude/VENDOR.json` | obsidian-mind v9.1.0 | everything else §7.1 lists. 64 files. |
+| `.claude/scripts/VENDOR.json` | mindframe, `sourceRoot: core/scripts` | `core/`: `index`, `types`, `registry`, `context`, `qmd-session`, with their tests; `lib/`: `hook-io`, `session-start`, `project-dir`, `om-mod`, `frontmatter`, `prose-width`, `qmd`, `wikilinks`, `regex`; and those seven libraries' tests, and `lib/atomic-write` (#86). 27 files, with `vendor-guard.ts` and its test, none patched. |
+| `.claude/VENDOR.json` | obsidian-mind v9.1.0 | everything else §7.1 lists. 65 files, 17 of them patched. |
 
 Each record has one repository, and each vendored file is in exactly one record. The lift changed no bytes: the 22 files wiki-mind already had were identical to mindframe's, and only `core/context.ts` and its test are new. CI checks both records, with mindframe's vendor tool at the commit `.github/pins.json` records: every file is upstream plus its patches, and every patch is forwarded or says why not.
 
