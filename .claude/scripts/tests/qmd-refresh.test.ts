@@ -121,6 +121,56 @@ describe("triggerDebouncedRefresh — schedules one trailing flush per window", 
 	});
 });
 
+describe("VAULT_QMD_REFRESH=off — the switch the test runner sets", () => {
+	function withSwitch(value: string | undefined, run: () => void): void {
+		const before = process.env["VAULT_QMD_REFRESH"];
+		if (value === undefined) delete process.env["VAULT_QMD_REFRESH"];
+		else process.env["VAULT_QMD_REFRESH"] = value;
+		try {
+			run();
+		} finally {
+			if (before === undefined) delete process.env["VAULT_QMD_REFRESH"];
+			else process.env["VAULT_QMD_REFRESH"] = before;
+		}
+	}
+
+	test("off, with no spawn seam: no worker, and no sentinel or pending marker written", () => {
+		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
+		const sentinel = join(dir, ".qmd-refresh-sentinel");
+		try {
+			// A real spawn would start a detached worker; with the switch off the
+			// trigger returns before it, so the leading edge stamps nothing either.
+			withSwitch("off", () =>
+				triggerDebouncedRefresh({ sentinelPath: sentinel, workerPath: join(dir, "no-such-worker.ts"), debounceMs: 30_000, logPrefix: "test", qmdAvailable: () => true }),
+			);
+			assert.equal(existsSync(sentinel), false, "no sentinel stamped");
+			assert.equal(existsSync(pendingPathFor(sentinel)), false, "no pending marker");
+		} finally {
+			rmTemp(dir);
+		}
+	});
+
+	test("off, with a spawn seam: the seam still runs, so the trigger's own tests keep their meaning", () => {
+		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
+		const spawned: (readonly string[])[] = [];
+		try {
+			withSwitch("off", () =>
+				triggerDebouncedRefresh({
+					sentinelPath: join(dir, ".qmd-refresh-sentinel"),
+					workerPath: "worker.ts",
+					debounceMs: 30_000,
+					logPrefix: "test",
+					qmdAvailable: () => true,
+					spawnWorker: (_p, args) => spawned.push(args),
+				}),
+			);
+			assert.deepEqual(spawned, [[]]);
+		} finally {
+			rmTemp(dir);
+		}
+	});
+});
+
 describe("claimTrailingFlush — the worker's gate after sleeping", () => {
 	test("runs when no newer refresh started, clears the marker, stamps the sentinel", () => {
 		const dir = mkdtempSync(join(tmpdir(), "qmd-claim-"));
