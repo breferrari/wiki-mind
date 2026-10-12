@@ -42,8 +42,12 @@ hooks:
     # engine re-runs bootstrap when this differs from the value recorded at
     # the last install (Invariant 4).
     fingerprint: "qmd-v1"
+  # Managed-file edits on install and adopt (SPEC.md §6.5): the owner and
+  # research focus into Index.md. The engine skips it on an all-defaults
+  # install, so that install stays identical to a clone (Invariant 2).
+  personalize: .shardmind/hooks/personalize.ts
   # The first QMD bootstrap builds the index and embeds every note.
   timeout_ms: 60000
 
-# personalize lands with #17. There is no post-update hook, and
+# There is no post-update hook, and
 # .claude/scripts/tests/shard-manifest.test.ts holds that (Invariant 3).
