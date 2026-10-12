@@ -154,7 +154,7 @@ The command prints what it did and what it left alone:
 | `.claude/commands/` | Slash commands (§6.2). |
 | `.claude/scripts/` | The vendored libraries and QMD MCP server, wiki-mind's entry points, and the extension registry in `core/` (§7). |
 | `.claude/extensions/` | wiki-mind's own sections, detectors, signals and validators (§7.4). |
-| `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod at `.claude/skills/wiki-mind/` (§6.4), vendored. |
+| `.claude/skills/` | Obsidian and QMD skills, `mermaid-visualizer` for synthesis diagrams (§6.2), and the Claude Code mod at `.claude/skills/wiki-mind/` (§6.4), vendored. |
 | `.claude/settings.json` | The hook wiring, vendored with one patch that adds the vendor guard (§7.1; inert in an installed vault, which has no record): wiki-mind's entry points keep obsidian-mind's script names and walk-up (§7.3). |
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
@@ -217,6 +217,8 @@ Default wizard state is every module selected (ShardMind rule), so a defaults in
 
 A fifth, `/wiki-retract`, came with §2.1 (#86): the wiki's own case of a correction (Q12).
 
+**Decided (2026-10-12, maintainer may overrule):** `/wiki-synthesize` offers a diagram when the comparison has a shape a picture shows, such as a pipeline the sides split, a hierarchy, or trade-off axes. It draws it with the vendored `mermaid-visualizer` skill, under `## Diagram`, before the verdict (#33). **A diagram adds no claim:** it restates what the note's text says and cites, so it needs no links of its own, and a claim that appears only in a diagram is a bug.
+
 ### 6.3 Hooks
 
 The same events obsidian-mind hooks, wired the same way in `.claude/settings.json`. The scripts are wiki-mind's own, written as dispatchers over the extension registry (§7.4); only `pre-compact.ts` is vendored:
@@ -265,7 +267,7 @@ wiki-mind is also the test bed for the extensible layer. Its entry points are th
 
 A vendored file is upstream plus patches, nothing else. A local change is a patch in `vendor-patches/` beside its record, never a hand edit: a short header over a unified diff. `Description` is the change to make, and `Forwarded` is the upstream issue or PR it went to, or `not-needed: <reason>`. mindframe's vendor tool makes the patches (`patch begin`, then `patch new`), and `check` verifies the copy offline: each file must be exactly upstream plus its patches, and every patch must say where it went. Text is hashed as LF so a CRLF checkout matches. `update` moves a record to a new upstream commit, carrying its patches, and retires the ones upstream has taken. `.claude/scripts/vendor-guard.ts`, a PreToolUse hook, stops an edit to a vendored file and names the routes: an extension, a fix upstream, or a patch. It fails open; CI's `check` is the guarantee. **Decided (2026-10-06, the maintainer, replacing 2026-10-05):** provenance and vendor updates are repo-only (Q11). The records and their patches stay in the repo, through `.shardmindignore`. An installed vault is its user's own, and updates through ShardMind, which merges the user's edits. The guard and its wiring still install, but with no record the guard allows every edit and prints nothing, so a user is never sent to a vendor tool their vault doesn't have.
 
-**The vendored set: 80 files from obsidian-mind v9.1.0.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. #53 re-vendored the set from v9.1.0 (the session-start budget restores sections that fit, and degrades by levels). It added `lib/prose-width.ts`, which `lib/frontmatter.ts` now imports, with its test, and the test runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts`: `npm test` redirects QMD's cache and config to a temp folder and fails if the run wrote into the user's own. Three upstream test cases read obsidian-mind's own templates or run its `charcount` entry point, which wiki-mind ships neither of, so they are skipped, recorded as patches. `.claude/VENDOR.json` lists each file. #78 moved 16 of them, 9 libraries and their 7 tests, to the mindframe record (§7.5), so `.claude/VENDOR.json` now records 64.
+**The vendored set: 80 files from obsidian-mind v9.1.0.** #6 vendored 66 generic files unmodified. #35 added `.claude/settings.json` unmodified. #7 added the mod's 9 files, 7 of them changed by P1, and patched `lib/stop-report.ts` for S6. #53 re-vendored the set from v9.1.0 (the session-start budget restores sections that fit, and degrades by levels). It added `lib/prose-width.ts`, which `lib/frontmatter.ts` now imports, with its test, and the test runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts`: `npm test` redirects QMD's cache and config to a temp folder and fails if the run wrote into the user's own. Three upstream test cases read obsidian-mind's own templates or run its `charcount` entry point, which wiki-mind ships neither of, so they are skipped, recorded as patches. `.claude/VENDOR.json` lists each file. #78 moved 16 of them, 9 libraries and their 7 tests, to the mindframe record (§7.5), and #86 moved `lib/atomic-write.ts` there too. #33 added the `mermaid-visualizer` skill's 2 files unmodified, so `.claude/VENDOR.json` now records 65.
 
 | Group | Files |
 |-------|-------|
@@ -286,7 +288,7 @@ Not vendored:
 
 - the hook entry points `session-start.ts`, `classify-message.ts`, `validate-write.ts` and `stop-checklist.ts`, and the libraries only they use (`active-hygiene`, `signals`, `matcher`, `memory-promoted`, `mcp-exposure`, `mcp-qmd-client`);
 - the memory MCP server and its libraries;
-- `tidy-fix`, the correction sweep, `update-skills.ts`, the root `.claude-plugin/`, and the `excalidraw-diagram` and `mermaid-visualizer` skills;
+- `tidy-fix`, the correction sweep, `update-skills.ts`, the root `.claude-plugin/`, and the `excalidraw-diagram` skill;
 - obsidian-mind's commands, agents, templates, Bases and content.
 
 The mod is vendored at `.claude/skills/wiki-mind/` (upstream `.claude/skills/obsidian-mind/`). P1, its identity change, renames its plugin, state keys and context block to `wiki-mind`, and leaves the `om_mod` protocol and the script paths it runs unchanged (§7.3). It doesn't need obsidian-mind's root `.claude-plugin/`. `claude plugin validate --strict` and `claude plugin test` check it in CI on all three operating systems (`.github/workflows/mod.yml`).
@@ -537,4 +539,4 @@ Planned for phases after the first release, so they are scheduled rather than dr
 - **Codex and Gemini** as removable modules, as in obsidian-mind (§5).
 - **Corrections for a retracted or superseded source:** specified in §2.1, built by #86.
 - **`wrap-up` and `tidy`**, through the extraction rather than as wiki-mind copies (§6.2).
-- **A diagram skill for syntheses** (mermaid). A comparison note is a natural place for a diagram (§7.1).
+- **A diagram skill for syntheses** (mermaid): built by #33, §6.2.
