@@ -3,11 +3,13 @@
  * what part of a note each line is in, and which sources are current. The
  * retraction pass and the stale-citation check read notes the same way.
  *
- * A link is whatever `extractWikilinkTargets` reads as one; this module only
- * adds where it is, because a claim is the whole line that holds the link.
+ * The core reads the lines (`lineRegions`) and the links on each
+ * (`wikilinkSpans`), by the rules `extractWikilinkTargets` follows. This
+ * module adds the wiki's own layer: the Withdrawn claims region, and each
+ * link's note name.
  */
 
-import { extractWikilinkTargets } from "../../scripts/core/index.ts";
+import { lineRegions, wikilinkSpans } from "../../scripts/core/index.ts";
 import { linkName, listNotes, type Note, statusOf } from "./notes.ts";
 
 /** Written right after a link to a source that is no longer current. Exact: lint and --undo match it. */
@@ -24,45 +26,16 @@ export function splitLines(content: string): Lines {
 
 export const joinLines = ({ lines, eol }: Lines): string => lines.join(eol);
 
-/** Which part of a note a line is in. */
+/** Which part of a note a line is in: the core's regions, plus the wiki's Withdrawn claims. */
 export type Region = "frontmatter" | "fence" | "heading" | "withdrawn" | "body";
 
-/**
- * Each line's region. The core's code stripper (lib/wikilinks.ts) removes
- * fenced lines rather than naming them, and isn't exported to extensions,
- * so this reads fences itself: a fence closes on the same character, at
- * least as long, as Markdown has it.
- */
+/** Each line's region: a body line under `## Withdrawn claims` is "withdrawn". */
 export function regions(lines: readonly string[]): Region[] {
-	const out: Region[] = [];
-	let inFrontmatter = lines[0]?.replace(/^﻿/, "").trimEnd() === "---";
-	let fence: string | null = null;
 	let withdrawn = false;
-	lines.forEach((line, i) => {
-		if (inFrontmatter) {
-			out.push("frontmatter");
-			if (i > 0 && line.trimEnd() === "---") inFrontmatter = false;
-			return;
-		}
-		const open = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
-		if (fence !== null) {
-			out.push("fence");
-			if (open !== undefined && open[0] === fence[0] && open.length >= fence.length) fence = null;
-			return;
-		}
-		if (open !== undefined) {
-			fence = open;
-			out.push("fence");
-			return;
-		}
-		if (/^#{1,6}\s/.test(line)) {
-			withdrawn = line.trim() === WITHDRAWN_HEADING;
-			out.push("heading");
-			return;
-		}
-		out.push(withdrawn ? "withdrawn" : "body");
+	return lineRegions(lines).map((region, i): Region => {
+		if (region === "heading") withdrawn = (lines[i] ?? "").trim() === WITHDRAWN_HEADING;
+		return region === "body" && withdrawn ? "withdrawn" : region;
 	});
-	return out;
 }
 
 /** The first heading line that `match` accepts, or -1. */
@@ -85,16 +58,9 @@ export function trimTrailingBlanks(lines: string[]): void {
 /** A wikilink on a line: its target as written, the note name it targets (lowercased last path segment), and where it sits. */
 export type LinkSpan = { readonly target: string; readonly name: string; readonly start: number; readonly end: number };
 
-/** The links on a line, left to right. */
+/** The links on a line, left to right, each with the note name it targets. */
 export function linkSpans(line: string): LinkSpan[] {
-	// Inline code is not a link: blank it out, keeping every offset.
-	const masked = line.replace(/`[^`]*`/g, (m) => " ".repeat(m.length));
-	const spans: LinkSpan[] = [];
-	for (const m of masked.matchAll(/!?\[\[([^\[\]\n]+?)\]\]/g)) {
-		const target = extractWikilinkTargets(m[0])[0];
-		if (target !== undefined) spans.push({ target, name: linkName(target), start: m.index, end: m.index + m[0].length });
-	}
-	return spans;
+	return wikilinkSpans(line).map((span) => ({ ...span, name: linkName(span.target) }));
 }
 
 /** The links among `spans` to a note in `names` with no marker after them: what lint reports and the pass marks or withdraws. */
