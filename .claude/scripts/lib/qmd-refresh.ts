@@ -335,6 +335,13 @@ export function triggerDebouncedRefresh(opts: {
 	// passed only where qmd was installed, since without qmd the trigger stops
 	// at the resolvability check first — the release job, with no qmd, failed.
 	debug(`${opts.logPrefix}: refresh requested`);
+	// The test runner turns the real worker off: a debounced trigger still spawns
+	// a detached trailing worker, which outlives the test and calls qmd later.
+	// A test seam (spawnWorker) still runs, so the trigger's own tests hold.
+	if (process.env["VAULT_QMD_REFRESH"] === "off" && opts.spawnWorker === undefined) {
+		debug(`${opts.logPrefix}: refresh off (VAULT_QMD_REFRESH); nothing spawned`);
+		return;
+	}
 	const now = Date.now();
 	const mtime = readSentinelMtime(opts.sentinelPath);
 	const pendingPath = pendingPathFor(opts.sentinelPath);
