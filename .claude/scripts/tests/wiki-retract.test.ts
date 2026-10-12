@@ -475,10 +475,15 @@ describe("writes (SPEC.md §2.1, Writes)", () => {
 		// Between plan and apply, the note becomes a folder: renaming a file onto it fails on every system.
 		rmSync(join(root, "entities", "Locked.md"));
 		mkdirSync(join(root, "entities", "Locked.md"));
+		const started = performance.now();
 		const applied = applyRetraction(root, plan, writeFileAtomic);
+		// A folder is not a busy file: the write fails at once, not after the core's
+		// one-second retry for a file another program holds (mindframe #79).
+		assert.ok(performance.now() - started < 750, `stopped in ${Math.round(performance.now() - started)} ms`);
 		assert.equal(applied.error?.relPath, "entities/Locked.md");
 		assert.ok(applied.written.includes("concepts/RAG.md"));
 		assert.ok(applied.notWritten.includes("sources/Smith 2024.md"), "the source note, written last, is not written");
+		// readdirSync lists dot files too, so the core's hidden, random temp name would show here.
 		assert.deepEqual(readdirSync(join(root, "entities")).sort(), ["Locked.md"], "no temporary file left beside it");
 		assert.ok(read(root, "concepts/RAG.md").includes(`(withdrawn ${DATE})`), "what was written is whole");
 		assert.equal(read(root, "sources/Smith 2024.md").includes("status:"), false);

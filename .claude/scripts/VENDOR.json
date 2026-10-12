@@ -1,5 +1,5 @@
 {
-  "commit": "afdf793e0df62b7884cdb188611a2e2ea9c1c4e6",
+  "commit": "6766d5dc43f11bec4608ee807190b11566f1d8f5",
   "copyright": "Brenno Ferrari",
   "files": {
     "core/context.test.ts": {
@@ -43,9 +43,9 @@
       "upstreamSha256": "cd969dbc6805ae5b3e15c50f71abd8f800d867e4ff84ebbd8fda7c904b364bbd"
     },
     "lib/atomic-write.ts": {
-      "sha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8",
+      "sha256": "47bda78689e0acc1d1a2f7059d33264a631aa9a15b108c67d4c4bed3e7910f37",
       "upstream": "lib/atomic-write.ts",
-      "upstreamSha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8"
+      "upstreamSha256": "47bda78689e0acc1d1a2f7059d33264a631aa9a15b108c67d4c4bed3e7910f37"
     },
     "lib/frontmatter.ts": {
       "sha256": "6ddd9bbb99ca760c02595d7119c81973291ebd0a07c48c88fa955f6563913da1",
