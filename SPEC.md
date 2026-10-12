@@ -50,64 +50,55 @@ A synthesis sits above concepts: it never replaces one, and a concept never hold
 | Synthesis | `sides`: the notes it compares |
 | Question | `status`: `open`, `answered` or `dropped` |
 
-A Source also takes an optional `status` and `superseded_by` when it is retracted or superseded (§2.1).
+A Source can be retracted or superseded: §2.1.
 
 ### 2.1 When a source is retracted or superseded
 
-A source can stop holding: its publisher retracts it, or a newer source replaces what it says (a correction, an erratum, a new version, a partial retraction). The wiki then has to stop asserting what rested on it, without losing the record of what it said. Specified by #26 and built by #86.
+A source can stop holding: its publisher retracts it, or a newer source replaces what it says (a correction, an erratum, a new version, a partial retraction). The wiki then stops asserting what rested on it and keeps the record of what it said. Built by #86.
 
-**Decided (2026-10-12):** the shape below. It takes one rule from obsidian-mind's correction sweep and leaves the rest. The rule it takes is the asymmetry: a rewritten record cannot be recovered, while a missed restatement stays visible and fixable. So a note that records what a source said is never rewritten, and an uncertain case is kept and reported. What it leaves is the search: obsidian-mind looks for a corrected fact by meaning, because its notes restate facts without links. Here every claim links its source (§2), so the source note's backlinks find every claim that rests on it. Publishers and reference managers work the same way: Crossmark records a retraction or a new version as an update to the work, and Zotero flags a retracted item rather than removing it.
+**Decided (2026-10-12):** a note that records what a source said is never rewritten, and an uncertain case is kept and reported. This is the one rule taken from obsidian-mind's correction sweep: a rewritten record cannot be recovered, while a missed restatement stays visible. Its search by meaning is not taken: here every claim links its source (§2), so the source note's backlinks find the claims that rest on it.
 
-#### The source note
+#### Currency
 
 | Field | Values | When |
 |-------|--------|------|
 | `status` | `retracted` or `superseded` | Optional. Absent means current, so existing notes need no change. |
-| `superseded_by` | `[[Source]]` | With `status: superseded`, and only then. The newer source is ingested first. |
+| `superseded_by` | `[[Source]]` | With `status: superseded`, and only then. |
 
-**Decided (2026-10-12):** `status` is optional, and absent means current.
+A source with either status is **no longer current**. Every rule below is about currency, so the two statuses differ in one step only: a superseded source's claims are restated from the newer source.
 
-The note is never deleted, and its body stays as the record of what the source said. A dated section goes at the top, `## Retracted` or `## Superseded`, with the date, the notice's URL and the reason in a line. The note's `Index.md` annotation ends with `(retracted)` or `(superseded by [[Source]])`.
+The source note is never deleted, and its body stays as the record. A dated section goes at the top, `## Retracted` or `## Superseded`, with the date, the notice's URL and the reason in a line. The note's `Index.md` annotation ends with `(retracted)` or `(superseded by [[Source]])`.
 
 #### The claims that cite it
 
-`/wiki-retract <source>` marks a retraction, and `/wiki-retract <source> --superseded-by <source>` marks a supersession. It reads the source note's backlinks. A claim is the list item, table row or paragraph that holds a link to the source, in any form: `[[Source]]`, `[[Source|alias]]`, `[[Source#heading]]`, or a path to it. The command sorts each claim by what still supports it. Only a current source counts as support.
+`/wiki-retract <source>`, or `/wiki-retract <source> --superseded-by <source>`, sets the status and then walks the source note's backlinks. A link is whatever `extractWikilinkTargets` (`lib/wikilinks.ts`) reads as one, the same reader `wiki-lint` uses. A claim is the line that holds the link: a list item, a table row or a paragraph line. Ingest writes one claim per line (`templates/Source.md`). Only a current source counts as support.
 
-| Case | What happens |
-|------|--------------|
-| Another current source also backs the claim | The claim stays. Its link to the source is followed by `(retracted)` or `(superseded)`. |
-| Only this source backs it, and it was retracted | The claim leaves the note's text and moves under `## Withdrawn claims` at the note's end, as `- <claim> [[Source]] (retracted YYYY-MM-DD)`. |
-| Only this source backs it, and it was superseded | The claim is restated from the newer source and linked to it. The old wording moves under `## Withdrawn claims`, as `(superseded by [[Source]] YYYY-MM-DD)`. |
-| A synthesis loses a side's only source, or names the source in `sides` | It is flagged for review in the report and not rewritten. A verdict needs judgement. |
-| An answered question rested only on this source | Its `status` goes back to `open`, with a dated line saying which source fell. |
+| The claim | What happens |
+|-----------|--------------|
+| Still has another current source | It stays. The link to the source gains the marker ` (no longer current)`. |
+| Has no other current source | It moves under `## Withdrawn claims` at the note's end, as `- <claim> (withdrawn YYYY-MM-DD)`, with its link to the source kept. A superseded source's claim is first restated from the newer source and linked to it, in the claim's old place. |
+| Is in a synthesis, whose side loses its only current source, or which names the source in `sides` | The synthesis is flagged for review in the report, and not rewritten. A verdict needs judgement. |
+| Answers a question, and the answer has no other current source | The question's `status` goes back to `open`, with a dated line naming the source. |
 
-**Decided (2026-10-12):** a claim with no other support moves to `## Withdrawn claims`. It isn't deleted, and it isn't struck through in place. A struck claim stays in the text that later sessions reread, and a deleted one loses the record.
-
-A concept or entity whose sources are all retracted or superseded counts as unsourced: `wiki-lint` reports it under "concepts and entities with no source".
+**Decided (2026-10-12):** a claim with no other current support moves to `## Withdrawn claims`. It isn't struck through in place, because later sessions reread the note's text, and it isn't deleted, because that loses the record.
 
 #### Edge cases
 
 - **Supersession with the newer source missing.** If the newer source has no note, the command stops and names the source to ingest first, as `/wiki-synthesize` does.
-- **A claim whose sources are all retracted.** Each retraction is handled in turn. While one source is current, the claim stays and is marked. When the last one falls, the claim is withdrawn.
-- **A chain.** A is superseded by B, and B is later retracted. Claims restated from B are handled as B's claims: with no other current source, they are withdrawn. They don't fall back to A, which stays superseded. The report names A, so the user can decide whether an older source should be reconsidered.
-- **A source nothing cites.** The command still sets `status`, adds the dated section and marks the annotation. The report says no note cites it.
-- **A citing note edited by hand since ingest.** Only a claim the command can match to a link to the source is moved or marked. A mention without a link, or a paraphrase whose link was removed, is listed in the report and left alone. The command doesn't guess what a claim rests on.
-- **A retraction that is itself withdrawn** (the publisher withdraws its notice). `/wiki-retract <source> --undo` clears `status` and `superseded_by`. The dated section stays, and gains a dated line saying the retraction was withdrawn, because the record is never rewritten. Each entry under `## Withdrawn claims` that this source alone put there returns to the note's text, and the entry gains `restored YYYY-MM-DD`. The markers on its links are removed. A flagged synthesis stays flagged, and a reopened question stays open with a dated line, because the user re-decides both.
-- **An uncertain case.** The claim is kept and listed in the report, never rewritten on a guess.
+- **A chain.** A is superseded by B, and B is later retracted. Claims restated from B have no other current source and are withdrawn. They don't fall back to A, which is not current either. The report names A, so the user can decide whether to reconsider it.
+- **A source nothing cites.** The status, the dated section and the annotation still change, and the report says no note cites it.
+- **A citing note edited by hand since ingest.** Only a line holding a link to the source is moved or marked. A mention without a link, or a paraphrase whose link was removed, is listed in the report as unmatched and left alone. The command doesn't guess what a claim rests on.
+- **A retraction that is itself withdrawn** (the publisher withdraws its notice). `/wiki-retract <source> --undo` makes the source current again: it clears `status` and `superseded_by`, and adds a dated line to the dated section, which otherwise stays. Then it runs the same pass with the source current. A marker on a link to the source is removed. A withdrawn claim whose kept link to the source is now its only current support returns to the note's text, and its entry gains `restored YYYY-MM-DD`. A flagged synthesis stays flagged, and a reopened question stays open, because the user re-decides both.
 
 #### Checks
 
-- `validate-write`:
-  - `status` on a source is `retracted` or `superseded`;
-  - `superseded_by` appears only with `status: superseded`;
-  - `superseded_by` links a source note that exists.
-- `wiki-lint` reports:
-  - a link to a retracted or superseded source with no marker, outside `## Withdrawn claims`;
-  - a concept or entity whose sources are all retracted or superseded.
+These extend what exists rather than adding new checks:
+- `validate-write`: `ENUM_FIELDS` (`extensions/wiki/index.ts`) gains a source rule, `status` in `retracted` or `superseded`, which an absent field passes. `superseded_by` appears only with `status: superseded`, and links a source note that exists.
+- `wiki-lint`: `sourceNames()` counts only current sources, so `wiki.unsourced` reports a concept or entity whose sources are all no longer current. A new finding reports a link to a source that is no longer current, with no marker, outside `## Withdrawn claims`.
 
 #### Report
 
-Like obsidian-mind's correction sweep, the command prints what it did and what it left alone:
+The command prints what it did and what it left alone:
 
 ```
 /wiki-retract "Smith 2024"
@@ -115,7 +106,7 @@ Like obsidian-mind's correction sweep, the command prints what it did and what i
   MARKED      concepts/Retrieval-augmented generation.md:14   also backed by [[Lee 2025]]
   WITHDRAWN   entities/RAG-Bench.md:9                         moved to Withdrawn claims
   REOPENED    questions/Does RAG beat fine-tuning.md          answer rested on [[Smith 2024]]
-  FLAGGED     syntheses/RAG vs fine-tuning.md                 a side lost its only source
+  FLAGGED     syntheses/RAG vs fine-tuning.md                 a side lost its only current source
   UNMATCHED   concepts/Chunking.md:22                         names "Smith" with no link: left alone
 
   1 marked, 1 withdrawn, 1 reopened, 1 flagged, 1 unmatched.
