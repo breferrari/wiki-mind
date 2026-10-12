@@ -98,6 +98,7 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Find the vault from a subfolder in /wiki-retract | [#89](https://github.com/breferrari/wiki-mind/issues/89) |
 | ⬜ | Run the effects extensions declare from wiki-mind's entry points | [#90](https://github.com/breferrari/wiki-mind/issues/90) |
 | ✅ | Stop the test suite from leaving detached QMD refresh workers running | [#93](https://github.com/breferrari/wiki-mind/issues/93) |
+| ✅ | Re-vendor the obsidian-mind record to v10.0.0 | [#96](https://github.com/breferrari/wiki-mind/issues/96) |
 | ⬜ | wrap-up and tidy through the extraction | [#27](https://github.com/breferrari/wiki-mind/issues/27) |
 | ✅ | Diagram skill for syntheses (mermaid) | [#33](https://github.com/breferrari/wiki-mind/issues/33) |
 | ✅ | Vendor the core from mindframe | [#78](https://github.com/breferrari/wiki-mind/issues/78) |
