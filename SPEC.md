@@ -93,10 +93,12 @@ The marker ` (no longer current)`, the suffixes `(withdrawn YYYY-MM-DD)` and `re
 #### Edge cases
 
 - **Supersession with the newer source missing.** If the newer source has no note, the command stops and names the source to ingest first, as `/wiki-synthesize` does.
+- **A newer source that can't supersede.** The source itself, or a source that is no longer current, can't be the newer source: the command stops and says why.
 - **A claim whose sources fall one at a time.** While one source is current, the claim is MARKED. When the last falls, it is WITHDRAWN.
 - **A chain.** A is superseded by B, and B is later retracted. Claims restated from B have no other current source and are withdrawn. They don't fall back to A, which is not current either. The report names A, so the user can decide whether to reconsider it.
 - **A source whose status changes.** Running the command again on a source that is no longer current, for instance a superseded source that is then retracted, sets the new status and adds a dated line to the dated section. Then the pass runs again. A line already marked or withdrawn is not marked or withdrawn twice.
 - **A source nothing cites.** The status, the dated section and the annotation still change, and the report says no note cites it.
+- **An --undo of a pass that stopped midway.** The source note is written last, so a pass that stops leaves the source current. `--undo` still runs: it removes the markers and restores the lines that pass wrote, and leaves the source note as it is.
 - **A retraction that is itself withdrawn** (the publisher withdraws its notice). `/wiki-retract <source> --undo` makes the source current again: it clears `status` and `superseded_by`, and adds a dated line to the dated section, which otherwise stays. The marker after each link to the source is removed. A withdrawn line whose kept link to the source is now its only current support returns to its note's text, and its entry gains `restored YYYY-MM-DD`. A line that was restated from a newer source is not restored, because the restatement still stands; it is reported for the user. A flagged synthesis stays flagged, and a reopened question stays open, because the user re-decides both.
 
 #### Writes
