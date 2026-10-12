@@ -1,6 +1,7 @@
 Description: Build the mod-report preface from the mod's name
 Forwarded: https://github.com/breferrari/obsidian-mind/issues/318
 Last-Update: 2026-10-06
+Applied-Upstream: 0c980df
 
 diff --git a/.claude/scripts/lib/stop-report.ts b/.claude/scripts/lib/stop-report.ts
 --- a/.claude/scripts/lib/stop-report.ts
