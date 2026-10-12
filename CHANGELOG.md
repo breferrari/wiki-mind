@@ -4,6 +4,10 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ## [Unreleased]
 
+### Added
+
+- **Retract or supersede a source with `/wiki-retract`.** The source note stays as the record of what it said. Each claim that cites it is marked when another source still backs it, or moved to the note's Withdrawn claims when nothing does. For a newer source, the agent restates the claim from it. Syntheses that rest on it are flagged for review, and answered questions that rested on it alone reopen. `--undo` reverses it when a retraction is itself withdrawn. `/wiki-lint` reports a link to such a source that nothing has marked.
+
 ### Changed
 
 - **Install names its folder, and needs ShardMind 1.0 or later.** ShardMind 1.0 makes the vault's folder itself, so these steps replace 0.1.0's `mkdir` first:

@@ -5,6 +5,7 @@ tags: [source]
 authors: ""
 year:
 url: ""
+# Once retracted or superseded, /wiki-retract adds status (retracted or superseded) and superseded_by.
 ---
 
 # {{title}}
