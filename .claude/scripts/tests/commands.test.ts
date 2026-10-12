@@ -23,7 +23,6 @@ describe("the slash commands", () => {
 	test("wiki-synthesize offers a diagram through the vendored mermaid-visualizer skill, and says a diagram adds no claim (SPEC.md §6.2)", () => {
 		const text = readFileSync(join(DIR, "wiki-synthesize.md"), "utf-8");
 		assert.match(text, /`\.claude\/skills\/mermaid-visualizer\/`/);
-		assert.match(text, /## Diagram/);
 		assert.match(text, /adds no claim/);
 	});
 

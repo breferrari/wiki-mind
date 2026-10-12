@@ -45,7 +45,7 @@ Check what exists first: search before creating, so one idea never gets two note
 
 Write a `syntheses/` note from `templates/Synthesis.md`, with the notes compared in `sides`. Say where they agree and where they differ, and give a verdict on when to prefer which, citing the sources behind each claim. If a side has no note yet, stop and say which source to ingest first.
 
-When a picture would help, offer a mermaid diagram under `## Diagram`, drawn with the `mermaid-visualizer` skill. A diagram adds no claim: everything in it is already in the text, with its source.
+When a picture would help, offer a diagram (the command says how). A diagram adds no claim.
 
 ### File a question: `/wiki-question <text>`
 
