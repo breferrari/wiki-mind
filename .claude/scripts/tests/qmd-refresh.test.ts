@@ -25,6 +25,7 @@ import {
 	isDebounced,
 	parseWorkerArgs,
 	pendingPathFor,
+	refreshDisabled,
 	planRefresh,
 	resolveVaultRoot,
 	shouldRefreshForPath,
@@ -122,35 +123,67 @@ describe("triggerDebouncedRefresh — schedules one trailing flush per window", 
 });
 
 describe("VAULT_QMD_REFRESH=off — the switch the test runner sets", () => {
-	function withSwitch(value: string | undefined, run: () => void): void {
-		const before = process.env["VAULT_QMD_REFRESH"];
+	/** Run with the switch set and HOOK_DEBUG on, and return the debug lines written. */
+	function withSwitch(value: string | undefined, run: () => void): string[] {
+		const saved = { refresh: process.env["VAULT_QMD_REFRESH"], debug: process.env["HOOK_DEBUG"] };
+		const lines: string[] = [];
+		const write = process.stderr.write.bind(process.stderr);
 		if (value === undefined) delete process.env["VAULT_QMD_REFRESH"];
 		else process.env["VAULT_QMD_REFRESH"] = value;
+		process.env["HOOK_DEBUG"] = "1";
+		process.stderr.write = ((chunk: string | Uint8Array) => {
+			lines.push(String(chunk));
+			return true;
+		}) as typeof process.stderr.write;
 		try {
 			run();
 		} finally {
-			if (before === undefined) delete process.env["VAULT_QMD_REFRESH"];
-			else process.env["VAULT_QMD_REFRESH"] = before;
+			process.stderr.write = write;
+			for (const [key, before] of [["VAULT_QMD_REFRESH", saved.refresh], ["HOOK_DEBUG", saved.debug]] as const) {
+				if (before === undefined) delete process.env[key];
+				else process.env[key] = before;
+			}
 		}
+		return lines;
 	}
 
-	test("off, with no spawn seam: no worker, and no sentinel or pending marker written", () => {
+	const fire = (sentinel: string, dir: string) =>
+		triggerDebouncedRefresh({ sentinelPath: sentinel, workerPath: join(dir, "worker.ts"), debounceMs: 30_000, logPrefix: "test", qmdAvailable: () => true });
+
+	test("refreshDisabled reads the switch", () => {
+		assert.equal(refreshDisabled({ VAULT_QMD_REFRESH: "off" }), true);
+		assert.equal(refreshDisabled({}), false);
+		assert.equal(refreshDisabled({ VAULT_QMD_REFRESH: "on" }), false);
+	});
+
+	test("off: the immediate path spawns nothing, and still stamps the sentinel", () => {
 		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
 		const sentinel = join(dir, ".qmd-refresh-sentinel");
 		try {
-			// A real spawn would start a detached worker; with the switch off the
-			// trigger returns before it, so the leading edge stamps nothing either.
-			withSwitch("off", () =>
-				triggerDebouncedRefresh({ sentinelPath: sentinel, workerPath: join(dir, "no-such-worker.ts"), debounceMs: 30_000, logPrefix: "test", qmdAvailable: () => true }),
-			);
-			assert.equal(existsSync(sentinel), false, "no sentinel stamped");
-			assert.equal(existsSync(pendingPathFor(sentinel)), false, "no pending marker");
+			const lines = withSwitch("off", () => fire(sentinel, dir));
+			assert.ok(existsSync(sentinel), "the sentinel is stamped");
+			assert.ok(lines.some((l) => l.includes("test: refresh off (VAULT_QMD_REFRESH)")), lines.join(""));
 		} finally {
 			rmTemp(dir);
 		}
 	});
 
-	test("off, with a spawn seam: the seam still runs, so the trigger's own tests keep their meaning", () => {
+	test("off: the trailing path spawns nothing, and still claims the pending marker", () => {
+		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
+		const sentinel = join(dir, ".qmd-refresh-sentinel");
+		try {
+			writeFileSync(sentinel, "");
+			const t = (Date.now() - 10_000) / 1000;
+			utimesSync(sentinel, t, t);
+			const lines = withSwitch("off", () => fire(sentinel, dir));
+			assert.ok(existsSync(pendingPathFor(sentinel)), "the pending marker is claimed");
+			assert.ok(lines.some((l) => l.includes("test: refresh off (VAULT_QMD_REFRESH)")), lines.join(""));
+		} finally {
+			rmTemp(dir);
+		}
+	});
+
+	test("off, with a spawnWorker seam: the seam still runs", () => {
 		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
 		const spawned: (readonly string[])[] = [];
 		try {

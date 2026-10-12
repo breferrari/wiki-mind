@@ -31,7 +31,9 @@
  * guard that only killed would hide the leak.
  *
  * A test that builds a subprocess env from scratch, without `process.env`,
- * escapes the redirect; step 3 is what catches it. The wrapper exists
+ * escapes the redirect; step 3 is what catches it. It escapes the refresh
+ * switch and the temp folder too, so its worker wouldn't name the folder and
+ * the guard can't attribute it: build a test's env from `process.env`. The wrapper exists
  * because Node's runner applies `--import` to each test file's process and
  * never to itself, so a preload cannot see the run as a whole.
  */
@@ -71,14 +73,14 @@ function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
 				{ encoding: "utf-8", timeout: 30_000, windowsHide: true },
 			)
-		: spawnSync("ps", ["-eo", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
+		: spawnSync("ps", ["-ax", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
 	const fold = (t: string) => (windows ? t.toLowerCase() : t);
 	return (listed.stdout ?? "")
 		.split(/\r?\n/)
 		.map((line) => /^\s*(\d+)\s+(.*)$/.exec(line))
 		.filter((m): m is RegExpExecArray => m !== null)
 		.map((m) => ({ pid: Number(m[1]), cmd: m[2] ?? "" }))
-		.filter((p) => p.pid !== process.pid && p.cmd.includes("qmd-refresh-run") && fold(p.cmd).includes(fold(marker)));
+		.filter((p) => p.cmd.includes("qmd-refresh-run") && fold(p.cmd).includes(fold(marker)));
 }
 
 const before = watched.map(({ dir, ext }) => listing(dir, ext));
