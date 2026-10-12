@@ -1,5 +1,5 @@
 {
-  "commit": "6766d5dc43f11bec4608ee807190b11566f1d8f5",
+  "commit": "bcdfc9ca604498ef3691ca72ba97544f3cdfca91",
   "copyright": "Brenno Ferrari",
   "files": {
     "core/context.test.ts": {
@@ -13,9 +13,9 @@
       "upstreamSha256": "66366754444a92443ce79f5d85cfdfcc7bef039e4fe0d36567130f66252dea2c"
     },
     "core/index.ts": {
-      "sha256": "b1cb7309fbd676b07e171f84c0e3a3266bab1da65e769294bf316e74b3ddef91",
+      "sha256": "6fa9915ffafb8b7557df31135d47e580e696311e8b960673061cc2625bd37689",
       "upstream": "core/index.ts",
-      "upstreamSha256": "b1cb7309fbd676b07e171f84c0e3a3266bab1da65e769294bf316e74b3ddef91"
+      "upstreamSha256": "6fa9915ffafb8b7557df31135d47e580e696311e8b960673061cc2625bd37689"
     },
     "core/qmd-session.test.ts": {
       "sha256": "9e9373a79366fa480707c27b2c1d7fe92acdb4a9c8e7d65a5b077dfcb74a9183",
@@ -63,9 +63,9 @@
       "upstreamSha256": "90221c42785ca6d1bc581f6255a1f786093bd7c612da9a3d724b90c526dbdca7"
     },
     "lib/project-dir.ts": {
-      "sha256": "fcd33c92325e685ac31754f32d6a9519509133ccc469094a82f0783930e09e38",
+      "sha256": "bbf63b3507fb0fc6f0856cf73bd6dd548a143bda456189a451d3b9f2e475a18c",
       "upstream": "lib/project-dir.ts",
-      "upstreamSha256": "fcd33c92325e685ac31754f32d6a9519509133ccc469094a82f0783930e09e38"
+      "upstreamSha256": "bbf63b3507fb0fc6f0856cf73bd6dd548a143bda456189a451d3b9f2e475a18c"
     },
     "lib/prose-width.ts": {
       "sha256": "2d0fa9c392ed77ece98b10d4fe0634139570b66f6425aa95e3aacf64450e99ed",
@@ -108,9 +108,9 @@
       "upstreamSha256": "ca15b12d08609ed8e698ffdda449afb6ee53de9bdc95e1457a5cfc7562cecd99"
     },
     "tests/project-dir.test.ts": {
-      "sha256": "e738d5af8410a60c3f3f0965b1728ac903b0c5b1ef43456af13b1be545abda28",
+      "sha256": "422f618546ccfa0374771a2283d58888812598c522a60f4041837dbbd374a7ef",
       "upstream": "tests/project-dir.test.ts",
-      "upstreamSha256": "e738d5af8410a60c3f3f0965b1728ac903b0c5b1ef43456af13b1be545abda28"
+      "upstreamSha256": "422f618546ccfa0374771a2283d58888812598c522a60f4041837dbbd374a7ef"
     },
     "tests/prose-width.test.ts": {
       "sha256": "7627ad4666aa52e32099e5f20bbeed7f734dc10f5b1d9a5797d3bee2237957be",

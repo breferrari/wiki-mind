@@ -19,6 +19,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Fixed
 
+- **`/wiki-retract` finds the vault when the session started in a subfolder.** Before, it looked for `sources/` inside that subfolder and found nothing.
 - **Your name and research focus head `Index.md`** when you give them at install. Before, ShardMind recorded them but never ran the step that writes them.
 
 ## [0.1.0] - 2026-10-06

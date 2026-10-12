@@ -40,17 +40,19 @@ function vault(): string {
 	return root;
 }
 
-function run(root: string, ...args: string[]) {
-	const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PROJECT_DIR: root };
+/** Run the script from `projectDir`, with CLAUDE_PROJECT_DIR naming it. */
+function run(projectDir: string, ...args: string[]) {
+	const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PROJECT_DIR: projectDir };
 	delete env["CODEX_PROJECT_DIR"];
 	delete env["GEMINI_PROJECT_DIR"];
-	const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", RUNNER, ...args], { cwd: root, env, encoding: "utf-8" });
+	const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", RUNNER, ...args], { cwd: projectDir, env, encoding: "utf-8" });
 	return { code: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
 const read = (root: string, rel: string) => readFileSync(join(root, rel), "utf-8");
 
 describe("wiki-retract.ts", () => {
+	// Its vault has no vault-manifest.json, so this also covers a folder outside any vault: used as given.
 	test("--dry-run prints the plan and writes nothing", () => {
 		const root = vault();
 		const r = run(root, "Smith 2024", "--dry-run", "--date", "2026-10-12");
@@ -66,6 +68,14 @@ describe("wiki-retract.ts", () => {
 		assert.equal(r.code, 0, r.stderr);
 		assert.match(r.stdout, /Written: concepts\/RAG\.md, Index\.md, sources\/Smith 2024\.md/);
 		assert.match(read(root, "sources/Smith 2024.md"), /- 2026-10-12: retracted\. Notice: https:\/\/notice\. Reason: fabricated/);
+		assert.ok(read(root, "concepts/RAG.md").includes("(withdrawn 2026-10-12)"));
+	});
+
+	test("finds the vault from a subfolder: a session started in concepts/ still finds sources/ (#89)", () => {
+		const root = vault();
+		writeFileSync(join(root, "vault-manifest.json"), "{}\n");
+		const r = run(join(root, "concepts"), "Smith 2024", "--date", "2026-10-12");
+		assert.equal(r.code, 0, r.stdout + r.stderr);
 		assert.ok(read(root, "concepts/RAG.md").includes("(withdrawn 2026-10-12)"));
 	});
 
