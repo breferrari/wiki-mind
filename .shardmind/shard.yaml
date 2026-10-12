@@ -49,5 +49,5 @@ hooks:
   # The first QMD bootstrap builds the index and embeds every note.
   timeout_ms: 60000
 
-# There is no post-update hook, and
-# .claude/scripts/tests/shard-manifest.test.ts holds that (Invariant 3).
+# There is no post-update hook: .claude/scripts/tests/shard-manifest.test.ts
+# holds that (Invariant 3).

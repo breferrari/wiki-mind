@@ -90,7 +90,7 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 
 | | Task | Issue |
 |---|---|---|
-| ⬜ | Declare the personalize hook in shard.yaml | [#82](https://github.com/breferrari/wiki-mind/issues/82) |
+| ✅ | Declare the personalize hook in shard.yaml | [#82](https://github.com/breferrari/wiki-mind/issues/82) |
 | ⬜ | Install into a named folder in the README and release notes for ShardMind 1.0 | [#83](https://github.com/breferrari/wiki-mind/issues/83) |
 | ⬜ | Codex and Gemini as removable modules | [#25](https://github.com/breferrari/wiki-mind/issues/25) |
 | ⬜ | Spec corrections for a retracted or superseded source | [#26](https://github.com/breferrari/wiki-mind/issues/26) |

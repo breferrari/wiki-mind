@@ -53,10 +53,13 @@ describe("the ShardMind manifest", () => {
 	test("every hook script under .shardmind/hooks/ is declared, so the engine runs it", () => {
 		const scripts = readdirSync(join(REPO, ".shardmind", "hooks")).filter((f) => f.endsWith(".ts"));
 		assert.ok(scripts.length > 0);
+		// A declaration is a value line under any slot; a comment naming the path doesn't count.
+		const values = manifest
+			.split(/\r?\n/)
+			.filter((l) => !/^\s*#/.test(l))
+			.map((l) => l.trimEnd());
 		for (const script of scripts) {
-			const declared = manifest
-				.split(/\r?\n/)
-				.some((l) => /^ {2,4}(?:script|personalize|post-update): /.test(l) && l.trimEnd().endsWith(`: .shardmind/hooks/${script}`));
+			const declared = values.some((l) => l.endsWith(`: .shardmind/hooks/${script}`));
 			assert.ok(declared, `.shardmind/hooks/${script} exists, but shard.yaml never declares it`);
 		}
 	});
