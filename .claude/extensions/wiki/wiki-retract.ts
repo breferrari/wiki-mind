@@ -18,7 +18,7 @@
  */
 
 import { parseArgs } from "node:util";
-import { writeFileAtomic } from "../../scripts/core/index.ts";
+import { resolveProjectDir, writeFileAtomic } from "../../scripts/core/index.ts";
 import { applyRetraction, formatReport, planRetraction, RetractError } from "./retract.ts";
 
 const USAGE = 'usage: wiki-retract.ts "<source>" [--superseded-by "<newer>"] [--notice <url>] [--reason "<text>"] [--undo] [--dry-run] [--date YYYY-MM-DD]';
@@ -65,8 +65,9 @@ function main(): number {
 	const date = values.date ?? today();
 	if (!isDate(date)) return refuse(`--date takes a real date as YYYY-MM-DD, got ${date}`);
 
-	// The vault the agent runs in: its project directory, as the hooks find it, or here.
-	const vaultRoot = [process.env["CLAUDE_PROJECT_DIR"], process.env["CODEX_PROJECT_DIR"], process.env["GEMINI_PROJECT_DIR"]].find((d) => d !== undefined && d !== "") ?? process.cwd();
+	// The vault the agent runs in, found as the hooks find it: the agent's project
+	// directory (or here), walked up to the folder holding vault-manifest.json.
+	const vaultRoot = resolveProjectDir(process.cwd());
 
 	let plan;
 	try {
