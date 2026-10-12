@@ -1,5 +1,5 @@
 {
-  "commit": "bcdfc9ca604498ef3691ca72ba97544f3cdfca91",
+  "commit": "d5629cfa5491e853454686dc5d9ce9d87ab0a7eb",
   "copyright": "Brenno Ferrari",
   "files": {
     "core/context.test.ts": {
@@ -13,9 +13,9 @@
       "upstreamSha256": "66366754444a92443ce79f5d85cfdfcc7bef039e4fe0d36567130f66252dea2c"
     },
     "core/index.ts": {
-      "sha256": "6fa9915ffafb8b7557df31135d47e580e696311e8b960673061cc2625bd37689",
+      "sha256": "022636d146f4aa7b16a14b1f37f7b4c0ff945a37c9232a8b2c4841569225a9dc",
       "upstream": "core/index.ts",
-      "upstreamSha256": "6fa9915ffafb8b7557df31135d47e580e696311e8b960673061cc2625bd37689"
+      "upstreamSha256": "022636d146f4aa7b16a14b1f37f7b4c0ff945a37c9232a8b2c4841569225a9dc"
     },
     "core/qmd-session.test.ts": {
       "sha256": "9e9373a79366fa480707c27b2c1d7fe92acdb4a9c8e7d65a5b077dfcb74a9183",
@@ -47,15 +47,25 @@
       "upstream": "lib/atomic-write.ts",
       "upstreamSha256": "47bda78689e0acc1d1a2f7059d33264a631aa9a15b108c67d4c4bed3e7910f37"
     },
+    "lib/fences.ts": {
+      "sha256": "c0cae6d3e1cfb7de78deb4408d7243d7cc4d2df4245e8b3ca4b06041168e345f",
+      "upstream": "lib/fences.ts",
+      "upstreamSha256": "c0cae6d3e1cfb7de78deb4408d7243d7cc4d2df4245e8b3ca4b06041168e345f"
+    },
     "lib/frontmatter.ts": {
-      "sha256": "6ddd9bbb99ca760c02595d7119c81973291ebd0a07c48c88fa955f6563913da1",
+      "sha256": "aad35e1b6f615b58abbdece44d0977a1753e6b1e6984363447a45d7ac116e9d4",
       "upstream": "lib/frontmatter.ts",
-      "upstreamSha256": "6ddd9bbb99ca760c02595d7119c81973291ebd0a07c48c88fa955f6563913da1"
+      "upstreamSha256": "aad35e1b6f615b58abbdece44d0977a1753e6b1e6984363447a45d7ac116e9d4"
     },
     "lib/hook-io.ts": {
       "sha256": "6eddaeb3e73c7d31af51264974c998b28433c9051fc21d4d4d6aefdad91f4822",
       "upstream": "lib/hook-io.ts",
       "upstreamSha256": "6eddaeb3e73c7d31af51264974c998b28433c9051fc21d4d4d6aefdad91f4822"
+    },
+    "lib/instruction-files.ts": {
+      "sha256": "86ae26f2522746905c2bd5147bef639c0d6c700c225121c68d14ce8c9b620fa7",
+      "upstream": "lib/instruction-files.ts",
+      "upstreamSha256": "86ae26f2522746905c2bd5147bef639c0d6c700c225121c68d14ce8c9b620fa7"
     },
     "lib/om-mod.ts": {
       "sha256": "90221c42785ca6d1bc581f6255a1f786093bd7c612da9a3d724b90c526dbdca7",
@@ -68,9 +78,9 @@
       "upstreamSha256": "bbf63b3507fb0fc6f0856cf73bd6dd548a143bda456189a451d3b9f2e475a18c"
     },
     "lib/prose-width.ts": {
-      "sha256": "2d0fa9c392ed77ece98b10d4fe0634139570b66f6425aa95e3aacf64450e99ed",
+      "sha256": "6253abaf474b5a9b46ed1f4bc9c8a444751960c1af6cd3fa30585ab3d43b67b8",
       "upstream": "lib/prose-width.ts",
-      "upstreamSha256": "2d0fa9c392ed77ece98b10d4fe0634139570b66f6425aa95e3aacf64450e99ed"
+      "upstreamSha256": "6253abaf474b5a9b46ed1f4bc9c8a444751960c1af6cd3fa30585ab3d43b67b8"
     },
     "lib/qmd.ts": {
       "sha256": "887487cc52b17e8494c248d65faaba6b2006e9844acfe67164c78fb06af86848",
@@ -83,14 +93,14 @@
       "upstreamSha256": "4bdbbb1e83027db42d459cb17c3d71af7a91e09e3b53356c02188e2feb093c96"
     },
     "lib/session-start.ts": {
-      "sha256": "3593de22dfe5f8dfa5e78663717c06c4ff82001abfe5dc6e0421a78d2564a27d",
+      "sha256": "31393d385b0909210601c176e2f69db106af577fcff42234214cf3e5d678f45c",
       "upstream": "lib/session-start.ts",
-      "upstreamSha256": "3593de22dfe5f8dfa5e78663717c06c4ff82001abfe5dc6e0421a78d2564a27d"
+      "upstreamSha256": "31393d385b0909210601c176e2f69db106af577fcff42234214cf3e5d678f45c"
     },
     "lib/wikilinks.ts": {
-      "sha256": "e458e45a53b8fe9841cf463127e41fd680dd8abdb14ff6062bfe1f519532277f",
+      "sha256": "f73d2bff7f2145a745e6c111f92cce5b0cd23a57fdc445b9b4a5abf0ea9be19b",
       "upstream": "lib/wikilinks.ts",
-      "upstreamSha256": "e458e45a53b8fe9841cf463127e41fd680dd8abdb14ff6062bfe1f519532277f"
+      "upstreamSha256": "f73d2bff7f2145a745e6c111f92cce5b0cd23a57fdc445b9b4a5abf0ea9be19b"
     },
     "tests/frontmatter.test.ts": {
       "sha256": "68efb6dc7f016b5ef24c8e479acdc8cd981c0cd809fb7d6466d536dfd711da48",
@@ -133,9 +143,9 @@
       "upstreamSha256": "db63042a973a284e01722e2981d11f63cc43a8a32ddf2143bc5769f1639352ad"
     },
     "vendor-guard.ts": {
-      "sha256": "d31a0b91dd1f1140b0fa696367dcae3e16f5502346cc17b25c33d5ce771f44ca",
+      "sha256": "8791e61e50441f514d97648fd5b72c87efa521388ff92a4df29a09b8e0c0e55c",
       "upstream": "vendor-guard.ts",
-      "upstreamSha256": "d31a0b91dd1f1140b0fa696367dcae3e16f5502346cc17b25c33d5ce771f44ca"
+      "upstreamSha256": "8791e61e50441f514d97648fd5b72c87efa521388ff92a4df29a09b8e0c0e55c"
     }
   },
   "license": "MIT",
