@@ -103,7 +103,7 @@ The marker ` (no longer current)`, the suffixes `(withdrawn YYYY-MM-DD)` and `re
 
 #### Writes
 
-Each note is written whole and atomically: to a temporary file, then renamed over the note, as the vault's other writers do. A note is never left half-written. The pass stops at the first note it cannot write (read-only, or locked by another program, which Obsidian can cause on Windows), and the report names every note written and every note not written. Running the command again finishes the job, since a line already marked or withdrawn is not touched twice.
+Each note is written whole and atomically: to a temporary file, then renamed over the note, as the vault's other writers do. A note is never left half-written. The pass stops at the first note it cannot write (read-only, say, or held for a moment by another program such as a virus scanner or a file indexer), and the report names every note written and every note not written. Running the command again finishes the job, since a line already marked or withdrawn is not touched twice.
 
 #### Checks
 
