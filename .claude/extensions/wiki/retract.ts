@@ -40,7 +40,11 @@ export type Status = "retracted" | "superseded";
 
 export type Kind = "MARKED" | "WITHDRAWN" | "RESTATE" | "REOPENED" | "FLAGGED" | "KEPT" | "UNMATCHED" | "RESTORED" | "UNMARKED";
 
-/** One thing the pass did, or deliberately left alone. `line` is 1-based, in the note as it was read. */
+/**
+ * One thing the pass did, or deliberately left alone. `line` is 1-based, in
+ * the note as it was read, except for RESTATE: there it is where the
+ * restated claim goes in the note as written.
+ */
 export type Outcome = { readonly kind: Kind; readonly relPath: string; readonly line?: number; readonly detail: string };
 
 export type RetractOptions = {
@@ -63,7 +67,11 @@ export type Plan = {
 	readonly source: string;
 	readonly options: RetractOptions;
 	readonly outcomes: readonly Outcome[];
-	/** In write order: the source note, the notes by type, then Index.md. */
+	/**
+	 * In write order: the notes by type, Index.md, then the source note. The
+	 * source note goes last, so a pass that stops midway leaves its status as
+	 * it was, and a re-run (retract or --undo) plans the rest.
+	 */
 	readonly writes: readonly NoteWrite[];
 };
 
@@ -86,6 +94,8 @@ export class RetractError extends Error {
 const DATED_HEADINGS: readonly string[] = ["## Retracted", "## Superseded"];
 const INDEX_SUFFIX = / \((?:retracted|superseded by \[\[[^\]]+\]\])\)$/;
 const WITHDRAWN_SUFFIX = / \(withdrawn \d{4}-\d{2}-\d{2}\)$/;
+/** A Markdown list item's marker: `-`, `*`, `+`, or `1.` / `1)`, with any indent. */
+const LIST_MARKER = /^\s*(?:[-*+]|\d+[.)])\s+/;
 
 type Pass = {
 	readonly target: Note;
@@ -144,8 +154,6 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 	};
 
 	const writes: NoteWrite[] = [];
-	const sourceNote = editSourceNote(pass);
-	if (sourceNote !== target.content) writes.push({ relPath: target.relPath, content: sourceNote });
 	const needle = target.name.toLowerCase();
 	for (const type of NOTE_TYPES) {
 		for (const note of notes.get(type) ?? []) {
@@ -163,6 +171,8 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 		const edited = editIndex(pass, index);
 		if (edited !== index) writes.push({ relPath: "Index.md", content: edited });
 	}
+	const sourceNote = editSourceNote(pass);
+	if (sourceNote !== target.content) writes.push({ relPath: target.relPath, content: sourceNote });
 	return { source: target.name, options, outcomes: pass.outcomes, writes };
 }
 
@@ -262,7 +272,8 @@ function setField(lines: string[], name: string, value: string | null): void {
 function editIndex(pass: Pass, content: string): string {
 	const doc = splitLines(content);
 	const suffix = pass.newStatus === null ? "" : pass.newStatus === "superseded" ? ` (superseded by [[${pass.newer?.name}]])` : " (retracted)";
-	doc.lines = doc.lines.map((line) => (linkSpans(line).some((s) => s.name === pass.key) ? line.replace(INDEX_SUFFIX, "") + suffix : line));
+	// The source's own annotation: the line whose first link is the source.
+	doc.lines = doc.lines.map((line) => (linkSpans(line)[0]?.name === pass.key ? line.replace(INDEX_SUFFIX, "") + suffix : line));
 	return joinLines(doc);
 }
 
@@ -348,9 +359,10 @@ function editClaims(pass: Pass, note: Note, { doc, kinds, spans }: Read, withdra
 			case "withdrawn":
 				if (pass.undo && own.length > 0 && WITHDRAWN_SUFFIX.test(line)) {
 					if (pass.everSuperseded) {
-						emit(pass, "KEPT", note.relPath, i + 1, "restated from a newer source: not restored");
+						emit(pass, "KEPT", note.relPath, i + 1, "the source was superseded, so this line may have been restated: not restored. Restore it by hand if it wasn't");
 					} else {
-						restored.push(line.replace(WITHDRAWN_SUFFIX, ""));
+						const claim = line.replace(WITHDRAWN_SUFFIX, "");
+						restored.push(unmark(claim, linkSpans(claim).filter((s) => s.name === pass.key)));
 						doc.lines[i] = `${line} restored ${pass.options.date}`;
 						emit(pass, "RESTORED", note.relPath, i + 1, "back in the note's text");
 					}
@@ -382,8 +394,9 @@ function editClaims(pass: Pass, note: Note, { doc, kinds, spans }: Read, withdra
 			return;
 		}
 		remove.add(i);
-		withdrawn.push(`${line.startsWith("- ") ? line : `- ${line.trim()}`} (withdrawn ${pass.options.date})`);
-		if (pass.newStatus === "superseded") emit(pass, "RESTATE", note.relPath, i + 1, `withdrawn: write [[${pass.newer?.name}]]'s claim here, or leave it withdrawn`);
+		withdrawn.push(`- ${line.replace(LIST_MARKER, "").trim()} (withdrawn ${pass.options.date})`);
+		// Where the restated claim goes once the withdrawn lines are gone: this line's place.
+		if (pass.newStatus === "superseded") emit(pass, "RESTATE", note.relPath, i + 2 - remove.size, `withdrawn: write [[${pass.newer?.name}]]'s claim at this line, or leave it withdrawn`);
 		else emit(pass, "WITHDRAWN", note.relPath, i + 1, "moved to Withdrawn claims");
 	});
 	if (remove.size > 0) doc.lines = doc.lines.filter((_, i) => !remove.has(i));

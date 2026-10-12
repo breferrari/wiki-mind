@@ -76,7 +76,9 @@ function supersededByWarnings(content: string, sources: ReadonlySet<string>): st
 	const superseded = statusOf(content) === "superseded";
 	if (!hasField(content, "superseded_by")) return superseded ? ["A superseded source names its newer source in `superseded_by`"] : [];
 	if (!superseded) return ["`superseded_by` comes only with `status: superseded`"];
-	return linkSpans(field(content, "superseded_by") ?? "")
+	const spans = linkSpans(field(content, "superseded_by") ?? "");
+	if (spans.length === 0) return ['`superseded_by` names no note: write it as "[[Source]]"'];
+	return spans
 		.filter((span) => !sources.has(span.name))
 		.map((span) => `\`superseded_by\` links [[${span.target}]], which is not a note in sources/`);
 }
@@ -85,10 +87,11 @@ function supersededByWarnings(content: string, sources: ReadonlySet<string>): st
 function staleLinks(note: Note, stale: ReadonlyMap<string, string>): string[] {
 	// Most notes name no stale source: skip them before reading line by line.
 	const lower = note.content.toLowerCase();
-	if (![...stale.keys()].some((name) => lower.includes(name))) return [];
+	// A question reopened on a source (§2.1) cites it on purpose until it is re-answered.
+	const names = new Set([...stale.keys()].filter((name) => lower.includes(name) && !lower.includes(`reopened: the answer rested on [[${name}]]`)));
+	if (names.size === 0) return [];
 	const { lines } = splitLines(note.content);
 	const kinds = regions(lines);
-	const names = new Set(stale.keys());
 	return lines.flatMap((line, i) =>
 		kinds[i] === "body" ? unmarkedLinks(line, linkSpans(line), names).map((span) => `[[${stale.get(span.name)}]] on line ${i + 1}`) : [],
 	);
