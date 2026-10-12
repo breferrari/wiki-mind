@@ -5,11 +5,11 @@ argument-hint: "<X> vs <Y> [vs <Z>]"
 
 # Write a synthesis
 
-Compares the notes named in `$ARGUMENTS` in a `syntheses/` note (CLAUDE.md, "The wiki"). A synthesis sits above concepts and entities: it says how they relate, and never replaces either.
+Compares the notes named in `$ARGUMENTS` in a `syntheses/` note (AGENTS.md, "The wiki"). A synthesis sits above concepts and entities: it says how they relate, and never replaces either.
 
 ## 1. Find the sides
 
-Split the argument on "vs" (or "versus", or commas). For each side, find its note in `concepts/` or `entities/` (QMD first, see CLAUDE.md "Search").
+Split the argument on "vs" (or "versus", or commas). For each side, find its note in `concepts/` or `entities/` (QMD first, see AGENTS.md "Search").
 
 **Refuse when a side has no note.** Name the missing side, and suggest the source to ingest first, if the wiki or the user points at one: the user can run `/wiki-ingest` for it. A synthesis compares what the wiki holds, never what you remember.
 

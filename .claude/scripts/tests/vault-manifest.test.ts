@@ -43,7 +43,7 @@ describe("vault-manifest.json", () => {
 
 	test("the vault's identity and its root infrastructure", () => {
 		assert.equal(manifest?.["template"], "wiki-mind");
-		for (const file of ["CLAUDE.md", "README.md", "LICENSE", "Index.md", "vault-manifest.json"]) {
+		for (const file of ["AGENTS.md", "README.md", "LICENSE", "Index.md", "vault-manifest.json"]) {
 			assert.ok(parseInfraRootFilenames(raw).includes(file), file);
 		}
 	});

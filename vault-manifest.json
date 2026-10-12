@@ -7,7 +7,7 @@
   "eager_layer_instruction_budget_bytes": 20000,
   "listing_collapse_threshold": 12,
   "infrastructure": [
-    "CLAUDE.md",
+    "AGENTS.md",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
@@ -17,6 +17,8 @@
     "vault-manifest.json",
     "shard-values.yaml",
     ".claude/**",
+    ".codex/**",
+    ".gemini/**",
     ".scripts/**",
     "templates/**",
     "bases/**"

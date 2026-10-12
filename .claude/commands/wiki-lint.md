@@ -4,7 +4,7 @@ description: "Check the wiki for drift: orphans, concepts and entities with no c
 
 # Check the wiki
 
-Runs every drift check the vault declares and works through what it finds (CLAUDE.md, "Check the wiki").
+Runs every drift check the vault declares and works through what it finds (AGENTS.md, "Check the wiki").
 
 ## 1. Run the checks
 
