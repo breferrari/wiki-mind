@@ -4,6 +4,14 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ## [Unreleased]
 
+### Changed
+
+- **Install names its folder, and needs ShardMind 1.0 or later.** ShardMind 1.0 makes the vault's folder itself:
+  1. `npx shardmind install breferrari/wiki-mind my-wiki`
+  2. `cd my-wiki`
+
+  Upgrade with `npm i -g shardmind@latest` if your ShardMind is older: an older one stops with a version error.
+
 ### Fixed
 
 - **Your name and research focus head `Index.md`** when you give them at install. Before, ShardMind recorded them but never ran the step that writes them.

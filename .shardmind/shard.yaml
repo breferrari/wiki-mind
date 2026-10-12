@@ -15,10 +15,10 @@ requires:
   # `--experimental-strip-types` + ESM: the hook scripts run on Node with no
   # build step.
   node: ">=22.6.0"
-  # The version CI validates with (.github/workflows/ci.yml). 0.2.0 shipped
-  # `validate` and `install --defaults`; 0.2.1 fixes adopt deleting the files
-  # of a clone (shardmind#326).
-  shardmind: ">=0.2.1"
+  # The version CI validates with (.github/workflows/ci.yml). 1.0.0 installs
+  # into the folder it is given, or a new one named after the shard, so the
+  # README's steps name the folder; an older engine rejects that argument.
+  shardmind: ">=1.0.0"
 
 external_tools:
   # Semantic search (SPEC.md §4, §5). Optional: without it the vault works
