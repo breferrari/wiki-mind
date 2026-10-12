@@ -1,5 +1,5 @@
 {
-  "commit": "6f1244f8c9e36ea88d253e8f23f71c9d6a8b1ffd",
+  "commit": "afdf793e0df62b7884cdb188611a2e2ea9c1c4e6",
   "copyright": "Brenno Ferrari",
   "files": {
     "core/context.test.ts": {
@@ -13,9 +13,9 @@
       "upstreamSha256": "66366754444a92443ce79f5d85cfdfcc7bef039e4fe0d36567130f66252dea2c"
     },
     "core/index.ts": {
-      "sha256": "b965013432c4973e66159c26f6c74e38e43fb07db66f14070faabe39204ab843",
+      "sha256": "b1cb7309fbd676b07e171f84c0e3a3266bab1da65e769294bf316e74b3ddef91",
       "upstream": "core/index.ts",
-      "upstreamSha256": "b965013432c4973e66159c26f6c74e38e43fb07db66f14070faabe39204ab843"
+      "upstreamSha256": "b1cb7309fbd676b07e171f84c0e3a3266bab1da65e769294bf316e74b3ddef91"
     },
     "core/qmd-session.test.ts": {
       "sha256": "9e9373a79366fa480707c27b2c1d7fe92acdb4a9c8e7d65a5b077dfcb74a9183",
@@ -28,19 +28,24 @@
       "upstreamSha256": "0cd8856d680d18f2f605a42b492a045df8d41bcb0568c71c865a36c37eaedca2"
     },
     "core/registry.test.ts": {
-      "sha256": "2e16726561c70fdc8c69942531b267ddc471bdcd783ad0843b3ba36f21ade98d",
+      "sha256": "634258b478171d99c07a0c162826804f703e45242030e6ac2c6e3cc43261dc1c",
       "upstream": "core/registry.test.ts",
-      "upstreamSha256": "2e16726561c70fdc8c69942531b267ddc471bdcd783ad0843b3ba36f21ade98d"
+      "upstreamSha256": "634258b478171d99c07a0c162826804f703e45242030e6ac2c6e3cc43261dc1c"
     },
     "core/registry.ts": {
-      "sha256": "78e0d0e96116caf05b91d96d7c0fa58f3e52397a0b002ee0af8aaf485fed50c7",
+      "sha256": "205c26654161fba14d2a26636831ea18be9b2dee27f48428cc37696ab99fe6db",
       "upstream": "core/registry.ts",
-      "upstreamSha256": "78e0d0e96116caf05b91d96d7c0fa58f3e52397a0b002ee0af8aaf485fed50c7"
+      "upstreamSha256": "205c26654161fba14d2a26636831ea18be9b2dee27f48428cc37696ab99fe6db"
     },
     "core/types.ts": {
-      "sha256": "3416b8cf8fb7f1913ece0b16685eb3b7d4e1ceee89d40f821e1f5996ac01beb2",
+      "sha256": "cd969dbc6805ae5b3e15c50f71abd8f800d867e4ff84ebbd8fda7c904b364bbd",
       "upstream": "core/types.ts",
-      "upstreamSha256": "3416b8cf8fb7f1913ece0b16685eb3b7d4e1ceee89d40f821e1f5996ac01beb2"
+      "upstreamSha256": "cd969dbc6805ae5b3e15c50f71abd8f800d867e4ff84ebbd8fda7c904b364bbd"
+    },
+    "lib/atomic-write.ts": {
+      "sha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8",
+      "upstream": "lib/atomic-write.ts",
+      "upstreamSha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8"
     },
     "lib/frontmatter.ts": {
       "sha256": "6ddd9bbb99ca760c02595d7119c81973291ebd0a07c48c88fa955f6563913da1",
@@ -83,14 +88,14 @@
       "upstreamSha256": "3593de22dfe5f8dfa5e78663717c06c4ff82001abfe5dc6e0421a78d2564a27d"
     },
     "lib/wikilinks.ts": {
-      "sha256": "876c6ed61fe0d2e38adcf5d4678643955037e7e1e4a03845e7a883e8a565754b",
+      "sha256": "e458e45a53b8fe9841cf463127e41fd680dd8abdb14ff6062bfe1f519532277f",
       "upstream": "lib/wikilinks.ts",
-      "upstreamSha256": "876c6ed61fe0d2e38adcf5d4678643955037e7e1e4a03845e7a883e8a565754b"
+      "upstreamSha256": "e458e45a53b8fe9841cf463127e41fd680dd8abdb14ff6062bfe1f519532277f"
     },
     "tests/frontmatter.test.ts": {
-      "sha256": "7199a67da0c3e063b66e32b2158bb519f67af63e18648847533be47f43560e95",
+      "sha256": "68efb6dc7f016b5ef24c8e479acdc8cd981c0cd809fb7d6466d536dfd711da48",
       "upstream": "tests/frontmatter.test.ts",
-      "upstreamSha256": "7199a67da0c3e063b66e32b2158bb519f67af63e18648847533be47f43560e95"
+      "upstreamSha256": "68efb6dc7f016b5ef24c8e479acdc8cd981c0cd809fb7d6466d536dfd711da48"
     },
     "tests/hook-io.test.ts": {
       "sha256": "9b3f3cc1399b67116a8ebb08f12110117dc06300b251ef57c1061a212096f9c7",

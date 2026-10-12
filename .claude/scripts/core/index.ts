@@ -11,6 +11,8 @@
 export type {
 	Declaration,
 	Detector,
+	Effect,
+	EffectTrigger,
 	Extension,
 	Failure,
 	Finding,
@@ -31,3 +33,10 @@ export { extractFrontmatterField, stripFrontmatter } from "../lib/session-start.
 
 /** The note names a body links to, with alias tails, fragments and embeds removed. */
 export { extractWikilinkTargets } from "../lib/wikilinks.ts";
+
+/** Write a whole file or none of it: a reader never sees half a note, and a process killed mid-write leaves the old one. */
+export { writeFileAtomic } from "../lib/atomic-write.ts";
+
+/** A note line by line: each line's region (frontmatter, fence, heading, body), and each wikilink's target and offsets on a line. */
+export { lineRegions, wikilinkSpans } from "../lib/wikilinks.ts";
+export type { LineRegion, WikilinkSpan } from "../lib/wikilinks.ts";

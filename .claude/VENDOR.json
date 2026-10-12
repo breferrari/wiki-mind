@@ -2,11 +2,6 @@
   "commit": "d01f3cb8b0d149210fa1a839bd1c3152cb27f79c",
   "copyright": "Brenno Ferrari",
   "files": {
-    ".claude/scripts/lib/atomic-write.ts": {
-      "sha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8",
-      "upstream": ".claude/scripts/lib/atomic-write.ts",
-      "upstreamSha256": "05fb81b4f8562816d4ca2983801b58b1a7137123eeb3adf738fea5b75022ced8"
-    },
     ".claude/scripts/lib/charcount.ts": {
       "sha256": "b861a181e496c86baad3d9f86af0a75687c3965e8444024964d1712808b57dc8",
       "upstream": ".claude/scripts/lib/charcount.ts",
