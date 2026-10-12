@@ -20,6 +20,8 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const manifest = readFileSync(join(REPO, ".shardmind", "shard.yaml"), "utf-8");
 const ci = readFileSync(join(REPO, ".github", "workflows", "ci.yml"), "utf-8");
+/** The engine floor: X.Y.Z from requires.shardmind's `">=X.Y.Z"`. */
+const floor = manifest.match(/^ {2}shardmind:\s*">=([0-9.]+)"/m)?.[1];
 
 /** The keys of a top-level YAML block, by indentation: `hooks:` then its two-space children. */
 function blockKeys(yaml: string, block: string): string[] {
@@ -69,10 +71,14 @@ describe("the ShardMind manifest", () => {
 	});
 
 	test("requires.shardmind's floor is the version CI validates with", () => {
-		const floor = manifest.match(/^ {2}shardmind:\s*">=([0-9.]+)"/m)?.[1];
 		const pinned = ci.match(/SHARDMIND_VERSION:\s*([0-9.]+)/)?.[1];
 		assert.ok(floor !== undefined, "requires.shardmind is a >= range");
 		assert.equal(floor, pinned);
+	});
+
+	test("requires.shardmind's floor is 1.0.0 or later, the first engine whose install takes a folder", () => {
+		assert.ok(floor !== undefined, "requires.shardmind is a >= range");
+		assert.ok(Number(floor.split(".")[0]) >= 1, `the README's install steps name a folder, which ShardMind before 1.0 rejects; the floor is >=${floor}`);
 	});
 
 	test("the block reader sees a declared hook, so the first test can fail", () => {

@@ -15,7 +15,9 @@
  *
  * Without WIKI_CONTRACT_REF the test is skipped: it needs the network and a
  * pushed commit. WIKI_CONTRACT_CLI may point at a local shardmind cli.js;
- * otherwise `npx shardmind@<the version CI pins>` runs it.
+ * otherwise `npx shardmind@<the version CI pins>` runs it. The install names
+ * `.` as its folder: from ShardMind 1.0 it otherwise makes a new folder named
+ * after the shard.
  */
 import { after, describe, test } from "node:test";
 import assert from "node:assert/strict";
@@ -47,12 +49,12 @@ function listFiles(dir: string, prefix = ""): string[] {
 function install(into: string) {
 	const cli = process.env["WIKI_CONTRACT_CLI"];
 	if (cli !== undefined && cli !== "") {
-		return spawnSync(process.execPath, [cli, "install", "--defaults", SHARD], { cwd: into, encoding: "utf-8", timeout: 300_000 });
+		return spawnSync(process.execPath, [cli, "install", "--defaults", SHARD, "."], { cwd: into, encoding: "utf-8", timeout: 300_000 });
 	}
 	const version = readFileSync(join(REPO, ".github", "workflows", "ci.yml"), "utf-8").match(/SHARDMIND_VERSION:\s*([0-9.]+)/)?.[1];
 	assert.ok(version, "ci.yml pins SHARDMIND_VERSION");
 	// npx is a .cmd on Windows, which needs a shell; the arguments are fixed strings.
-	return spawnSync(`npx --yes shardmind@${version} install --defaults ${SHARD}`, { cwd: into, encoding: "utf-8", shell: true, timeout: 300_000 });
+	return spawnSync(`npx --yes shardmind@${version} install --defaults ${SHARD} .`, { cwd: into, encoding: "utf-8", shell: true, timeout: 300_000 });
 }
 
 describe("Invariant 1 and Invariant 2: install --defaults equals a clone", { skip: REF === "" ? "WIKI_CONTRACT_REF is unset (CI sets it to the PR head)" : false }, () => {
