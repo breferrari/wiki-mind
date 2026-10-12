@@ -6,6 +6,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Added
 
+- **Diagrams in syntheses.** When a comparison has a shape a picture shows, `/wiki-synthesize` offers a mermaid diagram, drawn with the bundled `mermaid-visualizer` skill. A diagram adds no claim: everything in it is already in the note's text, with its source.
 - **Retract or supersede a source with `/wiki-retract`.** The source note stays as the record of what it said. Each claim that cites it is marked when another source still backs it, or moved to the note's Withdrawn claims when nothing does. For a newer source, the agent restates the claim from it. Syntheses that rest on it are flagged for review, and answered questions that rested on it alone reopen. `--undo` reverses it when a retraction is itself withdrawn. `/wiki-lint` reports a link to such a source that nothing has marked.
 
 ### Changed

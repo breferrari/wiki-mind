@@ -219,6 +219,16 @@
       "upstream": ".claude/skills/json-canvas/references/EXAMPLES.md",
       "upstreamSha256": "f5ce15a4b74643122396265e8c37c828874a4005794de2aee7030662968768eb"
     },
+    ".claude/skills/mermaid-visualizer/SKILL.md": {
+      "sha256": "131decc93edbd3965782951f62f4f26364d895b471d140f8b0f3326c39978efa",
+      "upstream": ".claude/skills/mermaid-visualizer/SKILL.md",
+      "upstreamSha256": "131decc93edbd3965782951f62f4f26364d895b471d140f8b0f3326c39978efa"
+    },
+    ".claude/skills/mermaid-visualizer/references/syntax-rules.md": {
+      "sha256": "660965a794a26aa6db3efc0cab5f98b52c052b76ec3f33efed1084c722e90ad9",
+      "upstream": ".claude/skills/mermaid-visualizer/references/syntax-rules.md",
+      "upstreamSha256": "660965a794a26aa6db3efc0cab5f98b52c052b76ec3f33efed1084c722e90ad9"
+    },
     ".claude/skills/obsidian-bases/SKILL.md": {
       "sha256": "c0037f20926c7d8591cdd040365e4c0e4c0c4146386a506f28f241faee9a27d9",
       "upstream": ".claude/skills/obsidian-bases/SKILL.md",

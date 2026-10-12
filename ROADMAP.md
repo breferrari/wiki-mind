@@ -96,5 +96,5 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Spec corrections for a retracted or superseded source | [#26](https://github.com/breferrari/wiki-mind/issues/26) |
 | ✅ | Retract or supersede a source, as SPEC §2.1 specifies | [#86](https://github.com/breferrari/wiki-mind/issues/86) |
 | ⬜ | wrap-up and tidy through the extraction | [#27](https://github.com/breferrari/wiki-mind/issues/27) |
-| ⬜ | Diagram skill for syntheses (mermaid) | [#33](https://github.com/breferrari/wiki-mind/issues/33) |
+| ✅ | Diagram skill for syntheses (mermaid) | [#33](https://github.com/breferrari/wiki-mind/issues/33) |
 | ✅ | Vendor the core from mindframe | [#78](https://github.com/breferrari/wiki-mind/issues/78) |
