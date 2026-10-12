@@ -130,7 +130,11 @@ describe("the claims that cite it", () => {
 				].join("\n"),
 		});
 		const { plan } = run(root, { source: "Smith 2024" });
-		assert.deepEqual(kinds(plan.outcomes).filter((k) => k.includes("entities/")), [7, 8, 9, 10, 11, 12].map((n) => `MARKED entities/Forms.md:${n}`));
+		// The link in code is no link, so its line is a bare mention: UNMATCHED, and left alone.
+		assert.deepEqual(kinds(plan.outcomes).filter((k) => k.includes("entities/")), [
+			...[7, 8, 9, 10, 11, 12].map((n) => `MARKED entities/Forms.md:${n}`),
+			"UNMATCHED entities/Forms.md:13",
+		]);
 		const note = read(root, "entities/Forms.md");
 		for (const link of ["[[Smith 2024|the paper]]", "[[Smith 2024#Results]]", "[[Smith 2024\\|s]]", "[[Smith 2024&#124;s]]", "![[Smith 2024]]", "[[sources/Smith 2024]]"]) {
 			assert.ok(note.includes(link + MARK), link);
