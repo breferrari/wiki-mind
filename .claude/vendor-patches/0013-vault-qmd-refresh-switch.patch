@@ -1,4 +1,4 @@
-Description: Let tests turn off the detached QMD refresh worker with VAULT_QMD_REFRESH=off (the spawn becomes a no-op; decisions and stamps still run), and have the test runner set it and fail a run that leaves a worker behind
+Description: Let tests turn off the detached QMD refresh worker with VAULT_QMD_REFRESH=off (the spawn becomes a no-op; decisions and stamps still run), set it in the test runner and the per-file preload, and fail a run that leaves a worker behind, killing it with its children
 Forwarded: https://github.com/breferrari/obsidian-mind/issues/337
 Last-Update: 2026-10-12
 
@@ -67,7 +67,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  import { homedir, tmpdir } from "node:os";
  import { join } from "node:path";
  
-@@ -49,8 +60,33 @@
+@@ -49,8 +60,39 @@
  	}
  }
  
@@ -78,13 +78,19 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
 + */
 +function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 +	const windows = process.platform === "win32";
++	// Filter on the command line, not the image name: a worker runs under
++	// process.execPath, which a version manager may name other than node.exe.
 +	const listed = windows
 +		? spawnSync(
 +				"powershell.exe",
-+				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
++				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%qmd-refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
 +				{ encoding: "utf-8", timeout: 30_000, windowsHide: true },
 +			)
-+		: spawnSync("ps", ["-ax", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
++		: spawnSync("ps", ["-ax", "-ww", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
++	if (listed.error !== undefined || listed.status !== 0) {
++		process.stderr.write(`refresh-worker guard: couldn't list processes (${listed.error?.message ?? `exit ${listed.status}`}); leftover workers were not checked.\n`);
++		return [];
++	}
 +	const fold = (t: string) => (windows ? t.toLowerCase() : t);
 +	return (listed.stdout ?? "")
 +		.split(/\r?\n/)
@@ -101,7 +107,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  
  const run = spawnSync(
  	process.execPath,
-@@ -62,10 +98,30 @@
+@@ -62,10 +104,38 @@
  			XDG_CACHE_HOME: join(isolated, "cache"),
  			QMD_CONFIG_DIR: join(isolated, "config", "qmd"),
  			OM_QMD_ISOLATED: isolated,
@@ -118,10 +124,18 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
 +if (leftover.length > 0) {
 +	process.stderr.write(`\nrefresh-worker guard: the test run left ${leftover.length} QMD refresh worker(s) running:\n`);
 +	for (const w of leftover) process.stderr.write(`  ${w.pid}  ${w.cmd}\n`);
++	// Kill each worker with what it started: a worker blocked in `qmd embed`
++	// leaves qmd running if only the worker dies. The worker was spawned
++	// detached, so on POSIX it leads its own process group.
 +	for (const w of leftover) {
 +		try {
-+			process.kill(w.pid);
-+			process.stderr.write(`  killed ${w.pid}\n`);
++			if (process.platform === "win32") {
++				const r = spawnSync("taskkill", ["/T", "/F", "/PID", String(w.pid)], { encoding: "utf-8", timeout: 30_000, windowsHide: true });
++				if (r.status !== 0) throw new Error((r.stderr || r.stdout || `exit ${r.status}`).trim());
++			} else {
++				process.kill(-w.pid);
++			}
++			process.stderr.write(`  killed ${w.pid} and its children\n`);
 +		} catch (err) {
 +			process.stderr.write(`  could not kill ${w.pid}: ${(err as Error).message}\n`);
 +		}
@@ -132,7 +146,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  const added = watched.flatMap(({ dir, ext }, i) =>
  	[...listing(dir, ext)].filter((f) => !before[i]!.has(f)).sort().map((f) => join(dir, f)),
  );
-@@ -83,4 +139,5 @@
+@@ -83,4 +153,5 @@
  	);
  	process.exit(1);
  }
@@ -141,26 +155,25 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
 diff --git a/.claude/scripts/tests/qmd-refresh.test.ts b/.claude/scripts/tests/qmd-refresh.test.ts
 --- a/.claude/scripts/tests/qmd-refresh.test.ts
 +++ b/.claude/scripts/tests/qmd-refresh.test.ts
-@@ -25,6 +25,7 @@
- 	isDebounced,
+@@ -26,6 +26,7 @@
  	parseWorkerArgs,
  	pendingPathFor,
-+	refreshDisabled,
  	planRefresh,
++	refreshDisabled,
  	resolveVaultRoot,
  	shouldRefreshForPath,
-@@ -121,6 +122,88 @@
+ 	triggerDebouncedRefresh,
+@@ -121,6 +122,91 @@
  	});
  });
  
 +describe("VAULT_QMD_REFRESH=off — the switch the test runner sets", () => {
-+	/** Run with the switch set and HOOK_DEBUG on, and return the debug lines written. */
-+	function withSwitch(value: string | undefined, run: () => void): string[] {
++	/** Run with the switch off and HOOK_DEBUG on, and return the debug lines written. */
++	function withSwitch(run: () => void): string[] {
 +		const saved = { refresh: process.env["VAULT_QMD_REFRESH"], debug: process.env["HOOK_DEBUG"] };
 +		const lines: string[] = [];
 +		const write = process.stderr.write.bind(process.stderr);
-+		if (value === undefined) delete process.env["VAULT_QMD_REFRESH"];
-+		else process.env["VAULT_QMD_REFRESH"] = value;
++		process.env["VAULT_QMD_REFRESH"] = "off";
 +		process.env["HOOK_DEBUG"] = "1";
 +		process.stderr.write = ((chunk: string | Uint8Array) => {
 +			lines.push(String(chunk));
@@ -181,6 +194,10 @@ diff --git a/.claude/scripts/tests/qmd-refresh.test.ts b/.claude/scripts/tests/q
 +	const fire = (sentinel: string, dir: string) =>
 +		triggerDebouncedRefresh({ sentinelPath: sentinel, workerPath: join(dir, "worker.ts"), debounceMs: 30_000, logPrefix: "test", qmdAvailable: () => true });
 +
++	test("every test process sees the switch, through npm test or a direct run", () => {
++		assert.equal(process.env["VAULT_QMD_REFRESH"], "off");
++	});
++
 +	test("refreshDisabled reads the switch", () => {
 +		assert.equal(refreshDisabled({ VAULT_QMD_REFRESH: "off" }), true);
 +		assert.equal(refreshDisabled({}), false);
@@ -191,7 +208,7 @@ diff --git a/.claude/scripts/tests/qmd-refresh.test.ts b/.claude/scripts/tests/q
 +		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
 +		const sentinel = join(dir, ".qmd-refresh-sentinel");
 +		try {
-+			const lines = withSwitch("off", () => fire(sentinel, dir));
++			const lines = withSwitch(() => fire(sentinel, dir));
 +			assert.ok(existsSync(sentinel), "the sentinel is stamped");
 +			assert.ok(lines.some((l) => l.includes("test: refresh off (VAULT_QMD_REFRESH)")), lines.join(""));
 +		} finally {
@@ -206,7 +223,7 @@ diff --git a/.claude/scripts/tests/qmd-refresh.test.ts b/.claude/scripts/tests/q
 +			writeFileSync(sentinel, "");
 +			const t = (Date.now() - 10_000) / 1000;
 +			utimesSync(sentinel, t, t);
-+			const lines = withSwitch("off", () => fire(sentinel, dir));
++			const lines = withSwitch(() => fire(sentinel, dir));
 +			assert.ok(existsSync(pendingPathFor(sentinel)), "the pending marker is claimed");
 +			assert.ok(lines.some((l) => l.includes("test: refresh off (VAULT_QMD_REFRESH)")), lines.join(""));
 +		} finally {
@@ -218,7 +235,7 @@ diff --git a/.claude/scripts/tests/qmd-refresh.test.ts b/.claude/scripts/tests/q
 +		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
 +		const spawned: (readonly string[])[] = [];
 +		try {
-+			withSwitch("off", () =>
++			withSwitch(() =>
 +				triggerDebouncedRefresh({
 +					sentinelPath: join(dir, ".qmd-refresh-sentinel"),
 +					workerPath: "worker.ts",
@@ -238,3 +255,42 @@ diff --git a/.claude/scripts/tests/qmd-refresh.test.ts b/.claude/scripts/tests/q
  describe("claimTrailingFlush — the worker's gate after sleeping", () => {
  	test("runs when no newer refresh started, clears the marker, stamps the sentinel", () => {
  		const dir = mkdtempSync(join(tmpdir(), "qmd-claim-"));
+diff --git a/.claude/scripts/tests/_qmd-cache-guard.ts b/.claude/scripts/tests/_qmd-cache-guard.ts
+--- a/.claude/scripts/tests/_qmd-cache-guard.ts
++++ b/.claude/scripts/tests/_qmd-cache-guard.ts
+@@ -9,12 +9,18 @@
+  * runner, so without the wrapper each file gets its own temp folders here.
+  *
+  * See `_run-tests.ts` for why the redirect exists.
++ *
++ * It also turns the detached QMD refresh worker off (VAULT_QMD_REFRESH=off)
++ * for a direct run, as `_run-tests.ts` does for `npm test`: a hook a test
++ * runs would otherwise leave a worker behind that calls qmd later.
+  */
+ 
+ import { mkdtempSync, rmSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ 
++process.env["VAULT_QMD_REFRESH"] ??= "off";
++
+ if (process.env["OM_QMD_ISOLATED"] === undefined) {
+ 	const isolated = mkdtempSync(join(tmpdir(), "om-test-qmd-"));
+ 	process.env["XDG_CACHE_HOME"] = join(isolated, "cache");
+diff --git a/.claude/scripts/tests/_helpers.ts b/.claude/scripts/tests/_helpers.ts
+--- a/.claude/scripts/tests/_helpers.ts
++++ b/.claude/scripts/tests/_helpers.ts
+@@ -21,9 +21,10 @@
+  *
+  * Every hook that writes or stops refreshes QMD through a debounce sentinel
+  * beside the scripts. A test that names no sentinel of its own gets
+- * TEST_SENTINEL instead, touched before each spawn: the real one is never
+- * written, and a sentinel that fresh keeps the refresh debounced, so no test
+- * starts a real index update of the checkout it runs in.
++ * TEST_SENTINEL instead, touched before each spawn, so the real one is never
++ * written. A fresh sentinel only debounces the refresh: the trigger still
++ * spawns a trailing worker. What keeps tests from starting one is
++ * VAULT_QMD_REFRESH=off, which `_run-tests.ts` and `_qmd-cache-guard.ts` set.
+  */
+ 
+ import { spawnSync } from "node:child_process";

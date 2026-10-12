@@ -102,12 +102,18 @@
       "upstreamSha256": "7f360d0ffd65b5af135d4aae97caa5e05ff283ff7bc403196683a267574309fc"
     },
     ".claude/scripts/tests/_helpers.ts": {
-      "sha256": "10dbb2de1e4f224a37a3c6f266fe6cac59d7468d5e920af48e0c6c1634e1336b",
+      "patches": [
+        "0013-vault-qmd-refresh-switch.patch"
+      ],
+      "sha256": "74a9cc5fe5e62506816e8306e11f5922cc6409596999427b48d5aaf2ae827a7c",
       "upstream": ".claude/scripts/tests/_helpers.ts",
       "upstreamSha256": "10dbb2de1e4f224a37a3c6f266fe6cac59d7468d5e920af48e0c6c1634e1336b"
     },
     ".claude/scripts/tests/_qmd-cache-guard.ts": {
-      "sha256": "c32ecc66c93c5e5703f79e31f7ad4b52cb121775ff7a2e3a69987dd38ce6f82c",
+      "patches": [
+        "0013-vault-qmd-refresh-switch.patch"
+      ],
+      "sha256": "12f0e7e34457accb0522b46edf6549b2640829edee6db9e173464eb32ede94c5",
       "upstream": ".claude/scripts/tests/_qmd-cache-guard.ts",
       "upstreamSha256": "c32ecc66c93c5e5703f79e31f7ad4b52cb121775ff7a2e3a69987dd38ce6f82c"
     },
@@ -115,7 +121,7 @@
       "patches": [
         "0013-vault-qmd-refresh-switch.patch"
       ],
-      "sha256": "f4f9bdf50f6fe4c5e42a68753a23e4bdc8261c826405d09b99300c0afd85394b",
+      "sha256": "f45119036b865b4cb073ab37ec2c3a2e61ae38c2f267a9280ed0a2e997280487",
       "upstream": ".claude/scripts/tests/_run-tests.ts",
       "upstreamSha256": "2f115b04cfd0c8ebc1138f5126d647b8163556b5bd300fa8790e95086da2c74b"
     },
@@ -176,7 +182,7 @@
       "patches": [
         "0013-vault-qmd-refresh-switch.patch"
       ],
-      "sha256": "f2990c63662f318df032c13447bb3c4809639919dac4b9045dc1d05046c5b705",
+      "sha256": "ffab7afb24a56d60a73046f443442aec392ec05d25a0326170026c3705dd45ba",
       "upstream": ".claude/scripts/tests/qmd-refresh.test.ts",
       "upstreamSha256": "e6bd95e5749898497e58f6bd5b70cb01f8c787d24338a66ea96fb3e6232701fe"
     },

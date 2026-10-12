@@ -67,13 +67,19 @@ function listing(dir: string, ext: string): Set<string> {
  */
 function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 	const windows = process.platform === "win32";
+	// Filter on the command line, not the image name: a worker runs under
+	// process.execPath, which a version manager may name other than node.exe.
 	const listed = windows
 		? spawnSync(
 				"powershell.exe",
-				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
+				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%qmd-refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
 				{ encoding: "utf-8", timeout: 30_000, windowsHide: true },
 			)
-		: spawnSync("ps", ["-ax", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
+		: spawnSync("ps", ["-ax", "-ww", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
+	if (listed.error !== undefined || listed.status !== 0) {
+		process.stderr.write(`refresh-worker guard: couldn't list processes (${listed.error?.message ?? `exit ${listed.status}`}); leftover workers were not checked.\n`);
+		return [];
+	}
 	const fold = (t: string) => (windows ? t.toLowerCase() : t);
 	return (listed.stdout ?? "")
 		.split(/\r?\n/)
@@ -111,10 +117,18 @@ const leftover = refreshWorkers(isolated);
 if (leftover.length > 0) {
 	process.stderr.write(`\nrefresh-worker guard: the test run left ${leftover.length} QMD refresh worker(s) running:\n`);
 	for (const w of leftover) process.stderr.write(`  ${w.pid}  ${w.cmd}\n`);
+	// Kill each worker with what it started: a worker blocked in `qmd embed`
+	// leaves qmd running if only the worker dies. The worker was spawned
+	// detached, so on POSIX it leads its own process group.
 	for (const w of leftover) {
 		try {
-			process.kill(w.pid);
-			process.stderr.write(`  killed ${w.pid}\n`);
+			if (process.platform === "win32") {
+				const r = spawnSync("taskkill", ["/T", "/F", "/PID", String(w.pid)], { encoding: "utf-8", timeout: 30_000, windowsHide: true });
+				if (r.status !== 0) throw new Error((r.stderr || r.stdout || `exit ${r.status}`).trim());
+			} else {
+				process.kill(-w.pid);
+			}
+			process.stderr.write(`  killed ${w.pid} and its children\n`);
 		} catch (err) {
 			process.stderr.write(`  could not kill ${w.pid}: ${(err as Error).message}\n`);
 		}

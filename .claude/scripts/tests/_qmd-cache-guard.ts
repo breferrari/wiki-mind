@@ -9,11 +9,17 @@
  * runner, so without the wrapper each file gets its own temp folders here.
  *
  * See `_run-tests.ts` for why the redirect exists.
+ *
+ * It also turns the detached QMD refresh worker off (VAULT_QMD_REFRESH=off)
+ * for a direct run, as `_run-tests.ts` does for `npm test`: a hook a test
+ * runs would otherwise leave a worker behind that calls qmd later.
  */
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+process.env["VAULT_QMD_REFRESH"] ??= "off";
 
 if (process.env["OM_QMD_ISOLATED"] === undefined) {
 	const isolated = mkdtempSync(join(tmpdir(), "om-test-qmd-"));
