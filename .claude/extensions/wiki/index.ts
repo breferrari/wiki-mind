@@ -28,9 +28,10 @@ import {
 	linkedNames,
 	listField,
 	listNotes,
+	statusOf,
 	typeOf,
 } from "./notes.ts";
-import { currentSourceNames, linkSpans, MARK, noLongerCurrent, regions, splitLines } from "./claims.ts";
+import { currentSourceNames, linkSpans, noLongerCurrent, regions, splitLines, unmarkedLinks } from "./claims.ts";
 
 /** Every note's frontmatter (SPEC.md §2). */
 const GLOBAL_FIELDS = ["date", "description", "tags"] as const;
@@ -72,7 +73,7 @@ function unsourced(note: Note, sources: ReadonlySet<string>): boolean {
 
 /** Problems with a source's `superseded_by` (SPEC.md §2.1). */
 function supersededByWarnings(content: string, sources: ReadonlySet<string>): string[] {
-	const superseded = (field(content, "status") ?? "").toLowerCase() === "superseded";
+	const superseded = statusOf(content) === "superseded";
 	if (!hasField(content, "superseded_by")) return superseded ? ["A superseded source names its newer source in `superseded_by`"] : [];
 	if (!superseded) return ["`superseded_by` comes only with `status: superseded`"];
 	return linkSpans(field(content, "superseded_by") ?? "")
@@ -82,21 +83,19 @@ function supersededByWarnings(content: string, sources: ReadonlySet<string>): st
 
 /** Each unmarked link in a note to a source that is no longer current, outside Withdrawn claims, as "[[Name]] on line N". */
 function staleLinks(note: Note, stale: ReadonlyMap<string, string>): string[] {
+	// Most notes name no stale source: skip them before reading line by line.
+	const lower = note.content.toLowerCase();
+	if (![...stale.keys()].some((name) => lower.includes(name))) return [];
 	const { lines } = splitLines(note.content);
 	const kinds = regions(lines);
-	const out: string[] = [];
-	lines.forEach((line, i) => {
-		if (kinds[i] !== "body") return;
-		for (const span of linkSpans(line)) {
-			const name = stale.get(span.name);
-			if (name !== undefined && !line.startsWith(MARK, span.end)) out.push(`[[${name}]] on line ${i + 1}`);
-		}
-	});
-	return out;
+	const names = new Set(stale.keys());
+	return lines.flatMap((line, i) =>
+		kinds[i] === "body" ? unmarkedLinks(line, linkSpans(line), names).map((span) => `[[${stale.get(span.name)}]] on line ${i + 1}`) : [],
+	);
 }
 
 function isOpen(note: Note): boolean {
-	return (field(note.content, "status") ?? "").toLowerCase() === "open";
+	return statusOf(note.content) === "open";
 }
 
 function frontmatterWarnings(type: NoteType, content: string): string[] {
@@ -262,14 +261,16 @@ export const extension: Extension = {
 						.map((n) => [n.name.toLowerCase(), n.name] as const),
 				);
 				if (stale.size === 0) return [];
-				const notes = (["concept", "entity", "synthesis", "question"] as const)
-					.flatMap((t) => listNotes(ctx.vaultRoot, t))
-					.map((n) => ({ n, links: staleLinks(n, stale) }))
-					.filter((x) => x.links.length > 0);
+				const links = new Map(
+					(["concept", "entity", "synthesis", "question"] as const)
+						.flatMap((t) => listNotes(ctx.vaultRoot, t))
+						.map((n) => [n, staleLinks(n, stale)] as const)
+						.filter(([, l]) => l.length > 0),
+				);
 				return findingOf(
-					`${plural(notes.length, "note")} link${notes.length === 1 ? "s" : ""} a source that is no longer current with no marker`,
-					notes.map((x) => x.n),
-					(n) => notes.find((x) => x.n === n)?.links.join(", ") ?? "",
+					`${plural(links.size, "note")} link${links.size === 1 ? "s" : ""} a source that is no longer current with no marker`,
+					[...links.keys()],
+					(n) => links.get(n)?.join(", ") ?? "",
 				);
 			},
 		},

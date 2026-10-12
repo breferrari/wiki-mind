@@ -149,14 +149,19 @@ function splitItems(text: string): string[] {
 	return out;
 }
 
+/** The note name a link target names, lowercased: the last path segment, without `.md`. */
+export function linkName(target: string): string {
+	return (target.split("/").pop() ?? target).replace(/\.md$/i, "").toLowerCase();
+}
+
 /** The note names a note links to, lowercased: the last path segment, without `.md`. */
 export function linkedNames(content: string): Set<string> {
-	const names = new Set<string>();
-	for (const target of extractWikilinkTargets(content)) {
-		const last = target.split("/").pop() ?? target;
-		names.add(last.replace(/\.md$/i, "").toLowerCase());
-	}
-	return names;
+	return new Set(extractWikilinkTargets(content).map(linkName));
+}
+
+/** A note's `status`, lowercased; empty when it has none. */
+export function statusOf(content: string): string {
+	return (field(content, "status") ?? "").toLowerCase();
 }
 
 /** True when the note links at least one note that exists in sources/. */

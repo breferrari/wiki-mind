@@ -15,12 +15,12 @@ import { rmTemp } from "./_helpers.ts";
 import { fromLoaded, runDetectors, runValidators } from "../core/registry.ts";
 import type { HookContext } from "../core/types.ts";
 import { extension } from "../../extensions/wiki/index.ts";
+import { MARK } from "../../extensions/wiki/claims.ts";
 
 const fm = (fields: Record<string, string>) =>
 	`---\n${Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join("\n")}\n---\n`;
 const BASE = { date: "2026-10-12", description: "d", tags: "[t]" };
 const SOURCE = { ...BASE, authors: "A", year: "2024", url: "https://a" };
-const MARK = " (no longer current)";
 
 let root = "";
 let ctx: HookContext;

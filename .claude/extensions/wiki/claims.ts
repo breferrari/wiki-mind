@@ -8,7 +8,7 @@
  */
 
 import { extractWikilinkTargets } from "../../scripts/core/index.ts";
-import { field, listNotes } from "./notes.ts";
+import { linkName, listNotes, type Note, statusOf } from "./notes.ts";
 
 /** Written right after a link to a source that is no longer current. Exact: lint and --undo match it. */
 export const MARK = " (no longer current)";
@@ -27,15 +27,21 @@ export const joinLines = ({ lines, eol }: Lines): string => lines.join(eol);
 /** Which part of a note a line is in. */
 export type Region = "frontmatter" | "fence" | "heading" | "withdrawn" | "body";
 
+/**
+ * Each line's region. The core's code stripper (lib/wikilinks.ts) removes
+ * fenced lines rather than naming them, and isn't exported to extensions,
+ * so this reads fences itself: a fence closes on the same character, at
+ * least as long, as Markdown has it.
+ */
 export function regions(lines: readonly string[]): Region[] {
 	const out: Region[] = [];
-	let inFrontmatter = lines[0]?.replace(/^﻿/, "") === "---";
+	let inFrontmatter = lines[0]?.replace(/^﻿/, "").trimEnd() === "---";
 	let fence: string | null = null;
 	let withdrawn = false;
 	lines.forEach((line, i) => {
 		if (inFrontmatter) {
 			out.push("frontmatter");
-			if (i > 0 && line === "---") inFrontmatter = false;
+			if (i > 0 && line.trimEnd() === "---") inFrontmatter = false;
 			return;
 		}
 		const open = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
@@ -59,29 +65,53 @@ export function regions(lines: readonly string[]): Region[] {
 	return out;
 }
 
+/** The first heading line that `match` accepts, or -1. */
+export function findHeading(lines: readonly string[], kinds: readonly Region[], match: (heading: string) => boolean): number {
+	return lines.findIndex((l, i) => kinds[i] === "heading" && match(l.trim()));
+}
+
+/** The last non-blank line of the section that starts at `heading`. */
+export function lastContentLine(lines: readonly string[], kinds: readonly Region[], heading: number): number {
+	let last = heading;
+	for (let i = heading + 1; i < lines.length && kinds[i] !== "heading"; i++) if ((lines[i] ?? "").trim() !== "") last = i;
+	return last;
+}
+
+/** Drop blank lines at the end. */
+export function trimTrailingBlanks(lines: string[]): void {
+	while (lines.length > 0 && (lines.at(-1) ?? "").trim() === "") lines.pop();
+}
+
 /** A wikilink on a line: its target as written, the note name it targets (lowercased last path segment), and where it sits. */
 export type LinkSpan = { readonly target: string; readonly name: string; readonly start: number; readonly end: number };
 
+/** The links on a line, left to right. */
 export function linkSpans(line: string): LinkSpan[] {
 	// Inline code is not a link: blank it out, keeping every offset.
 	const masked = line.replace(/`[^`]*`/g, (m) => " ".repeat(m.length));
 	const spans: LinkSpan[] = [];
 	for (const m of masked.matchAll(/!?\[\[([^\[\]\n]+?)\]\]/g)) {
 		const target = extractWikilinkTargets(m[0])[0];
-		if (target === undefined) continue;
-		const name = (target.split("/").pop() ?? target).replace(/\.md$/i, "").toLowerCase();
-		spans.push({ target, name, start: m.index, end: m.index + m[0].length });
+		if (target !== undefined) spans.push({ target, name: linkName(target), start: m.index, end: m.index + m[0].length });
 	}
 	return spans;
 }
 
+/** The links among `spans` to a note in `names` with no marker after them: what lint reports and the pass marks or withdraws. */
+export function unmarkedLinks(line: string, spans: readonly LinkSpan[], names: ReadonlySet<string>): LinkSpan[] {
+	return spans.filter((s) => names.has(s.name) && !line.startsWith(MARK, s.end));
+}
+
 /** True when a source note's `status` marks it retracted or superseded (§2.1). */
 export function noLongerCurrent(content: string): boolean {
-	const status = (field(content, "status") ?? "").toLowerCase();
+	const status = statusOf(content);
 	return status === "retracted" || status === "superseded";
 }
 
-/** The names of the source notes that are current, lowercased as links name them. */
-export function currentSourceNames(vaultRoot: string): Set<string> {
-	return new Set(listNotes(vaultRoot, "source").filter((n) => !noLongerCurrent(n.content)).map((n) => n.name.toLowerCase()));
+/** The names of the current source notes, lowercased as links name them. */
+export function currentSourceNames(sources: readonly Note[]): Set<string>;
+export function currentSourceNames(vaultRoot: string): Set<string>;
+export function currentSourceNames(from: string | readonly Note[]): Set<string> {
+	const sources = typeof from === "string" ? listNotes(from, "source") : from;
+	return new Set(sources.filter((n) => !noLongerCurrent(n.content)).map((n) => n.name.toLowerCase()));
 }

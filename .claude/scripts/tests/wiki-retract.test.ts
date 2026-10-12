@@ -11,10 +11,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmTemp } from "./_helpers.ts";
 import { applyRetraction, formatReport, planRetraction, RetractError, type Outcome, type RetractOptions } from "../../extensions/wiki/retract.ts";
+import { MARK } from "../../extensions/wiki/claims.ts";
 
 const DATE = "2026-10-12";
 const LATER = "2026-11-02";
-const MARK = " (no longer current)";
 const fm = (fields: Record<string, string>) =>
 	`---\n${Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join("\n")}\n---\n`;
 const BASE = { date: "2026-10-01", description: "d", tags: "[t]" };

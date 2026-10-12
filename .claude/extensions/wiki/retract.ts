@@ -17,8 +17,23 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { field, listField, listNotes, NOTE_TYPES, type Note } from "./notes.ts";
-import { currentSourceNames, joinLines, type LinkSpan, linkSpans, MARK, regions, splitLines, WITHDRAWN_HEADING } from "./claims.ts";
+import { field, linkedNames, listField, listNotes, linkName, NOTE_TYPES, type Note, statusOf } from "./notes.ts";
+import {
+	currentSourceNames,
+	findHeading,
+	joinLines,
+	lastContentLine,
+	type LinkSpan,
+	linkSpans,
+	MARK,
+	noLongerCurrent,
+	type Region,
+	regions,
+	splitLines,
+	trimTrailingBlanks,
+	unmarkedLinks,
+	WITHDRAWN_HEADING,
+} from "./claims.ts";
 
 export type Kind = "MARKED" | "WITHDRAWN" | "RESTATE" | "REOPENED" | "FLAGGED" | "KEPT" | "UNMATCHED" | "RESTORED" | "UNMARKED";
 
@@ -65,55 +80,77 @@ export class RetractError extends Error {
 	}
 }
 
-const DATED_HEADINGS = ["## Retracted", "## Superseded"] as const;
+const DATED_HEADINGS: readonly string[] = ["## Retracted", "## Superseded"];
 const INDEX_SUFFIX = / \((?:retracted|superseded by \[\[[^\]]+\]\])\)$/;
 const WITHDRAWN_SUFFIX = / \(withdrawn \d{4}-\d{2}-\d{2}\)$/;
 
-const nameOf = (item: string) => (item.split(/[|#]/)[0] ?? "").split("/").pop()?.replace(/\.md$/i, "").trim().toLowerCase() ?? "";
-
-function findSource(notes: readonly Note[], name: string): Note | undefined {
-	const key = name.trim().toLowerCase();
-	return notes.find((n) => n.name.toLowerCase() === key);
-}
+type Pass = {
+	readonly target: Note;
+	/** The target's name, lowercased as links name it. */
+	readonly key: string;
+	/** The current sources once this pass has run. */
+	readonly current: ReadonlySet<string>;
+	readonly options: RetractOptions;
+	readonly undo: boolean;
+	/** The status the pass sets; null when it makes the source current again. */
+	readonly newStatus: "retracted" | "superseded" | null;
+	readonly oldStatus: "retracted" | "superseded" | null;
+	readonly newer: Note | undefined;
+	/** The source has been superseded at some point, so its withdrawn lines were restated and --undo leaves them. */
+	readonly everSuperseded: boolean;
+	/** The link names of each concept and entity, by its lowercased name, for the synthesis check. */
+	readonly sideLinks: ReadonlyMap<string, { readonly name: string; readonly links: ReadonlySet<string> }>;
+	readonly outcomes: Outcome[];
+};
 
 export function planRetraction(vaultRoot: string, options: RetractOptions): Plan {
 	const sources = listNotes(vaultRoot, "source");
-	const target = findSource(sources, options.source);
+	const byName = (name: string) => sources.find((n) => n.name.toLowerCase() === name.trim().toLowerCase());
+	const target = byName(options.source);
 	if (target === undefined) throw new RetractError("NO_SOURCE", `No note in sources/ is named ${options.source}.`);
-	const status = (field(target.content, "status") ?? "").toLowerCase();
-	const wasCurrent = status !== "retracted" && status !== "superseded";
-	if (options.undo === true && wasCurrent) throw new RetractError("CURRENT", `[[${target.name}]] is current: there is nothing to undo.`);
+	const undo = options.undo === true;
+	const oldStatus = noLongerCurrent(target.content) ? (statusOf(target.content) as "retracted" | "superseded") : null;
+	if (undo && oldStatus === null) throw new RetractError("CURRENT", `[[${target.name}]] is current: there is nothing to undo.`);
 	let newer: Note | undefined;
-	if (options.supersededBy !== undefined && options.undo !== true) {
-		newer = findSource(sources, options.supersededBy);
+	if (options.supersededBy !== undefined && !undo) {
+		newer = byName(options.supersededBy);
 		if (newer === undefined) {
 			throw new RetractError("NO_NEWER_SOURCE", `No note in sources/ is named ${options.supersededBy}: ingest ${options.supersededBy} first, then supersede [[${target.name}]] by it.`);
 		}
 	}
 
 	const key = target.name.toLowerCase();
-	const current = currentSourceNames(vaultRoot);
-	if (options.undo === true) current.add(key);
+	const current = currentSourceNames(sources);
+	if (undo) current.add(key);
 	else current.delete(key);
+	const notes = new Map(NOTE_TYPES.map((t) => [t, t === "source" ? sources : listNotes(vaultRoot, t)] as const));
+	const sides = [...(notes.get("concept") ?? []), ...(notes.get("entity") ?? [])];
 
 	const pass: Pass = {
 		target,
 		key,
 		current,
 		options,
-		newStatus: options.undo === true ? null : newer !== undefined ? "superseded" : "retracted",
-		oldStatus: wasCurrent ? null : (status as "retracted" | "superseded"),
+		undo,
+		newStatus: undo ? null : newer !== undefined ? "superseded" : "retracted",
+		oldStatus,
 		newer,
+		everSuperseded: splitLines(target.content).lines.some((l) => l.trim() === "## Superseded"),
+		sideLinks: new Map(sides.map((n) => [n.name.toLowerCase(), { name: n.name, links: linkedNames(n.content) }])),
 		outcomes: [],
 	};
 
 	const writes: NoteWrite[] = [];
 	const sourceNote = editSourceNote(pass);
 	if (sourceNote !== target.content) writes.push({ relPath: target.relPath, content: sourceNote });
+	const needle = target.name.toLowerCase();
 	for (const type of NOTE_TYPES) {
-		for (const note of listNotes(vaultRoot, type)) {
+		for (const note of notes.get(type) ?? []) {
 			if (note.relPath === target.relPath) continue;
-			const edited = editNote(pass, note, vaultRoot);
+			// Most notes never name the source: skip them before reading line by line. Not a
+			// synthesis, which a side's lost source flags without the synthesis naming it.
+			if (type !== "synthesis" && !note.content.toLowerCase().includes(needle)) continue;
+			const edited = editNote(pass, note);
 			if (edited !== note.content) writes.push({ relPath: note.relPath, content: edited });
 		}
 	}
@@ -154,8 +191,7 @@ export function formatReport(plan: Plan, applied?: Applied): string {
 	for (const o of plan.outcomes) counts.set(o.kind, (counts.get(o.kind) ?? 0) + 1);
 	if (counts.size > 0) lines.push("", `  ${[...counts].map(([k, n]) => `${n} ${k.toLowerCase()}`).join(", ")}.`);
 	if (applied !== undefined) {
-		lines.push("");
-		lines.push(applied.written.length === 0 ? "  Written: nothing." : `  Written: ${applied.written.join(", ")}`);
+		lines.push("", applied.written.length === 0 ? "  Written: nothing." : `  Written: ${applied.written.join(", ")}`);
 		if (applied.error !== undefined) {
 			lines.push(`  Not written: ${applied.notWritten.join(", ")}`);
 			lines.push(`  Stopped at ${applied.error.relPath}: ${applied.error.message}. Run the command again to finish.`);
@@ -168,23 +204,8 @@ export function formatReport(plan: Plan, applied?: Applied): string {
 
 const where = (o: Outcome) => (o.line === undefined ? o.relPath : `${o.relPath}:${o.line}`);
 
-type Pass = {
-	readonly target: Note;
-	readonly key: string;
-	readonly current: ReadonlySet<string>;
-	readonly options: RetractOptions;
-	/** null when the pass makes the source current again. */
-	readonly newStatus: "retracted" | "superseded" | null;
-	readonly oldStatus: "retracted" | "superseded" | null;
-	readonly newer: Note | undefined;
-	readonly outcomes: Outcome[];
-};
-
-const outcome = (pass: Pass, kind: Kind, relPath: string, line: number | undefined, detail: string) =>
+const emit = (pass: Pass, kind: Kind, relPath: string, line: number | undefined, detail: string) =>
 	pass.outcomes.push(line === undefined ? { kind, relPath, detail } : { kind, relPath, line, detail });
-
-/** The word for what happened to the source, for dated lines. */
-const fate = (pass: Pass) => (pass.newStatus === "superseded" ? "superseded" : "retracted");
 
 // ---------------------------------------------------------------------------
 // The source note: status, superseded_by, and the dated section.
@@ -194,9 +215,7 @@ function editSourceNote(pass: Pass): string {
 	const { target, options } = pass;
 	const supersededBy = pass.newer === undefined ? null : `"[[${pass.newer.name}]]"`;
 	const unchanged =
-		pass.newStatus !== null &&
-		pass.newStatus === pass.oldStatus &&
-		(pass.newStatus === "retracted" || field(target.content, "superseded_by") === supersededBy);
+		pass.newStatus !== null && pass.newStatus === pass.oldStatus && (pass.newStatus === "retracted" || field(target.content, "superseded_by") === supersededBy);
 	if (unchanged) return target.content;
 
 	const doc = splitLines(target.content);
@@ -205,22 +224,21 @@ function editSourceNote(pass: Pass): string {
 
 	let dated: string;
 	if (pass.newStatus === null) {
-		const was = pass.oldStatus === "superseded" ? "supersession" : "retraction";
-		dated = `- ${options.date}: no longer ${pass.oldStatus}: the ${was} was withdrawn.`;
+		dated = `- ${options.date}: no longer ${pass.oldStatus}: the ${pass.oldStatus === "superseded" ? "supersession" : "retraction"} was withdrawn.`;
 	} else {
 		dated = `- ${options.date}: ${pass.newStatus === "superseded" ? `superseded by [[${pass.newer?.name}]]` : "retracted"}.`;
-		if (options.notice !== undefined && options.notice !== "") dated += ` Notice: ${options.notice}.`;
-		if (options.reason !== undefined && options.reason !== "") dated += ` Reason: ${options.reason}`;
+		if (options.notice) dated += ` Notice: ${options.notice}.`;
+		if (options.reason) dated += ` Reason: ${options.reason}`;
 	}
 	const kinds = regions(doc.lines);
-	const existing = doc.lines.findIndex((l, i) => kinds[i] === "heading" && (DATED_HEADINGS as readonly string[]).includes(l.trim()));
+	const existing = findHeading(doc.lines, kinds, (h) => DATED_HEADINGS.includes(h));
 	if (existing !== -1) {
 		doc.lines.splice(lastContentLine(doc.lines, kinds, existing) + 1, 0, dated);
 	} else {
 		const heading = pass.newStatus === "superseded" ? "## Superseded" : "## Retracted";
-		const h1 = doc.lines.findIndex((l, i) => kinds[i] === "heading" && /^#\s/.test(l));
+		const h1 = findHeading(doc.lines, kinds, (h) => /^#\s/.test(h));
 		if (h1 !== -1) doc.lines.splice(h1 + 1, 0, "", heading, "", dated);
-		else doc.lines.splice(frontmatterEnd(kinds) + 1, 0, heading, "", dated, "");
+		else doc.lines.splice(kinds.lastIndexOf("frontmatter") + 1, 0, heading, "", dated, "");
 	}
 	return joinLines(doc);
 }
@@ -231,26 +249,11 @@ function setField(lines: string[], name: string, value: string | null): void {
 	const at = lines.findIndex((l, i) => kinds[i] === "frontmatter" && l.startsWith(`${name}:`));
 	if (value === null) {
 		if (at !== -1) lines.splice(at, 1);
-		return;
+	} else if (at !== -1) {
+		lines[at] = `${name}: ${value}`;
+	} else {
+		lines.splice(kinds.lastIndexOf("frontmatter"), 0, `${name}: ${value}`);
 	}
-	if (at !== -1) lines[at] = `${name}: ${value}`;
-	else lines.splice(frontmatterEnd(kinds), 0, `${name}: ${value}`);
-}
-
-/** The index of the frontmatter's closing `---`, or -1 when there is no frontmatter. */
-function frontmatterEnd(kinds: readonly string[]): number {
-	let end = -1;
-	kinds.forEach((k, i) => {
-		if (k === "frontmatter") end = i;
-	});
-	return end;
-}
-
-/** The last non-blank line of the section that starts at `heading`. */
-function lastContentLine(lines: readonly string[], kinds: readonly string[], heading: number): number {
-	let last = heading;
-	for (let i = heading + 1; i < lines.length && kinds[i] !== "heading"; i++) if ((lines[i] ?? "").trim() !== "") last = i;
-	return last;
 }
 
 // ---------------------------------------------------------------------------
@@ -259,158 +262,154 @@ function lastContentLine(lines: readonly string[], kinds: readonly string[], hea
 
 function editIndex(pass: Pass, content: string): string {
 	const doc = splitLines(content);
-	const suffix =
-		pass.newStatus === null ? "" : pass.newStatus === "superseded" ? ` (superseded by [[${pass.newer?.name}]])` : " (retracted)";
-	doc.lines = doc.lines.map((line) => {
-		if (!linkSpans(line).some((s) => s.name === pass.key)) return line;
-		return line.replace(INDEX_SUFFIX, "") + suffix;
-	});
+	const suffix = pass.newStatus === null ? "" : pass.newStatus === "superseded" ? ` (superseded by [[${pass.newer?.name}]])` : " (retracted)";
+	doc.lines = doc.lines.map((line) => (linkSpans(line).some((s) => s.name === pass.key) ? line.replace(INDEX_SUFFIX, "") + suffix : line));
 	return joinLines(doc);
 }
 
 // ---------------------------------------------------------------------------
-// Every other note.
+// Every other note, by type.
 // ---------------------------------------------------------------------------
 
-function editNote(pass: Pass, note: Note, vaultRoot: string): string {
+/** A note read line by line: its lines, their regions, and each line's links (none in a fence). */
+type Read = { readonly doc: ReturnType<typeof splitLines>; readonly kinds: readonly Region[]; readonly spans: readonly (readonly LinkSpan[])[] };
+
+function readNote(note: Note): Read {
 	const doc = splitLines(note.content);
 	const kinds = regions(doc.lines);
-	const spans = doc.lines.map((line, i) => (kinds[i] === "fence" ? [] : linkSpans(line)));
-	const cites = (i: number) => (spans[i] ?? []).some((s) => s.name === pass.key);
-	const undo = pass.newStatus === null;
+	return { doc, kinds, spans: doc.lines.map((line, i) => (kinds[i] === "fence" ? [] : linkSpans(line))) };
+}
 
-	if (note.type === "source") {
-		if (!undo) {
-			spans.forEach((_, i) => {
-				if (!cites(i)) return;
-				const chain = kinds[i] === "frontmatter" && /^superseded_by:/.test(doc.lines[i] ?? "");
-				outcome(pass, "KEPT", note.relPath, i + 1, chain ? `superseded by [[${pass.target.name}]]; its claims don't fall back to it` : "another source note: a record");
-			});
-		}
-		return note.content;
+const citesOn = (pass: Pass, spans: readonly LinkSpan[]) => spans.some((s) => s.name === pass.key);
+
+function editNote(pass: Pass, note: Note): string {
+	const read = readNote(note);
+	switch (note.type) {
+		case "source":
+			if (!pass.undo) keepSourceRecord(pass, note, read);
+			return note.content;
+		case "synthesis":
+			if (!pass.undo) flagSynthesis(pass, note, read);
+			return note.content;
+		case "question":
+			if (!pass.undo && reopenQuestion(pass, note, read)) return joinLines(read.doc);
+			return editClaims(pass, note, read, false);
+		default:
+			return editClaims(pass, note, read, true);
 	}
+}
 
-	if (note.type === "synthesis") {
-		if (!undo) flagSynthesis(pass, note, vaultRoot, spans.some((_, i) => cites(i)));
-		return note.content;
+/** Another source note is a record of what it said (§2.1): reported, never edited. */
+function keepSourceRecord(pass: Pass, note: Note, { doc, kinds, spans }: Read): void {
+	spans.forEach((s, i) => {
+		if (!citesOn(pass, s)) return;
+		const chain = kinds[i] === "frontmatter" && /^superseded_by:/.test(doc.lines[i] ?? "");
+		emit(pass, "KEPT", note.relPath, i + 1, chain ? `superseded by [[${pass.target.name}]]; its claims don't fall back to it` : "another source note: a record");
+	});
+}
+
+/** A synthesis is never edited (§2.1): flagged when a side loses its only current source, names the source in `sides`, or links it. */
+function flagSynthesis(pass: Pass, note: Note, { spans }: Read): void {
+	const sides = listField(note.content, "sides").map((item) => linkName(item.split(/[|#]/)[0] ?? ""));
+	const why: string[] = [];
+	if (sides.includes(pass.key)) why.push("names the source in sides");
+	for (const side of sides) {
+		const s = pass.sideLinks.get(side);
+		if (s !== undefined && s.links.has(pass.key) && ![...s.links].some((n) => pass.current.has(n))) why.push(`[[${s.name}]] lost its only current source`);
 	}
+	if (!sides.includes(pass.key) && spans.some((s) => citesOn(pass, s))) why.push("links the source");
+	if (why.length > 0) emit(pass, "FLAGGED", note.relPath, undefined, `review the verdict: ${why.join("; ")}`);
+}
 
-	if (note.type === "question" && !undo && reopenQuestion(pass, note, doc, kinds, spans)) return joinLines(doc);
+/** An answered question whose answer has no other current source goes back to open, with a dated line (§2.1). True when the question is settled for this pass. */
+function reopenQuestion(pass: Pass, note: Note, { doc, kinds, spans }: Read): boolean {
+	if (doc.lines.some((l) => l.includes(`reopened: the answer rested on [[${pass.target.name}]]`))) return true; // reopened on an earlier run
+	const body = spans.filter((_, i) => kinds[i] === "body").flat();
+	if (statusOf(note.content) !== "answered" || !citesOn(pass, body) || body.some((s) => s.name !== pass.key && pass.current.has(s.name))) return false;
+	setField(doc.lines, "status", "open");
+	trimTrailingBlanks(doc.lines);
+	doc.lines.push("", `- ${pass.options.date}: reopened: the answer rested on [[${pass.target.name}]], ${pass.newStatus}.`, "");
+	emit(pass, "REOPENED", note.relPath, undefined, `answer rested on [[${pass.target.name}]]`);
+	return true;
+}
 
-	// Concepts, entities, and questions that stay as they are.
-	const claims = note.type === "concept" || note.type === "entity";
+/**
+ * Concepts and entities (`withdraw`), and questions that stay as they are:
+ * each line that links the source is marked, withdrawn, restated or kept;
+ * under --undo, markers come off and withdrawn lines come back.
+ */
+function editClaims(pass: Pass, note: Note, { doc, kinds, spans }: Read, withdraw: boolean): string {
+	const target = new Set([pass.key]);
 	const remove = new Set<number>();
 	const withdrawn: string[] = [];
 	const restored: string[] = [];
 	doc.lines.forEach((line, i) => {
-		const kind = kinds[i];
 		const own = (spans[i] ?? []).filter((s) => s.name === pass.key);
-		if (kind === "withdrawn") {
-			if (undo && own.length > 0 && WITHDRAWN_SUFFIX.test(line)) {
-				if (wasEverSuperseded(pass)) {
-					outcome(pass, "KEPT", note.relPath, i + 1, "restated from a newer source: not restored");
-				} else {
-					restored.push(line.replace(WITHDRAWN_SUFFIX, ""));
-					doc.lines[i] = `${line} restored ${pass.options.date}`;
-					outcome(pass, "RESTORED", note.relPath, i + 1, "back in the note's text");
+		switch (kinds[i]) {
+			case "fence":
+				return;
+			case "withdrawn":
+				if (pass.undo && own.length > 0 && WITHDRAWN_SUFFIX.test(line)) {
+					if (pass.everSuperseded) {
+						emit(pass, "KEPT", note.relPath, i + 1, "restated from a newer source: not restored");
+					} else {
+						restored.push(line.replace(WITHDRAWN_SUFFIX, ""));
+						doc.lines[i] = `${line} restored ${pass.options.date}`;
+						emit(pass, "RESTORED", note.relPath, i + 1, "back in the note's text");
+					}
 				}
-			}
-			return;
+				return;
+			case "frontmatter":
+			case "heading":
+				if (own.length > 0 && !pass.undo) emit(pass, "KEPT", note.relPath, i + 1, `a ${kinds[i]} line, not a claim`);
+				return;
 		}
-		if (kind === "fence") return;
 		if (own.length === 0) {
-			if (!undo && kind === "body" && mentions(line, spans[i] ?? [], pass.target.name)) {
-				outcome(pass, "UNMATCHED", note.relPath, i + 1, `names "${pass.target.name}" with no link: left alone`);
-			}
+			if (!pass.undo && mentions(line, spans[i] ?? [], pass.target.name)) emit(pass, "UNMATCHED", note.relPath, i + 1, `names "${pass.target.name}" with no link: left alone`);
 			return;
 		}
-		if (kind === "frontmatter" || kind === "heading") {
-			if (!undo) outcome(pass, "KEPT", note.relPath, i + 1, `a ${kind} line, not a claim`);
-			return;
-		}
-		if (undo) {
+		if (pass.undo) {
 			const unmarked = unmark(line, own);
 			if (unmarked !== line) {
 				doc.lines[i] = unmarked;
-				outcome(pass, "UNMARKED", note.relPath, i + 1, "marker removed");
+				emit(pass, "UNMARKED", note.relPath, i + 1, "marker removed");
 			}
 			return;
 		}
-		const open = own.filter((s) => !line.startsWith(MARK, s.end));
+		const open = unmarkedLinks(line, own, target);
 		if (open.length === 0) return; // marked on an earlier run
-		const supported = (spans[i] ?? []).some((s) => s.name !== pass.key && pass.current.has(s.name));
-		if (supported || !claims) {
+		const other = (spans[i] ?? []).find((s) => s.name !== pass.key && pass.current.has(s.name));
+		if (other !== undefined || !withdraw) {
 			doc.lines[i] = mark(line, open);
-			const other = (spans[i] ?? []).find((s) => s.name !== pass.key && pass.current.has(s.name));
-			outcome(pass, "MARKED", note.relPath, i + 1, other === undefined ? "a question's line: marked, not moved" : `also backed by [[${other.target}]]`);
+			emit(pass, "MARKED", note.relPath, i + 1, other === undefined ? "a question's line: marked, not moved" : `also backed by [[${other.target}]]`);
 			return;
 		}
 		remove.add(i);
 		withdrawn.push(`${line.startsWith("- ") ? line : `- ${line.trim()}`} (withdrawn ${pass.options.date})`);
-		if (pass.newStatus === "superseded") {
-			outcome(pass, "RESTATE", note.relPath, i + 1, `withdrawn: write [[${pass.newer?.name}]]'s claim here, or leave it withdrawn`);
-		} else {
-			outcome(pass, "WITHDRAWN", note.relPath, i + 1, "moved to Withdrawn claims");
-		}
+		if (pass.newStatus === "superseded") emit(pass, "RESTATE", note.relPath, i + 1, `withdrawn: write [[${pass.newer?.name}]]'s claim here, or leave it withdrawn`);
+		else emit(pass, "WITHDRAWN", note.relPath, i + 1, "moved to Withdrawn claims");
 	});
-	if (remove.size === 0 && withdrawn.length === 0 && restored.length === 0) return joinLines(doc);
-	doc.lines = doc.lines.filter((_, i) => !remove.has(i));
+	if (remove.size > 0) doc.lines = doc.lines.filter((_, i) => !remove.has(i));
 	if (restored.length > 0) insertBeforeWithdrawn(doc.lines, restored);
 	if (withdrawn.length > 0) appendWithdrawn(doc.lines, withdrawn);
 	return joinLines(doc);
 }
 
-const mark = (line: string, spans: readonly LinkSpan[]) =>
-	[...spans].sort((a, b) => b.end - a.end).reduce((l, s) => l.slice(0, s.end) + MARK + l.slice(s.end), line);
+/** Insert MARK after each span, right to left so earlier offsets hold. */
+const mark = (line: string, spans: readonly LinkSpan[]) => spans.toReversed().reduce((l, s) => l.slice(0, s.end) + MARK + l.slice(s.end), line);
 
-function unmark(line: string, spans: readonly LinkSpan[]): string {
-	return [...spans].sort((a, b) => b.end - a.end).reduce((l, s) => (l.startsWith(MARK, s.end) ? l.slice(0, s.end) + l.slice(s.end + MARK.length) : l), line);
-}
+const unmark = (line: string, spans: readonly LinkSpan[]) =>
+	spans.toReversed().reduce((l, s) => (l.startsWith(MARK, s.end) ? l.slice(0, s.end) + l.slice(s.end + MARK.length) : l), line);
 
 /** True when a line names the source in plain text, outside its links. */
 function mentions(line: string, spans: readonly LinkSpan[], name: string): boolean {
-	let rest = line;
-	for (const s of [...spans].sort((a, b) => b.start - a.start)) rest = rest.slice(0, s.start) + rest.slice(s.end);
+	const rest = spans.toReversed().reduce((l, s) => l.slice(0, s.start) + l.slice(s.end), line);
 	return rest.toLowerCase().includes(name.toLowerCase());
 }
 
-/** A synthesis is never edited (§2.1): it is flagged when a side loses its only current source, names the source in `sides`, or links it. */
-function flagSynthesis(pass: Pass, note: Note, vaultRoot: string, links: boolean): void {
-	const sides = listField(note.content, "sides").map(nameOf);
-	const why: string[] = [];
-	if (sides.includes(pass.key)) why.push("names the source in sides");
-	const notes = [...listNotes(vaultRoot, "concept"), ...listNotes(vaultRoot, "entity")];
-	for (const side of sides) {
-		const sideNote = notes.find((n) => n.name.toLowerCase() === side);
-		if (sideNote === undefined) continue;
-		const names = new Set(splitLines(sideNote.content).lines.flatMap((l) => linkSpans(l).map((s) => s.name)));
-		if (names.has(pass.key) && ![...names].some((n) => pass.current.has(n))) why.push(`[[${sideNote.name}]] lost its only current source`);
-	}
-	if (links && !sides.includes(pass.key)) why.push("links the source");
-	if (why.length > 0) outcome(pass, "FLAGGED", note.relPath, undefined, `review the verdict: ${why.join("; ")}`);
-}
-
-/** An answered question whose answer has no other current source goes back to open, with a dated line (§2.1). */
-function reopenQuestion(pass: Pass, note: Note, doc: { lines: string[] }, kinds: readonly string[], spans: readonly (readonly LinkSpan[])[]): boolean {
-	const status = (field(note.content, "status") ?? "").toLowerCase();
-	const body = spans.filter((_, i) => kinds[i] === "body").flat();
-	const reopenedBefore = doc.lines.some((l) => l.includes(`reopened: the answer rested on [[${pass.target.name}]]`));
-	if (reopenedBefore) return true;
-	if (status !== "answered" || !body.some((s) => s.name === pass.key) || body.some((s) => s.name !== pass.key && pass.current.has(s.name))) return false;
-	setField(doc.lines, "status", "open");
-	while (doc.lines.length > 0 && (doc.lines.at(-1) ?? "").trim() === "") doc.lines.pop();
-	doc.lines.push("", `- ${pass.options.date}: reopened: the answer rested on [[${pass.target.name}]], ${fate(pass)}.`, "");
-	outcome(pass, "REOPENED", note.relPath, undefined, `answer rested on [[${pass.target.name}]]`);
-	return true;
-}
-
-/** True when the source has ever been superseded: its withdrawn lines were restated, so --undo leaves them. */
-const wasEverSuperseded = (pass: Pass) => splitLines(pass.target.content).lines.some((l) => l.trim() === "## Superseded");
-
 /** Restored claims go back at the end of the note's text, before Withdrawn claims. */
 function insertBeforeWithdrawn(lines: string[], claims: readonly string[]): void {
-	const kinds = regions(lines);
-	const section = lines.findIndex((l, i) => kinds[i] === "heading" && l.trim() === WITHDRAWN_HEADING);
+	const section = findHeading(lines, regions(lines), (h) => h === WITHDRAWN_HEADING);
 	let at = section === -1 ? lines.length : section;
 	while (at > 0 && (lines[at - 1] ?? "").trim() === "") at--;
 	lines.splice(at, 0, ...claims);
@@ -418,11 +417,11 @@ function insertBeforeWithdrawn(lines: string[], claims: readonly string[]): void
 
 function appendWithdrawn(lines: string[], entries: readonly string[]): void {
 	const kinds = regions(lines);
-	const section = lines.findIndex((l, i) => kinds[i] === "heading" && l.trim() === WITHDRAWN_HEADING);
+	const section = findHeading(lines, kinds, (h) => h === WITHDRAWN_HEADING);
 	if (section !== -1) {
 		lines.splice(lastContentLine(lines, kinds, section) + 1, 0, ...entries);
 		return;
 	}
-	while (lines.length > 0 && (lines.at(-1) ?? "").trim() === "") lines.pop();
+	trimTrailingBlanks(lines);
 	lines.push("", WITHDRAWN_HEADING, "", ...entries, "");
 }
