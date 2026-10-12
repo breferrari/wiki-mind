@@ -76,11 +76,15 @@ The source note is never deleted, and its body stays as the record. A dated sect
 | Still has another current source | It stays. ` (no longer current)` is written right after the link's closing `]]`, whatever the link's form. | MARKED |
 | Has no other current source | It moves under `## Withdrawn claims` at the note's end, as `- <the line> (withdrawn YYYY-MM-DD)`, its link to the source kept. | WITHDRAWN |
 | As above, and the source was superseded | The newer source's claim is written in the old line's place and linked to the newer source. The old line moves under `## Withdrawn claims` as above. If the newer source doesn't make the claim, there is nothing to restate, and the line is only withdrawn. | RESTATED |
-| Is in a synthesis | The synthesis is never edited by the command. It is flagged for review when a side loses its only current source, or when it names the source in `sides`. A verdict needs judgement. | FLAGGED |
+| Is in a synthesis | The synthesis is never edited by the command. It is flagged for review when a side loses its only current source, when it names the source in `sides`, or when it links the source itself. A verdict needs judgement. | FLAGGED |
 | Is the answer of an answered question, with no other current source | Only `status` changes: back to `open`, with a dated line naming the source under the answer. The answer text stays. | REOPENED |
 | Can't be sorted (the command can't tell what the line rests on) | The line stays as it is. | KEPT |
 
 A mention of the source with no link, for instance in a note edited by hand since ingest, is listed as UNMATCHED and left alone. The command doesn't guess what a claim rests on.
+
+A line that is not a claim is KEPT: a frontmatter line, a heading, or any line of another source note, which is a record of what that source said.
+
+**Script and agent.** A script does the mechanical part of the pass: the status, the dated section and the annotation, then every outcome but the restatement. It never writes a claim. For a superseded source's line with no other current support, it withdraws the line and reports `RESTATE <note>:<line>`. The agent, following the command, writes the newer source's claim there, linked to it, or leaves the line withdrawn when the newer source doesn't make the claim. The command's report then says RESTATED.
 
 The marker ` (no longer current)`, the suffixes `(withdrawn YYYY-MM-DD)` and `restored YYYY-MM-DD`, and the headings `## Retracted`, `## Superseded` and `## Withdrawn claims` are exact strings, because `wiki-lint` and `--undo` match them.
 
@@ -94,6 +98,10 @@ The marker ` (no longer current)`, the suffixes `(withdrawn YYYY-MM-DD)` and `re
 - **A source whose status changes.** Running the command again on a source that is no longer current, for instance a superseded source that is then retracted, sets the new status and adds a dated line to the dated section. Then the pass runs again. A line already marked or withdrawn is not marked or withdrawn twice.
 - **A source nothing cites.** The status, the dated section and the annotation still change, and the report says no note cites it.
 - **A retraction that is itself withdrawn** (the publisher withdraws its notice). `/wiki-retract <source> --undo` makes the source current again: it clears `status` and `superseded_by`, and adds a dated line to the dated section, which otherwise stays. The marker after each link to the source is removed. A withdrawn line whose kept link to the source is now its only current support returns to its note's text, and its entry gains `restored YYYY-MM-DD`. A line that was restated from a newer source is not restored, because the restatement still stands; it is reported for the user. A flagged synthesis stays flagged, and a reopened question stays open, because the user re-decides both.
+
+#### Writes
+
+Each note is written whole and atomically: to a temporary file, then renamed over the note, as the vault's other writers do. A note is never left half-written. The pass stops at the first note it cannot write (read-only, or locked by another program, which Obsidian can cause on Windows), and the report names every note written and every note not written. Running the command again finishes the job, since a line already marked or withdrawn is not touched twice.
 
 #### Checks
 
