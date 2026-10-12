@@ -14,40 +14,33 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const read = (p: string) => readFileSync(join(REPO, p), "utf-8");
 
-interface Steps {
-	/** The install command line, as written. */
-	install: string | undefined;
-	/** The folder the install names, when it names one. */
-	folder: string | undefined;
-	/** The folder each `cd` line enters. */
-	cds: string[];
-	mkdir: boolean;
-}
-
 /** The README's install steps: the first ```sh block under `## Install`. */
-export function readmeSteps(readme: string): Steps {
+function readmeSteps(readme: string) {
 	const lines = readme.split(/\r?\n/);
 	const section = lines.slice(lines.indexOf("## Install") + 1);
 	const open = section.findIndex((l) => l === "```sh");
 	const close = section.findIndex((l, i) => i > open && l === "```");
-	return steps(open === -1 ? [] : section.slice(open + 1, close));
-}
-
-function steps(lines: string[]): Steps {
-	const install = lines.find((l) => l.startsWith("npx shardmind install "));
-	const words = install?.split(/\s+/) ?? [];
+	const block = open === -1 ? [] : section.slice(open + 1, close);
+	const install = block.find((l) => l.startsWith("npx shardmind install "));
+	// The folder is the first argument after the shard reference that isn't a flag.
+	const folder = install?.split(/\s+/).slice(4).find((w) => !w.startsWith("-"));
 	return {
 		install,
-		folder: words[4],
-		cds: lines.flatMap((l) => l.match(/(?:^|&&\s*)cd\s+(\S+)/)?.[1] ?? []),
-		mkdir: lines.some((l) => /(^|&&\s*)mkdir\b/.test(l)),
+		folder,
+		cds: block.flatMap((l) => l.match(/(?:^|&&\s*)cd\s+(\S+)/)?.[1] ?? []),
+		mkdir: block.some((l) => /(^|&&\s*)mkdir\b/.test(l)),
 	};
 }
 
-/** The body of CHANGELOG.md's Unreleased section. */
-function unreleased(changelog: string): string {
-	const body = changelog.split(/^## \[Unreleased\]\r?\n/m)[1] ?? "";
-	return body.split(/^## /m)[0] ?? "";
+/** The newest release notes: Unreleased while it has any, else the latest version's. */
+function newestNotes(changelog: string): string {
+	return (
+		changelog
+			.split(/^## /m)
+			.slice(1)
+			.map((s) => s.slice(s.indexOf("\n") + 1))
+			.find((body) => body.trim() !== "") ?? ""
+	);
 }
 
 describe("the install steps", () => {
@@ -65,10 +58,10 @@ describe("the install steps", () => {
 		assert.match(readme, new RegExp(`\`npx shardmind install github:breferrari/wiki-mind ${folder}\``));
 	});
 
-	test("the next release's notes carry the same install command", () => {
-		const notes = unreleased(read("CHANGELOG.md"));
-		assert.ok(install !== undefined && notes.includes(install), `CHANGELOG's Unreleased section gives \`${install}\``);
-		assert.ok(notes.includes(`cd ${folder}`), `CHANGELOG's Unreleased section enters ${folder}`);
+	test("the newest release notes carry the same install command", () => {
+		const notes = newestNotes(read("CHANGELOG.md"));
+		assert.ok(install !== undefined && notes.includes(install), `CHANGELOG's newest notes give \`${install}\``);
+		assert.ok(notes.includes(`cd ${folder}`), `CHANGELOG's newest notes enter ${folder}`);
 	});
 
 	test("the reader sees the pre-1.0 form, so the first test can fail", () => {
