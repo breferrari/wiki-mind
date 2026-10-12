@@ -347,6 +347,16 @@
       "upstream": ".claude/skills/obsidian-mind/types/index.d.ts",
       "upstreamSha256": "e8aa98c5f8c1a4e7b566c583cd1b386e08da246befbe2db0747fc7bb47fd31e7"
     },
+    ".codex/hooks.json": {
+      "sha256": "af22499c9760726ca6f03bec3792a6415b4f5aebcd9ef9afe89a2c4b8c867a59",
+      "upstream": ".codex/hooks.json",
+      "upstreamSha256": "af22499c9760726ca6f03bec3792a6415b4f5aebcd9ef9afe89a2c4b8c867a59"
+    },
+    ".gemini/settings.json": {
+      "sha256": "166b8ebb19eaec627740d1e020d63c8a98d40da7c522c53f7126903125ecef2f",
+      "upstream": ".gemini/settings.json",
+      "upstreamSha256": "166b8ebb19eaec627740d1e020d63c8a98d40da7c522c53f7126903125ecef2f"
+    },
     ".mcp.json": {
       "sha256": "63eb78e663f3d2e69b68c99e792b6645fe66a29cfd8fd741122a454fd182bdc3",
       "upstream": ".mcp.json",

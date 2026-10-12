@@ -37,10 +37,11 @@ groups:
     description: "Three questions. Press Enter after each."
 
 # ---------------------------------------------------------------------------
-# Modules (SPEC.md §5). Neither is removable in the first release; Codex and
-# Gemini arrive as removable modules with #25. `.claude/scripts/` and
-# `.claude/extensions/` are claimed by no module, so they always install:
-# the hooks resolve into them whatever agent runs them.
+# Modules (SPEC.md §5). wiki and claude stay; codex and gemini are removable
+# (#25). AGENTS.md, the one instruction file every agent reads (SPEC.md §6.1),
+# is claimed by no module and so always installs, as do `.claude/scripts/`
+# and `.claude/extensions/`: the hooks resolve into them whatever agent runs
+# them.
 # ---------------------------------------------------------------------------
 
 modules:
@@ -59,11 +60,23 @@ modules:
     removable: false
 
   claude:
-    label: "Claude Code: CLAUDE.md, commands, skills, the mod and the hook wiring"
+    label: "Claude Code: its rules, commands, skills, the mod and the hook wiring"
     paths:
-      - "CLAUDE.md"
+      - ".claude/rules/"
       - ".claude/commands/"
       - ".claude/skills/"
       - ".claude/settings.json"
       - ".claude/VENDOR.json"
     removable: false
+
+  codex:
+    label: "Codex (OpenAI): its hook config. Codex reads AGENTS.md itself."
+    paths:
+      - ".codex/"
+    removable: true
+
+  gemini:
+    label: "Gemini (Google): its settings, which point it at AGENTS.md and wire its hooks"
+    paths:
+      - ".gemini/"
+    removable: true
