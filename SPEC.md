@@ -412,7 +412,7 @@ ShardMind's four invariants apply as written. Each is held by a test whose name 
 
 ### Invariant 1 — `install --defaults` equals a clone
 
-Enforced in CI on ubuntu, macOS and Windows by `tests/contract.test.ts` (#11). It installs the commit CI checked out (for a pull request, the merge commit with main) from GitHub with `shardmind install --defaults`, and compares the result with what the repo says a vault gets: the tracked files, minus Tier 1, minus `.shardmindignore`. The paths must match and every file must be byte-identical; the install adds only `.shardmind/` and `shard-values.yaml`. With no `.njk` (§3.4), there is no render delta. The same test asserts that no test file installs (#40).
+Enforced in CI on ubuntu, macOS and Windows by `tests/contract.test.ts` (#11). It installs the commit CI checked out (for a pull request, the merge commit with main) from GitHub with `shardmind install --defaults` into an empty folder, named as `.` (from ShardMind 1.0, `install` otherwise makes a new folder named after the shard), and compares the result with what the repo says a vault gets: the tracked files, minus Tier 1, minus `.shardmindignore`. The paths must match and every file must be byte-identical; the install adds only `.shardmind/` and `shard-values.yaml`. With no `.njk` (§3.4), there is no render delta. The same test asserts that no test file installs (#40).
 
 ### Invariant 2 — a defaults install touches no managed file
 
