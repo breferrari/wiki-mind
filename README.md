@@ -27,6 +27,7 @@ Claude Code hooks keep the wiki honest as you work. The session starts with the 
 | `/wiki-ingest <url or inbox path>` | Reads a source in full, writes its note, and updates the concepts and entities it informs, with every claim linked back to it. |
 | `/wiki-synthesize <X> vs <Y>` | Compares notes the wiki already has, citing their sources. Refuses when a side has no note yet. |
 | `/wiki-question <text>` | Files a question in the intake queue. |
+| `/wiki-retract <source>` | Marks a source retracted or superseded and updates every note that cites it, keeping the record of what it said. |
 | `/wiki-lint` | Checks the whole wiki for drift and fixes what it can. |
 
 ## Install

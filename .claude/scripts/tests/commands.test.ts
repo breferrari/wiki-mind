@@ -28,6 +28,7 @@ describe("the slash commands", () => {
 			if (text.includes("$ARGUMENTS")) assert.match(fm, /^argument-hint: "[^"]+"$/m);
 			for (const m of text.matchAll(/`(templates\/[A-Za-z ]+\.md)`/g)) assert.ok(existsSync(join(REPO, m[1] ?? "")), `${m[1]} exists`);
 			for (const m of text.matchAll(/`(sources|concepts|entities|syntheses|questions|inbox)\/`/g)) assert.ok(existsSync(join(REPO, m[1] ?? "")), `${m[1]}/ exists`);
+			for (const m of text.matchAll(/(\.claude\/[\w./-]+\.ts)\b/g)) assert.ok(existsSync(join(REPO, m[1] ?? "")), `${m[1]} exists`);
 		});
 	}
 });

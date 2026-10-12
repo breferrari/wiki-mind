@@ -18,7 +18,7 @@ Five note types, each with its own folder and template (`templates/`). These are
 
 | Type | Folder | One note per | Frontmatter beyond `date`, `description`, `tags` | Must link to |
 |------|--------|--------------|---------------------------------------------------|--------------|
-| Source | `sources/` | paper or article | `authors`, `year`, `url` | every concept and entity it informs |
+| Source | `sources/` | paper or article | `authors`, `year`, `url`; `status` and `superseded_by` only once it is retracted or superseded | every concept and entity it informs |
 | Concept | `concepts/` | atomic idea | — | at least one source |
 | Entity | `entities/` | named system, tool or person | `kind`: `system`, `tool` or `person` | at least one source |
 | Synthesis | `syntheses/` | comparison of two or more notes | `sides`: the notes compared | each side, and the sources behind each claim |
@@ -49,11 +49,21 @@ Write a `syntheses/` note from `templates/Synthesis.md`, with the notes compared
 
 Write a `questions/` note with `status: open`, linked to whatever raised it. When a question stops mattering, set `status: dropped`. Never delete it.
 
+### Retract or supersede a source: `/wiki-retract <source> [--superseded-by <newer>]`
+
+When the user says a source was retracted, or replaced by a newer one, mark it and update what cites it. The source note stays as the record of what it said: never rewrite or delete it.
+- A claim another current source still backs stays, with ` (no longer current)` after the link.
+- A claim nothing else backs moves to the note's `## Withdrawn claims`. For a supersession, restate it from the newer source in its place, if the newer source makes the claim.
+- A synthesis resting on the source is flagged for review, and an answered question resting on it alone reopens.
+
+If the newer source has no note yet, stop and say which source to ingest first. `--undo` makes the source current again when a retraction is itself withdrawn.
+
 ### Check the wiki: `/wiki-lint`
 
 It reports:
 - orphans;
-- concepts and entities with no source;
+- concepts and entities with no current source;
+- links to a retracted or superseded source with no marker;
 - syntheses with fewer than two sides;
 - missing frontmatter;
 - stale open questions;

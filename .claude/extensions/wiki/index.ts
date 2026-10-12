@@ -6,7 +6,11 @@
  *   that cite no source, one-sided syntheses, and notes Index.md doesn't
  *   annotate;
  * - prompt signals: a new source, a comparison, a question;
- * - write validators: the frontmatter and link rules of SPEC.md §2.
+ * - write validators: the frontmatter and link rules of SPEC.md §2;
+ * - a retracted or superseded source (SPEC.md §2.1): its `status` and
+ *   `superseded_by` at write time, and at Stop, concepts and entities whose
+ *   sources are all no longer current, and links to such a source with no
+ *   marker after them.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -24,8 +28,10 @@ import {
 	linkedNames,
 	listField,
 	listNotes,
+	statusOf,
 	typeOf,
 } from "./notes.ts";
+import { currentSourceNames, linkSpans, noLongerCurrent, regions, splitLines, startsWithBom, unmarkedLinks } from "./claims.ts";
 
 /** Every note's frontmatter (SPEC.md §2). */
 const GLOBAL_FIELDS = ["date", "description", "tags"] as const;
@@ -43,6 +49,8 @@ const TYPE_FIELDS: Readonly<Record<NoteType, readonly string[]>> = {
 const ENUM_FIELDS: Readonly<Partial<Record<NoteType, { field: string; values: readonly string[] }>>> = {
 	entity: { field: "kind", values: ["system", "tool", "person"] },
 	question: { field: "status", values: ["open", "answered", "dropped"] },
+	// Optional (SPEC.md §2.1): absent means current, and an absent field passes.
+	source: { field: "status", values: ["retracted", "superseded"] },
 };
 
 const OPEN_QUESTIONS_SHOWN = 15;
@@ -63,8 +71,35 @@ function unsourced(note: Note, sources: ReadonlySet<string>): boolean {
 	return (note.type === "concept" || note.type === "entity") && !citesSource(note.content, sources);
 }
 
+/** Problems with a source's `superseded_by` (SPEC.md §2.1). */
+function supersededByWarnings(content: string, sources: ReadonlySet<string>): string[] {
+	const superseded = statusOf(content) === "superseded";
+	if (!hasField(content, "superseded_by")) return superseded ? ["A superseded source names its newer source in `superseded_by`"] : [];
+	if (!superseded) return ["`superseded_by` comes only with `status: superseded`"];
+	const spans = linkSpans(field(content, "superseded_by") ?? "");
+	if (spans.length === 0) return ['`superseded_by` names no note: write it as "[[Source]]"'];
+	return spans
+		.filter((span) => !sources.has(span.name))
+		.map((span) => `\`superseded_by\` links [[${span.target}]], which is not a note in sources/`);
+}
+
+/** Each unmarked link in a note to a source that is no longer current, outside Withdrawn claims, as "[[Name]] on line N". */
+function staleLinks(note: Note, stale: ReadonlyMap<string, string>): string[] {
+	// Most notes name no stale source: skip them before reading line by line.
+	if (startsWithBom(note.content)) return []; // its frontmatter would read as body (claims.ts)
+	const lower = note.content.toLowerCase();
+	// A question reopened on a source (§2.1) cites it on purpose until it is re-answered.
+	const names = new Set([...stale.keys()].filter((name) => lower.includes(name) && !lower.includes(`reopened: the answer rested on [[${name}]]`)));
+	if (names.size === 0) return [];
+	const { lines } = splitLines(note.content);
+	const kinds = regions(lines);
+	return lines.flatMap((line, i) =>
+		kinds[i] === "body" ? unmarkedLinks(line, linkSpans(line), names).map((span) => `[[${stale.get(span.name)}]] on line ${i + 1}`) : [],
+	);
+}
+
 function isOpen(note: Note): boolean {
-	return (field(note.content, "status") ?? "").toLowerCase() === "open";
+	return statusOf(note.content) === "open";
 }
 
 function frontmatterWarnings(type: NoteType, content: string): string[] {
@@ -161,7 +196,10 @@ export const extension: Extension = {
 			id: "wiki.unsourced",
 			priority: 10,
 			detect: (ctx) => {
-				const sources = sourceNames(ctx);
+				// Only a current source counts (SPEC.md §2.1). The write-time rule
+				// below counts every source, so a note the retraction pass has just
+				// rewritten doesn't warn as it is written.
+				const sources = currentSourceNames(ctx.vaultRoot);
 				const notes = [...listNotes(ctx.vaultRoot, "concept"), ...listNotes(ctx.vaultRoot, "entity")].filter((n) => unsourced(n, sources));
 				return findingOf(`${plural(notes.length, "concept or entity note")} cite${notes.length === 1 ? "s" : ""} no source`, notes);
 			},
@@ -218,6 +256,29 @@ export const extension: Extension = {
 			},
 		},
 		{
+			id: "wiki.stale-citation",
+			priority: 55,
+			detect: (ctx) => {
+				const stale = new Map(
+					listNotes(ctx.vaultRoot, "source")
+						.filter((n) => noLongerCurrent(n.content))
+						.map((n) => [n.name.toLowerCase(), n.name] as const),
+				);
+				if (stale.size === 0) return [];
+				const links = new Map(
+					(["concept", "entity", "synthesis", "question"] as const)
+						.flatMap((t) => listNotes(ctx.vaultRoot, t))
+						.map((n) => [n, staleLinks(n, stale)] as const)
+						.filter(([, l]) => l.length > 0),
+				);
+				return findingOf(
+					`${plural(links.size, "note")} link${links.size === 1 ? "s" : ""} a source that is no longer current with no marker`,
+					[...links.keys()],
+					(n) => links.get(n)?.join(", ") ?? "",
+				);
+			},
+		},
+		{
 			id: "wiki.stale-questions",
 			priority: 60,
 			detect: (ctx) => {
@@ -271,6 +332,12 @@ export const extension: Extension = {
 				citesSource(target.content, sourceNames(ctx))
 					? []
 					: ["Cites no source: link at least one note in sources/"],
+		},
+		{
+			id: "wiki.superseded-by",
+			priority: 25,
+			appliesTo: (relPath) => typeOf(relPath) === "source",
+			validate: (target, ctx) => supersededByWarnings(target.content, sourceNames(ctx)),
 		},
 		{
 			id: "wiki.synthesis-sides",

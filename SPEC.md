@@ -76,11 +76,15 @@ The source note is never deleted, and its body stays as the record. A dated sect
 | Still has another current source | It stays. ` (no longer current)` is written right after the link's closing `]]`, whatever the link's form. | MARKED |
 | Has no other current source | It moves under `## Withdrawn claims` at the note's end, as `- <the line> (withdrawn YYYY-MM-DD)`, its link to the source kept. | WITHDRAWN |
 | As above, and the source was superseded | The newer source's claim is written in the old line's place and linked to the newer source. The old line moves under `## Withdrawn claims` as above. If the newer source doesn't make the claim, there is nothing to restate, and the line is only withdrawn. | RESTATED |
-| Is in a synthesis | The synthesis is never edited by the command. It is flagged for review when a side loses its only current source, or when it names the source in `sides`. A verdict needs judgement. | FLAGGED |
+| Is in a synthesis | The synthesis is never edited by the command. It is flagged for review when a side loses its only current source, when it names the source in `sides`, or when it links the source itself. A verdict needs judgement. | FLAGGED |
 | Is the answer of an answered question, with no other current source | Only `status` changes: back to `open`, with a dated line naming the source under the answer. The answer text stays. | REOPENED |
 | Can't be sorted (the command can't tell what the line rests on) | The line stays as it is. | KEPT |
 
 A mention of the source with no link, for instance in a note edited by hand since ingest, is listed as UNMATCHED and left alone. The command doesn't guess what a claim rests on.
+
+A line that is not a claim is KEPT: a frontmatter line, a heading, or any line of another source note, which is a record of what that source said.
+
+**Script and agent.** A script does the mechanical part of the pass: the status, the dated section and the annotation, then every outcome but the restatement. It never writes a claim. For a superseded source's line with no other current support, it withdraws the line and reports `RESTATE <note>:<line>`. The agent, following the command, writes the newer source's claim there, linked to it, or leaves the line withdrawn when the newer source doesn't make the claim. The command's report then says RESTATED.
 
 The marker ` (no longer current)`, the suffixes `(withdrawn YYYY-MM-DD)` and `restored YYYY-MM-DD`, and the headings `## Retracted`, `## Superseded` and `## Withdrawn claims` are exact strings, because `wiki-lint` and `--undo` match them.
 
@@ -89,11 +93,18 @@ The marker ` (no longer current)`, the suffixes `(withdrawn YYYY-MM-DD)` and `re
 #### Edge cases
 
 - **Supersession with the newer source missing.** If the newer source has no note, the command stops and names the source to ingest first, as `/wiki-synthesize` does.
+- **A newer source that can't supersede.** The source itself, or a source that is no longer current, can't be the newer source: the command stops and says why.
 - **A claim whose sources fall one at a time.** While one source is current, the claim is MARKED. When the last falls, it is WITHDRAWN.
 - **A chain.** A is superseded by B, and B is later retracted. Claims restated from B have no other current source and are withdrawn. They don't fall back to A, which is not current either. The report names A, so the user can decide whether to reconsider it.
 - **A source whose status changes.** Running the command again on a source that is no longer current, for instance a superseded source that is then retracted, sets the new status and adds a dated line to the dated section. Then the pass runs again. A line already marked or withdrawn is not marked or withdrawn twice.
 - **A source nothing cites.** The status, the dated section and the annotation still change, and the report says no note cites it.
+- **A note that starts with a byte-order mark.** The core reads what follows it as body, frontmatter included (until mindframe #82), so the pass would put a second frontmatter block on the source note, or treat a citing note's frontmatter links as claims. Before any write, the command stops if the source note or any note it would edit starts with a BOM, and lists each one: remove the BOM first. Lint leaves such a note alone.
+- **An --undo of a pass that stopped midway.** The source note is written last, so a pass that stops leaves the source current. `--undo` still runs: it removes the markers and restores the lines that pass wrote, and leaves the source note as it is.
 - **A retraction that is itself withdrawn** (the publisher withdraws its notice). `/wiki-retract <source> --undo` makes the source current again: it clears `status` and `superseded_by`, and adds a dated line to the dated section, which otherwise stays. The marker after each link to the source is removed. A withdrawn line whose kept link to the source is now its only current support returns to its note's text, and its entry gains `restored YYYY-MM-DD`. A line that was restated from a newer source is not restored, because the restatement still stands; it is reported for the user. A flagged synthesis stays flagged, and a reopened question stays open, because the user re-decides both.
+
+#### Writes
+
+Each note is written whole and atomically: to a temporary file, then renamed over the note, as the vault's other writers do. A note is never left half-written. The pass stops at the first note it cannot write (held for a moment by another program such as a virus scanner or a file indexer, say, or in a folder the pass can't write to), and the report names every note written and every note not written. Running the command again finishes the job, since a line already marked or withdrawn is not touched twice.
 
 #### Checks
 
@@ -199,11 +210,12 @@ Default wizard state is every module selected (ShardMind rule), so a defaults in
 | `/wiki-ingest <url or inbox path>` | Fetch the source (`defuddle` for web pages) or read it from `inbox/`, leaving the original in place; write the `sources/` note, create or update the concepts and entities it informs, link both ways, update `Index.md`, mark any question it answers. |
 | `/wiki-synthesize <X> vs <Y>` | Write a `syntheses/` note comparing two or more existing concepts or entities, citing their sources. Refuses when a side has no note yet and says which to ingest first. |
 | `/wiki-question <text>` | File a `questions/` note with `status: open`. |
-| `/wiki-lint` | Report orphans, claims with no source link, syntheses with fewer than two sides, frontmatter missing per §2, and notes a Bases view shows that `Index.md` doesn't annotate. |
+| `/wiki-lint` | Report orphans, claims with no source link, syntheses with fewer than two sides, frontmatter missing per §2, and notes a Bases view shows that `Index.md` doesn't annotate. Also, from §2.1, concepts and entities with no current source, and unmarked links to a source that is no longer current. |
+| `/wiki-retract <source> [--superseded-by <source>] \| --undo` | Mark a source retracted or superseded and update what cites it, as §2.1 specifies. A script does the mechanical pass; the agent restates claims from a newer source. |
 
 **Decided (2026-10-05, maintainer may overrule):** v0.1 ships only these four commands (Q9). `wiki-lint` covers what `vault-audit` would. `wrap-up` and `tidy` can come later through the extraction.
 
-A fifth, `/wiki-retract`, is specified in §2.1 and built by #86.
+A fifth, `/wiki-retract`, came with §2.1 (#86): the wiki's own case of a correction (Q12).
 
 ### 6.3 Hooks
 
