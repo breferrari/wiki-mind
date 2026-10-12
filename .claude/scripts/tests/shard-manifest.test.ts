@@ -75,6 +75,12 @@ describe("the ShardMind manifest", () => {
 		assert.equal(floor, pinned);
 	});
 
+	test("requires.shardmind's floor is 1.0.0 or later, the first engine whose install takes a folder", () => {
+		const floor = manifest.match(/^ {2}shardmind:\s*">=([0-9]+)\.[0-9.]+"/m)?.[1];
+		assert.ok(floor !== undefined, "requires.shardmind is a >= range");
+		assert.ok(Number(floor) >= 1, `the README's install steps name a folder, which ShardMind before 1.0 rejects; the floor is >=${floor}.x`);
+	});
+
 	test("the block reader sees a declared hook, so the first test can fail", () => {
 		assert.deepEqual(blockKeys("hooks:\n  bootstrap: x\n  post-update: y\nother: 1\n", "hooks"), ["bootstrap", "post-update"]);
 	});
