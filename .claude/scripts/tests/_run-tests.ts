@@ -26,7 +26,9 @@
  * that outlives the test and calls qmd later; several suites at once pile
  * them up. The runner sets VAULT_QMD_REFRESH=off, which the trigger honours
  * by spawning nothing, and points TMPDIR, TEMP and TMP into its temp folder,
- * so a worker any test starts names that folder. After the run it looks for
+ * so a trailing worker a test starts names that folder in its arguments. An
+ * immediate worker carries no arguments, so the guard can't attribute it;
+ * the switch is what stops that one. After the run it looks for
  * such workers: it names each one, kills it, and fails the run, since a
  * guard that only killed would hide the leak.
  *
@@ -61,7 +63,7 @@ function listing(dir: string, ext: string): Set<string> {
 }
 
 /**
- * The node processes running qmd-refresh-run.ts with `marker` in their
+ * The processes running qmd-refresh-run.ts with `marker` in their
  * command line: the refresh workers this run's tests started. Listing
  * failures read as none; the run's own result still stands.
  */
@@ -77,7 +79,8 @@ function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 			)
 		: spawnSync("ps", ["-ax", "-ww", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
 	if (listed.error !== undefined || listed.status !== 0) {
-		process.stderr.write(`refresh-worker guard: couldn't list processes (${listed.error?.message ?? `exit ${listed.status}`}); leftover workers were not checked.\n`);
+		const why = listed.error?.message ?? (listed.signal !== null ? `killed by ${listed.signal}` : `exit ${listed.status}`);
+		process.stderr.write(`refresh-worker guard: couldn't list processes (${why}); leftover workers were not checked.\n`);
 		return [];
 	}
 	const fold = (t: string) => (windows ? t.toLowerCase() : t);
@@ -124,9 +127,19 @@ if (leftover.length > 0) {
 		try {
 			if (process.platform === "win32") {
 				const r = spawnSync("taskkill", ["/T", "/F", "/PID", String(w.pid)], { encoding: "utf-8", timeout: 30_000, windowsHide: true });
+				// 128: no such process, already gone with an earlier tree.
+				if (r.status === 128) {
+					process.stderr.write(`  ${w.pid} already gone\n`);
+					continue;
+				}
 				if (r.status !== 0) throw new Error((r.stderr || r.stdout || `exit ${r.status}`).trim());
 			} else {
-				process.kill(-w.pid);
+				try {
+					process.kill(-w.pid);
+				} catch {
+					// Not a group leader: kill the process alone.
+					process.kill(w.pid);
+				}
 			}
 			process.stderr.write(`  killed ${w.pid} and its children\n`);
 		} catch (err) {

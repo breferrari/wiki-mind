@@ -19,7 +19,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-process.env["VAULT_QMD_REFRESH"] ??= "off";
+process.env["VAULT_QMD_REFRESH"] = "off";
 
 if (process.env["OM_QMD_ISOLATED"] === undefined) {
 	const isolated = mkdtempSync(join(tmpdir(), "om-test-qmd-"));

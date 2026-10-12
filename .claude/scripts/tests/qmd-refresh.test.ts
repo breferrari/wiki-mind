@@ -31,7 +31,7 @@ import {
 	shouldRefreshForPath,
 	triggerDebouncedRefresh,
 } from "../lib/qmd-refresh.ts";
-import { rmTemp } from "./_helpers.ts";
+import { rmTemp, runScript } from "./_helpers.ts";
 
 /**
  * The debounce used to fire on the leading edge only: a note written inside
@@ -149,8 +149,15 @@ describe("VAULT_QMD_REFRESH=off — the switch the test runner sets", () => {
 	const fire = (sentinel: string, dir: string) =>
 		triggerDebouncedRefresh({ sentinelPath: sentinel, workerPath: join(dir, "worker.ts"), debounceMs: 30_000, logPrefix: "test", qmdAvailable: () => true });
 
-	test("every test process sees the switch, through npm test or a direct run", () => {
-		assert.equal(process.env["VAULT_QMD_REFRESH"], "off");
+	test("every hook a test spawns through runScript sees the switch, however the tests are started", () => {
+		const dir = mkdtempSync(join(tmpdir(), "qmd-switch-"));
+		try {
+			const probe = join(dir, "probe.ts");
+			writeFileSync(probe, 'process.stdout.write(String(process.env["VAULT_QMD_REFRESH"]));\n');
+			assert.equal(runScript(probe, null).stdout, "off");
+		} finally {
+			rmTemp(dir);
+		}
 	});
 
 	test("refreshDisabled reads the switch", () => {

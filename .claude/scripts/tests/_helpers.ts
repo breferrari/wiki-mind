@@ -24,7 +24,8 @@
  * TEST_SENTINEL instead, touched before each spawn, so the real one is never
  * written. A fresh sentinel only debounces the refresh: the trigger still
  * spawns a trailing worker. What keeps tests from starting one is
- * VAULT_QMD_REFRESH=off, which `_run-tests.ts` and `_qmd-cache-guard.ts` set.
+ * VAULT_QMD_REFRESH=off, which runScript sets for every hook, and which
+ * `_run-tests.ts` and `_qmd-cache-guard.ts` set for every test process.
  */
 
 import { spawnSync } from "node:child_process";
@@ -58,7 +59,9 @@ export function runScript(
 			: typeof stdin === "string"
 				? stdin
 				: JSON.stringify(stdin);
-	const env = { ...process.env, QMD_REFRESH_SENTINEL: TEST_SENTINEL, ...envOverrides };
+	// Every hook a test runs gets the refresh turned off here, however the tests
+	// were started: no detached worker outlives the test.
+	const env = { ...process.env, QMD_REFRESH_SENTINEL: TEST_SENTINEL, VAULT_QMD_REFRESH: "off", ...envOverrides };
 	if (env.QMD_REFRESH_SENTINEL === TEST_SENTINEL) writeFileSync(TEST_SENTINEL, "");
 	const proc = spawnSync(
 		process.execPath,
