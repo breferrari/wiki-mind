@@ -21,6 +21,15 @@
  * 3. after the run, fails if a new store or config appeared in the user's
  *    folders, naming each, then removes the temp folder.
  *
+ * It also keeps the run from leaving QMD refresh workers behind. A hook a
+ * test runs can trigger the index refresh, which spawns a detached worker
+ * that outlives the test and calls qmd later; several suites at once pile
+ * them up. The runner sets VAULT_QMD_REFRESH=off, which the trigger honours
+ * by spawning nothing, and points TMPDIR, TEMP and TMP into its temp folder,
+ * so a worker any test starts names that folder. After the run it looks for
+ * such workers: it names each one, kills it, and fails the run, since a
+ * guard that only killed would hide the leak.
+ *
  * A test that builds a subprocess env from scratch, without `process.env`,
  * escapes the redirect; step 3 is what catches it. The wrapper exists
  * because Node's runner applies `--import` to each test file's process and
@@ -28,7 +37,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -49,8 +58,33 @@ function listing(dir: string, ext: string): Set<string> {
 	}
 }
 
+/**
+ * The node processes running qmd-refresh-run.ts with `marker` in their
+ * command line: the refresh workers this run's tests started. Listing
+ * failures read as none; the run's own result still stands.
+ */
+function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
+	const windows = process.platform === "win32";
+	const listed = windows
+		? spawnSync(
+				"powershell.exe",
+				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
+				{ encoding: "utf-8", timeout: 30_000, windowsHide: true },
+			)
+		: spawnSync("ps", ["-eo", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
+	const fold = (t: string) => (windows ? t.toLowerCase() : t);
+	return (listed.stdout ?? "")
+		.split(/\r?\n/)
+		.map((line) => /^\s*(\d+)\s+(.*)$/.exec(line))
+		.filter((m): m is RegExpExecArray => m !== null)
+		.map((m) => ({ pid: Number(m[1]), cmd: m[2] ?? "" }))
+		.filter((p) => p.pid !== process.pid && p.cmd.includes("qmd-refresh-run") && fold(p.cmd).includes(fold(marker)));
+}
+
 const before = watched.map(({ dir, ext }) => listing(dir, ext));
 const isolated = mkdtempSync(join(tmpdir(), "om-test-qmd-"));
+const testTmp = join(isolated, "tmp");
+mkdirSync(testTmp);
 
 const run = spawnSync(
 	process.execPath,
@@ -62,9 +96,29 @@ const run = spawnSync(
 			XDG_CACHE_HOME: join(isolated, "cache"),
 			QMD_CONFIG_DIR: join(isolated, "config", "qmd"),
 			OM_QMD_ISOLATED: isolated,
+			VAULT_QMD_REFRESH: "off",
+			TMPDIR: testTmp,
+			TEMP: testTmp,
+			TMP: testTmp,
 		},
 	},
 );
+
+// Name each leftover refresh worker, kill it, then fail: three steps, each visible.
+const leftover = refreshWorkers(isolated);
+if (leftover.length > 0) {
+	process.stderr.write(`\nrefresh-worker guard: the test run left ${leftover.length} QMD refresh worker(s) running:\n`);
+	for (const w of leftover) process.stderr.write(`  ${w.pid}  ${w.cmd}\n`);
+	for (const w of leftover) {
+		try {
+			process.kill(w.pid);
+			process.stderr.write(`  killed ${w.pid}\n`);
+		} catch (err) {
+			process.stderr.write(`  could not kill ${w.pid}: ${(err as Error).message}\n`);
+		}
+	}
+	process.stderr.write("A test started the detached refresh worker. The trigger must see VAULT_QMD_REFRESH=off in its env.\n");
+}
 
 const added = watched.flatMap(({ dir, ext }, i) =>
 	[...listing(dir, ext)].filter((f) => !before[i]!.has(f)).sort().map((f) => join(dir, f)),
@@ -83,4 +137,5 @@ if (added.length > 0) {
 	);
 	process.exit(1);
 }
+if (leftover.length > 0) process.exit(1);
 process.exit(run.status ?? 1);
