@@ -44,11 +44,80 @@ A synthesis sits above concepts: it never replaces one, and a concept never hold
 
 | Type | Adds |
 |------|------|
-| Source | `authors`, `year`, `url` |
+| Source | `authors`, `year`, `url`; optional `status` and `superseded_by` (§2.1) |
 | Concept | nothing |
 | Entity | `kind`: `system`, `tool` or `person` |
 | Synthesis | `sides`: the notes it compares |
 | Question | `status`: `open`, `answered` or `dropped` |
+
+### 2.1 When a source is retracted or superseded
+
+A source can stop holding: its publisher retracts it, or a newer source replaces what it says (a correction, an erratum, a new version, a partial retraction). The wiki then stops asserting what rested on it and keeps the record of what it said. Built by #86.
+
+**Decided (2026-10-12, maintainer may overrule):** a note that records what a source said is never rewritten, and an uncertain case is kept and reported. This is the one rule taken from obsidian-mind's correction sweep: a rewritten record cannot be recovered, while a missed restatement stays visible. Its search by meaning is not taken: here every claim links its source (§2), so the source note's backlinks find the claims that rest on it.
+
+#### Currency
+
+| Field | Values | When |
+|-------|--------|------|
+| `status` | `retracted` or `superseded` | Optional. Absent means current, so existing notes need no change. |
+| `superseded_by` | `[[Source]]` | With `status: superseded`, and only then. |
+
+A source with either status is **no longer current**. The rules below are about currency, so the two statuses differ in one step only: a superseded source's claims are restated from the newer source. `status` is a per-type field, like an entity's `kind`. A Question also has `status`, and every reader of the Question one (`isOpen`, `bases/Questions.base`) reads only `questions/`.
+
+The source note is never deleted, and its body stays as the record. A dated section goes at the top, `## Retracted` or `## Superseded`, with the date, the notice's URL and the reason in a line. The note's `Index.md` annotation ends with `(retracted)` or `(superseded by [[Source]])`.
+
+#### The claims that cite it
+
+`/wiki-retract <source>`, or `/wiki-retract <source> --superseded-by <source>`, sets the status and then walks the source note's backlinks. A link to the source is one that `extractWikilinkTargets` (`lib/wikilinks.ts`) resolves to it: an alias, a heading, a table-escaped pipe or an embed still links, and a link in code doesn't. The command applies that reader one line at a time, because it needs to know where the link is. **A claim is the whole line that holds the link**: a list item, a table row or a paragraph line, never part of one. Only a current source counts as support, and a line counts as supported by every source it links.
+
+| The claim | What happens | Report |
+|-----------|--------------|--------|
+| Still has another current source | It stays. ` (no longer current)` is written right after the link's closing `]]`, whatever the link's form. | MARKED |
+| Has no other current source | It moves under `## Withdrawn claims` at the note's end, as `- <the line> (withdrawn YYYY-MM-DD)`, its link to the source kept. | WITHDRAWN |
+| As above, and the source was superseded | The newer source's claim is written in the old line's place and linked to the newer source. The old line moves under `## Withdrawn claims` as above. If the newer source doesn't make the claim, there is nothing to restate, and the line is only withdrawn. | RESTATED |
+| Is in a synthesis | The synthesis is never edited by the command. It is flagged for review when a side loses its only current source, or when it names the source in `sides`. A verdict needs judgement. | FLAGGED |
+| Is the answer of an answered question, with no other current source | Only `status` changes: back to `open`, with a dated line naming the source under the answer. The answer text stays. | REOPENED |
+| Can't be sorted (the command can't tell what the line rests on) | The line stays as it is. | KEPT |
+
+A mention of the source with no link, for instance in a note edited by hand since ingest, is listed as UNMATCHED and left alone. The command doesn't guess what a claim rests on.
+
+The marker ` (no longer current)`, the suffixes `(withdrawn YYYY-MM-DD)` and `restored YYYY-MM-DD`, and the headings `## Retracted`, `## Superseded` and `## Withdrawn claims` are exact strings, because `wiki-lint` and `--undo` match them.
+
+**Decided (2026-10-12, maintainer may overrule):** a claim with no other current support moves to `## Withdrawn claims`. It isn't struck through in place, because later sessions reread the note's text, and it isn't deleted, because that loses the record.
+
+#### Edge cases
+
+- **Supersession with the newer source missing.** If the newer source has no note, the command stops and names the source to ingest first, as `/wiki-synthesize` does.
+- **A claim whose sources fall one at a time.** While one source is current, the claim is MARKED. When the last falls, it is WITHDRAWN.
+- **A chain.** A is superseded by B, and B is later retracted. Claims restated from B have no other current source and are withdrawn. They don't fall back to A, which is not current either. The report names A, so the user can decide whether to reconsider it.
+- **A source whose status changes.** Running the command again on a source that is no longer current, for instance a superseded source that is then retracted, sets the new status and adds a dated line to the dated section. Then the pass runs again. A line already marked or withdrawn is not marked or withdrawn twice.
+- **A source nothing cites.** The status, the dated section and the annotation still change, and the report says no note cites it.
+- **A retraction that is itself withdrawn** (the publisher withdraws its notice). `/wiki-retract <source> --undo` makes the source current again: it clears `status` and `superseded_by`, and adds a dated line to the dated section, which otherwise stays. The marker after each link to the source is removed. A withdrawn line whose kept link to the source is now its only current support returns to its note's text, and its entry gains `restored YYYY-MM-DD`. A line that was restated from a newer source is not restored, because the restatement still stands; it is reported for the user. A flagged synthesis stays flagged, and a reopened question stays open, because the user re-decides both.
+
+#### Checks
+
+These extend what exists:
+- `validate-write`: `ENUM_FIELDS` (`extensions/wiki/index.ts`) gains a source rule, `status` in `retracted` or `superseded`, which an absent field passes. `superseded_by` appears only with `status: superseded`, and links a source note that exists. The write-time `wiki.source-link` rule keeps counting every source note, so a note the command has just withdrawn claims from is not flagged as it is written.
+- `wiki-lint`: `wiki.unsourced` counts only current sources, through a current-only variant of `sourceNames()`, so it reports a concept or entity whose sources are all no longer current. A new finding reports a link to a source that is no longer current with no marker after it, outside `## Withdrawn claims`.
+
+#### Report
+
+The command prints what it did and what it left alone:
+
+```
+/wiki-retract "Smith 2024"
+
+  MARKED      concepts/Retrieval-augmented generation.md:14   also backed by [[Lee 2025]]
+  WITHDRAWN   entities/RAG-Bench.md:9                         moved to Withdrawn claims
+  REOPENED    questions/Does RAG beat fine-tuning.md          answer rested on [[Smith 2024]]
+  FLAGGED     syntheses/RAG vs fine-tuning.md                 a side lost its only current source
+  UNMATCHED   concepts/Chunking.md:22                         names "Smith" with no link: left alone
+
+  1 marked, 1 withdrawn, 1 reopened, 1 flagged, 1 unmatched.
+```
+
+**Non-goal (2026-10-12, maintainer may overrule):** detecting a retraction automatically, for instance from Retraction Watch or Crossref. The user reports it. Lookups match on DOI, and a source note carries a URL but no DOI field. This changes if Source gains a DOI.
 
 ## 3. Shipped files
 
@@ -134,6 +203,8 @@ Default wizard state is every module selected (ShardMind rule), so a defaults in
 
 **Decided (2026-10-05, maintainer may overrule):** v0.1 ships only these four commands (Q9). `wiki-lint` covers what `vault-audit` would. `wrap-up` and `tidy` can come later through the extraction.
 
+A fifth, `/wiki-retract`, is specified in §2.1 and built by #86.
+
 ### 6.3 Hooks
 
 The same events obsidian-mind hooks, wired the same way in `.claude/settings.json`. The scripts are wiki-mind's own, written as dispatchers over the extension registry (§7.4); only `pre-compact.ts` is vendored:
@@ -210,7 +281,7 @@ The mod is vendored at `.claude/skills/wiki-mind/` (upstream `.claude/skills/obs
 
 **Decided, the maintainer may overrule:** the memory MCP server, and the libraries only it uses, stay in obsidian-mind. The server is a product of its own, it is about half of the machinery, and the wiki workflow doesn't depend on it. If wiki-mind wants it later, it arrives through the extraction or a vendor update.
 
-**Decided (2026-10-05, maintainer may overrule):** the correction sweep is not in v0.1 (Q12). obsidian-mind's sweep is built around its single-source status rule. A wiki's correction case is different: a source is retracted or superseded. That case gets its own spec in a later phase (see [Later](#later)).
+**Decided (2026-10-05, maintainer may overrule):** the correction sweep is not in v0.1 (Q12). obsidian-mind's sweep is built around its single-source status rule. A wiki's correction case is different: a source is retracted or superseded. §2.1 specifies that case (#26).
 
 **Tests stay in the repo (#40).** `.shardmindignore` leaves out:
 - every test file;
@@ -445,13 +516,13 @@ The draft's open questions, all answered 2026-10-05. The maintainer may overrule
 | Q9 | Generic obsidian-mind commands | Not in v0.1. | §6.2 |
 | Q10 | Mod name and flag | Mod `wiki-mind`; `om_mod` protocol unchanged. | §6.4, §7.3 |
 | Q11 | Where `VENDOR.json` lives | `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json`, with their patches, repo-only; installs update through ShardMind. | §3.3, §7.1 |
-| Q12 | Correction sweep | Not in v0.1; specified separately later. | §7.1 |
+| Q12 | Correction sweep | Not in v0.1. The wiki's own case, a retracted or superseded source, is specified in §2.1 (#26) and built by #86. | §2.1, §7.1 |
 
 ## Later
 
 Planned for phases after the first release, so they are scheduled rather than dropped:
 
 - **Codex and Gemini** as removable modules, as in obsidian-mind (§5).
-- **Corrections for a retracted or superseded source:** how the wiki updates the concepts, entities and syntheses that cite it. This needs its own spec, not obsidian-mind's sweep (§7.1).
+- **Corrections for a retracted or superseded source:** specified in §2.1, built by #86.
 - **`wrap-up` and `tidy`**, through the extraction rather than as wiki-mind copies (§6.2).
 - **A diagram skill for syntheses** (mermaid). A comparison note is a natural place for a diagram (§7.1).
