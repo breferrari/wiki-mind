@@ -13,9 +13,9 @@
  *   marker after them.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { stripFrontmatter, type Extension, type Finding, type HookContext, type WriteTarget } from "../../scripts/core/index.ts";
+import { INSTRUCTION_FILE, isRetiredInstructionFile, stripFrontmatter, type Extension, type Finding, type HookContext, type WriteTarget } from "../../scripts/core/index.ts";
 import {
 	FOLDERS,
 	NOTE_TYPES,
@@ -125,6 +125,23 @@ export const extension: Extension = {
 	id: "wiki",
 
 	sections: [
+		{
+			// A retired instruction file left at the vault root after an update
+			// (SPEC.md §6.1): Claude Code reads a CLAUDE.md in place of AGENTS.md.
+			id: "wiki.retired-instruction-files",
+			priority: 0,
+			header: "### Instruction files",
+			render: (ctx) => {
+				let names: string[];
+				try {
+					names = readdirSync(ctx.vaultRoot).filter((n) => isRetiredInstructionFile(n)).sort();
+				} catch {
+					return null;
+				}
+				if (names.length === 0) return null;
+				return `⚠️ ${names.map((n) => `\`${n}\``).join(" and ")} ${names.length === 1 ? "is" : "are"} retired: \`${INSTRUCTION_FILE}\` is this vault's one instruction file, and a leftover \`CLAUDE.md\` is read in its place. Move anything of your own from ${names.length === 1 ? "it" : "them"} into \`${INSTRUCTION_FILE}\` (or \`.claude/rules/\` for Claude-only notes), then delete ${names.length === 1 ? "it" : "them"}.`;
+			},
+		},
 		{
 			id: "wiki.counts",
 			priority: 0,
