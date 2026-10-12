@@ -207,11 +207,12 @@ Default wizard state is every module selected (ShardMind rule), so a defaults in
 | `/wiki-ingest <url or inbox path>` | Fetch the source (`defuddle` for web pages) or read it from `inbox/`, leaving the original in place; write the `sources/` note, create or update the concepts and entities it informs, link both ways, update `Index.md`, mark any question it answers. |
 | `/wiki-synthesize <X> vs <Y>` | Write a `syntheses/` note comparing two or more existing concepts or entities, citing their sources. Refuses when a side has no note yet and says which to ingest first. |
 | `/wiki-question <text>` | File a `questions/` note with `status: open`. |
-| `/wiki-lint` | Report orphans, claims with no source link, syntheses with fewer than two sides, frontmatter missing per §2, and notes a Bases view shows that `Index.md` doesn't annotate. |
+| `/wiki-lint` | Report orphans, claims with no source link, syntheses with fewer than two sides, frontmatter missing per §2, and notes a Bases view shows that `Index.md` doesn't annotate. Also, from §2.1, concepts and entities with no current source, and unmarked links to a source that is no longer current. |
+| `/wiki-retract <source> [--superseded-by <source>] \| --undo` | Mark a source retracted or superseded and update what cites it, as §2.1 specifies. A script does the mechanical pass; the agent restates claims from a newer source. |
 
 **Decided (2026-10-05, maintainer may overrule):** v0.1 ships only these four commands (Q9). `wiki-lint` covers what `vault-audit` would. `wrap-up` and `tidy` can come later through the extraction.
 
-A fifth, `/wiki-retract`, is specified in §2.1 and built by #86.
+A fifth, `/wiki-retract`, came with §2.1 (#86): the wiki's own case of a correction (Q12).
 
 ### 6.3 Hooks
 

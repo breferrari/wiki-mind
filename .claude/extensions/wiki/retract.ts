@@ -35,6 +35,9 @@ import {
 	WITHDRAWN_HEADING,
 } from "./claims.ts";
 
+/** What a source is once the pass has run: retracted or superseded. */
+export type Status = "retracted" | "superseded";
+
 export type Kind = "MARKED" | "WITHDRAWN" | "RESTATE" | "REOPENED" | "FLAGGED" | "KEPT" | "UNMATCHED" | "RESTORED" | "UNMARKED";
 
 /** One thing the pass did, or deliberately left alone. `line` is 1-based, in the note as it was read. */
@@ -93,8 +96,8 @@ type Pass = {
 	readonly options: RetractOptions;
 	readonly undo: boolean;
 	/** The status the pass sets; null when it makes the source current again. */
-	readonly newStatus: "retracted" | "superseded" | null;
-	readonly oldStatus: "retracted" | "superseded" | null;
+	readonly newStatus: Status | null;
+	readonly oldStatus: Status | null;
 	readonly newer: Note | undefined;
 	/** The source has been superseded at some point, so its withdrawn lines were restated and --undo leaves them. */
 	readonly everSuperseded: boolean;
@@ -109,7 +112,7 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 	const target = byName(options.source);
 	if (target === undefined) throw new RetractError("NO_SOURCE", `No note in sources/ is named ${options.source}.`);
 	const undo = options.undo === true;
-	const oldStatus = noLongerCurrent(target.content) ? (statusOf(target.content) as "retracted" | "superseded") : null;
+	const oldStatus = noLongerCurrent(target.content) ? (statusOf(target.content) as Status) : null;
 	if (undo && oldStatus === null) throw new RetractError("CURRENT", `[[${target.name}]] is current: there is nothing to undo.`);
 	let newer: Note | undefined;
 	if (options.supersededBy !== undefined && !undo) {
@@ -207,9 +210,7 @@ const where = (o: Outcome) => (o.line === undefined ? o.relPath : `${o.relPath}:
 const emit = (pass: Pass, kind: Kind, relPath: string, line: number | undefined, detail: string) =>
 	pass.outcomes.push(line === undefined ? { kind, relPath, detail } : { kind, relPath, line, detail });
 
-// ---------------------------------------------------------------------------
 // The source note: status, superseded_by, and the dated section.
-// ---------------------------------------------------------------------------
 
 function editSourceNote(pass: Pass): string {
 	const { target, options } = pass;
@@ -256,9 +257,7 @@ function setField(lines: string[], name: string, value: string | null): void {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Index.md: the annotation's suffix.
-// ---------------------------------------------------------------------------
 
 function editIndex(pass: Pass, content: string): string {
 	const doc = splitLines(content);
@@ -267,9 +266,7 @@ function editIndex(pass: Pass, content: string): string {
 	return joinLines(doc);
 }
 
-// ---------------------------------------------------------------------------
 // Every other note, by type.
-// ---------------------------------------------------------------------------
 
 /** A note read line by line: its lines, their regions, and each line's links (none in a fence). */
 type Read = { readonly doc: ReturnType<typeof splitLines>; readonly kinds: readonly Region[]; readonly spans: readonly (readonly LinkSpan[])[] };

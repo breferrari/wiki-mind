@@ -1,5 +1,5 @@
 ---
-description: "Check the wiki for drift: orphans, unsourced concepts and entities, one-sided syntheses, frontmatter problems, stale open questions, notes Index.md doesn't annotate. Fix what you can, ask about the rest."
+description: "Check the wiki for drift: orphans, concepts and entities with no current source, unmarked links to a retracted or superseded source, one-sided syntheses, frontmatter problems, stale open questions, notes Index.md doesn't annotate. Fix what you can, ask about the rest."
 ---
 
 # Check the wiki

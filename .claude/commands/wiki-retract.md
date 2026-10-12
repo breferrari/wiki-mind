@@ -5,7 +5,7 @@ argument-hint: "<source> [--superseded-by <newer source>] [--notice <url>] [--re
 
 # Retract or supersede a source
 
-Runs SPEC §2.1 for the source named in `$ARGUMENTS` (CLAUDE.md, "Retract or supersede a source"). The user reports a retraction: never infer one.
+Marks the source named in `$ARGUMENTS` retracted or superseded, and updates every note that cites it (CLAUDE.md, "Retract or supersede a source"). The user reports a retraction: never infer one.
 
 A source note is the record of what the source said. Its body is never rewritten, and no note is deleted.
 
