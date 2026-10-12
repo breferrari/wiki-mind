@@ -40,22 +40,19 @@ function vault(): string {
 	return root;
 }
 
-function run(root: string, ...args: string[]) {
-	return runIn(root, root, ...args);
-}
-
-/** Run the script with CLAUDE_PROJECT_DIR naming `projectDir`, from the working directory `cwd`. */
-function runIn(projectDir: string, cwd: string, ...args: string[]) {
+/** Run the script from `projectDir`, with CLAUDE_PROJECT_DIR naming it. */
+function run(projectDir: string, ...args: string[]) {
 	const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PROJECT_DIR: projectDir };
 	delete env["CODEX_PROJECT_DIR"];
 	delete env["GEMINI_PROJECT_DIR"];
-	const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", RUNNER, ...args], { cwd, env, encoding: "utf-8" });
+	const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", RUNNER, ...args], { cwd: projectDir, env, encoding: "utf-8" });
 	return { code: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
 const read = (root: string, rel: string) => readFileSync(join(root, rel), "utf-8");
 
 describe("wiki-retract.ts", () => {
+	// Its vault has no vault-manifest.json, so this also covers a folder outside any vault: used as given.
 	test("--dry-run prints the plan and writes nothing", () => {
 		const root = vault();
 		const r = run(root, "Smith 2024", "--dry-run", "--date", "2026-10-12");
@@ -77,16 +74,9 @@ describe("wiki-retract.ts", () => {
 	test("finds the vault from a subfolder: a session started in concepts/ still finds sources/ (#89)", () => {
 		const root = vault();
 		writeFileSync(join(root, "vault-manifest.json"), "{}\n");
-		const r = runIn(join(root, "concepts"), join(root, "concepts"), "Smith 2024", "--date", "2026-10-12");
+		const r = run(join(root, "concepts"), "Smith 2024", "--date", "2026-10-12");
 		assert.equal(r.code, 0, r.stdout + r.stderr);
 		assert.ok(read(root, "concepts/RAG.md").includes("(withdrawn 2026-10-12)"));
-	});
-
-	test("outside any vault, the folder named is used as given", () => {
-		const root = vault();
-		const r = run(root, "Smith 2024", "--dry-run", "--date", "2026-10-12");
-		assert.equal(r.code, 0, r.stderr);
-		assert.match(r.stdout, /WITHDRAWN\s+concepts\/RAG\.md:6/);
 	});
 
 	test("exit 2, with the reason, for a call the pass can't run", () => {
