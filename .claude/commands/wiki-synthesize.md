@@ -28,6 +28,8 @@ From `templates/Synthesis.md`, in `syntheses/`, named `<X> vs <Y>`:
 - **Where they agree** and **where they differ:** each point linked to the sources behind it. Use the table for side-by-side attributes;
 - **Verdict:** when to prefer which. Say where the sources don't settle it, rather than deciding it yourself.
 
+**Offer a diagram** when the comparison has a shape a picture shows: a pipeline the sides split differently, a hierarchy, or trade-off axes. If the user wants one, draw it with the `.claude/skills/mermaid-visualizer/` skill, as a mermaid block under `## Diagram`, before the Verdict. A diagram adds no claim: it restates what the text above already says and cites, so it needs no links of its own. If something appears only in the diagram, put it in the text with its source, or take it out. Draw the note's own sides and points: the skill's examples, colour styles and "add a brief explanation" step don't apply here.
+
 ## 4. Link back
 
 Add the synthesis to each side's **Related** section, and a one-line annotation under Syntheses in `Index.md`.

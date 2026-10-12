@@ -209,6 +209,14 @@ describe("the claims that cite it", () => {
 		assert.equal(read(root, "concepts/Chunking.md"), fm(BASE) + "- As Smith 2024 found, [[Lee 2025]] agrees.\n");
 	});
 
+	test("a link inside a mermaid diagram is no claim: the pass leaves the fence alone", () => {
+		const drawn = fm(BASE) + "- [[Lee 2025]].\n\n## Diagram\n\n```mermaid\ngraph LR\n  A[\"[[Smith 2024]]\"] --> B\n```\n";
+		const root = wiki({ "concepts/Drawn.md": drawn });
+		const { plan } = run(root, { source: "Smith 2024" });
+		assert.equal(plan.outcomes.some((o) => o.relPath === "concepts/Drawn.md"), false);
+		assert.equal(read(root, "concepts/Drawn.md"), drawn);
+	});
+
 	test("a source linking itself is not a citation of itself", () => {
 		const root = wiki({ "sources/Smith 2024.md": fm(SOURCE) + "# Smith 2024\n\nSee [[Smith 2024#Results]].\n" });
 		const { plan } = run(root, { source: "Smith 2024" });
