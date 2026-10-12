@@ -4,6 +4,10 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Your name and research focus head `Index.md`** when you give them at install. Before, ShardMind recorded them but never ran the step that writes them.
+
 ## [0.1.0] - 2026-10-06
 
 The first release. You bring sources; the agent reads them and keeps a linked wiki of concepts, entities and comparisons over them. Every note is plain Markdown that Obsidian opens without the agent.

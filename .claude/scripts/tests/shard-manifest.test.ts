@@ -4,6 +4,8 @@
  *   the invariant holds trivially; this test changes when one is added.
  * - Invariant 4: bootstrap re-runs only on fingerprint change. The engine
  *   enforces it; the shard has to declare a fingerprint for it to apply.
+ * - Every hook script under .shardmind/hooks/ is declared, since the engine
+ *   runs only the hooks the manifest names.
  * - The engine floor the manifest declares is the version CI validates with,
  *   so a manifest can't claim an engine CI never ran.
  *
@@ -11,7 +13,7 @@
  */
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -46,6 +48,24 @@ describe("the ShardMind manifest", () => {
 		assert.match(block, /^ {4}script: \.shardmind\/hooks\/bootstrap\.ts$/m);
 		assert.match(block, /^ {4}fingerprint: "[^"]+"$/m, "a bootstrap without a fingerprint never re-runs on update");
 		assert.ok(existsSync(join(REPO, ".shardmind", "hooks", "bootstrap.ts")));
+	});
+
+	test("every hook script under .shardmind/hooks/ is declared, so the engine runs it", () => {
+		const scripts = readdirSync(join(REPO, ".shardmind", "hooks")).filter((f) => f.endsWith(".ts"));
+		assert.ok(scripts.length > 0);
+		// A declaration is a value line under any slot; a comment naming the path doesn't count.
+		const values = manifest
+			.split(/\r?\n/)
+			.filter((l) => !/^\s*#/.test(l))
+			.map((l) => l.trimEnd());
+		for (const script of scripts) {
+			const declared = values.some((l) => l.endsWith(`: .shardmind/hooks/${script}`));
+			assert.ok(declared, `.shardmind/hooks/${script} exists, but shard.yaml never declares it`);
+		}
+	});
+
+	test("personalize is declared as a string, the form the engine's schema takes", () => {
+		assert.match(manifest, /^ {2}personalize: \.shardmind\/hooks\/personalize\.ts$/m);
 	});
 
 	test("requires.shardmind's floor is the version CI validates with", () => {
