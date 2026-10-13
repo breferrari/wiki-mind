@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HOOK_OUTPUT_MAX_CHARS, parseHookContext } from "../lib/hook-io.ts";
+import { METER_HEADROOM, parseInstructionBudget } from "../lib/session-start.ts";
 import { rmTemp, runScript } from "./_helpers.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -87,12 +88,13 @@ describe("session-start", () => {
 		assert.deepEqual([...order].sort((a, b) => a - b), order);
 		assert.match(context, /- \[\[Why\]\] — why slow/);
 		assert.match(context, /_context injected: [\d.]+kB \/ [\d.]+kB budget_\n$/);
+		assert.doesNotMatch(context, /configured, held under/, "the shipped budget is under the core's ceiling");
 	});
 
 	test("on the hook path, the context goes out in one SessionStart envelope within the hook output cap (#98)", () => {
 		// JSON escapes double a quote, a backslash, a CR, an LF or a tab: a
 		// context measured in UTF-8 bytes would overrun the cap in the envelope.
-		const line = '- "quoted" C:\path\to\note\ttab 🧪\r\n';
+		const line = '- "quoted" back\\slash\\ed\ttab 🧪\r\n';
 		writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n" + line.repeat(400));
 		let out: ReturnType<typeof startContext>;
 		try {
@@ -119,6 +121,8 @@ describe("session-start", () => {
 		assert.match(delivered, /^## Session Context\n/, "the instruction file gets Markdown, not the hook envelope");
 		assert.match(delivered, /why slow/);
 		assert.match(delivered, /budget_\n$/);
+		const instructionBudget = parseInstructionBudget(readFileSync(join(vault, "vault-manifest.json"), "utf-8"));
+		assert.ok(instructionBudget !== null && Buffer.byteLength(delivered) <= instructionBudget + METER_HEADROOM);
 	});
 
 	test("VAULT_PATH is exported to CLAUDE_ENV_FILE, even when standing down", () => {
