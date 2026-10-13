@@ -8,16 +8,16 @@
  *   AGENTS.md, and a GEMINI.md where the vault's Gemini settings point Gemini
  *   at AGENTS.md instead.
  *
- * Only the exact names are tested: the core's match will become
- * filesystem-case-aware (mindframe #91).
+ * Names match as the agent opens them (mindframe #91): in any case where the
+ * filesystem ignores case (Windows, macOS), exactly on Linux.
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENTS_MD_MAX_BYTES, INSTRUCTION_FILE, isRetiredInstructionFile } from "../core/index.ts";
+import { AGENTS_MD_MAX_BYTES, INSTRUCTION_FILE, filesystemIgnoresCase, isRetiredInstructionFile } from "../core/index.ts";
 import { collectSections, fromLoaded } from "../core/registry.ts";
 import type { HookContext } from "../core/types.ts";
 import { extension } from "../../extensions/wiki/index.ts";
@@ -35,7 +35,7 @@ describe("AGENTS.md ships, and is the only instruction file", () => {
 	});
 
 	test("no retired instruction file installs", () => {
-		assert.deepEqual([...installSet(REPO)].filter((f) => !f.includes("/") && isRetiredInstructionFile(f)), []);
+		assert.deepEqual([...installSet(REPO)].filter((f) => !f.includes("/") && isRetiredInstructionFile(f, "win32")), [], "matched as Windows does, so no case variant ships either");
 	});
 });
 
@@ -88,5 +88,42 @@ describe("session-start warns about a retired instruction file left at the vault
 		assert.match(w.body, /GEMINI\.md/);
 		assert.match(w.body, /AGENTS\.md/);
 		assert.match(w.body, /Claude Code reads `CLAUDE\.md` in place of it/);
+	});
+
+	describe("Gemini's settings read as Gemini reads them (mindframe #104, #119)", () => {
+		before(() => {
+			rmSync(join(root, "CLAUDE.md"), { force: true });
+			writeFileSync(join(root, "GEMINI.md"), "# old\n");
+			mkdirSync(join(root, ".gemini"), { recursive: true });
+		});
+		after(() => {
+			rmSync(join(root, ".gemini"), { recursive: true, force: true });
+			rmSync(join(root, "GEMINI.md"), { force: true });
+		});
+
+		test("settings with comments still name AGENTS.md, so a GEMINI.md is retired", async () => {
+			writeFileSync(join(root, ".gemini", "settings.json"), '// the vault\'s manual\n{"context":{"fileName":["AGENTS.md"]} /* one file */}\n');
+			assert.match((await warning())?.body ?? "", /Gemini no longer reads `GEMINI\.md`/);
+		});
+
+		test("settings behind a byte-order mark name nothing, as Gemini refuses them: no warning", async () => {
+			writeFileSync(join(root, ".gemini", "settings.json"), '\uFEFF{"context":{"fileName":["AGENTS.md"]}}\n');
+			assert.equal(await warning(), undefined);
+		});
+	});
+
+	test("a lowercase claude.md is named where the filesystem ignores case, and not on Linux (mindframe #91)", async () => {
+		// Its own fixture: no GEMINI.md and no Gemini settings, so only claude.md can be named.
+		rmSync(join(root, "GEMINI.md"), { force: true });
+		rmSync(join(root, "CLAUDE.md"), { force: true });
+		rmSync(join(root, ".gemini"), { recursive: true, force: true });
+		writeFileSync(join(root, "claude.md"), "# mine\n");
+		try {
+			const w = (await warning())?.body ?? "";
+			if (!filesystemIgnoresCase()) assert.equal(w, "");
+			else assert.match(w, /Claude Code reads `claude\.md` in place of it/);
+		} finally {
+			rmSync(join(root, "claude.md"), { force: true });
+		}
 	});
 });

@@ -25,6 +25,7 @@
 import { readFileSync } from "node:fs";
 import { debug, readStdinJson, writeHookOutput } from "./lib/hook-io.ts";
 import { shouldSkipFile } from "./lib/frontmatter.ts";
+import { foldOnDisk } from "./lib/instruction-files.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
 import { refreshTargets, writeTargets } from "./lib/write-targets.ts";
 import { openVault } from "./core/context.ts";
@@ -46,13 +47,17 @@ if (written.size === 0 && removed.length === 0) {
 }
 
 const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
-// Windows paths compare without case: `C:/Vault` and `c:/vault/x.md` are
-// the same folder, and a case mismatch must not read as outside the vault.
-const fold = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
+// Where the filesystem ignores case (Windows, macOS), `C:/Vault` and
+// `c:/vault/x.md` are the same folder, and a case mismatch must not read as
+// outside the vault: the core's rule (mindframe #91), the one shouldSkipFile
+// uses too. It goes by platform, so a case-sensitive volume on macOS is folded
+// as well (the core's gap, mindframe #112).
+const fold = foldOnDisk;
+const rootKey = `${fold(rootFwd)}/`;
 
 /**
- * Each changed file inside the vault, once, keyed so that on Windows one
- * file named in two cases is one file; a written spelling wins over a
+ * Each changed file inside the vault, once, keyed so that where the
+ * filesystem ignores case one file named in two cases is one file; a written spelling wins over a
  * removed one, so a case-only rename is validated under its new name.
  */
 const byFile = new Map<string, { filePath: string; relPath: string; written: boolean }>();
@@ -62,11 +67,12 @@ const listed: { filePath: string; isWritten: boolean }[] = [
 ];
 for (const { filePath, isWritten } of listed) {
 	const fileFwd = filePath.replaceAll("\\", "/");
-	if (!fold(fileFwd).startsWith(`${fold(rootFwd)}/`)) {
+	const key = fold(fileFwd);
+	if (!key.startsWith(rootKey)) {
 		debug(`validate: outside the vault root, skipped: ${filePath}`);
 		continue;
 	}
-	if (!byFile.has(fold(fileFwd))) byFile.set(fold(fileFwd), { filePath, relPath: fileFwd.slice(rootFwd.length + 1), written: isWritten });
+	if (!byFile.has(key)) byFile.set(key, { filePath, relPath: fileFwd.slice(rootFwd.length + 1), written: isWritten });
 }
 
 /**
@@ -103,7 +109,9 @@ try {
 		// The skip rules match path segments, so they get the vault-relative
 		// path: a vault that itself sits under a `.claude/` or `templates/`
 		// folder (a Claude Code worktree, say) would otherwise skip every file.
-		if (shouldSkipFile(relPath)) {
+		// The root lets a root `claude.md` match the retired CLAUDE.md where
+		// the filesystem ignores case (mindframe #91).
+		if (shouldSkipFile(relPath, { vaultRoot })) {
 			debug(`validate: skipped ${relPath}`);
 			continue;
 		}

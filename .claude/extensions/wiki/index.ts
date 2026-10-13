@@ -15,7 +15,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { INSTRUCTION_FILE, isRetiredInstructionFile, stripFrontmatter, type Extension, type Finding, type HookContext, type WriteTarget } from "../../scripts/core/index.ts";
+import { CLAUDE_MD, INSTRUCTION_FILE, isRetiredInstructionFile, retiredInVault, sameOnDisk, stripFrontmatter, type Extension, type Finding, type HookContext, type WriteTarget } from "../../scripts/core/index.ts";
 import {
 	FOLDERS,
 	NOTE_TYPES,
@@ -97,24 +97,6 @@ function staleLinks(note: Note, stale: ReadonlyMap<string, string>): string[] {
 	);
 }
 
-/**
- * True when the vault's Gemini settings point Gemini at AGENTS.md and not at
- * GEMINI.md: only then is a GEMINI.md retired (SPEC.md §6.1). Without the
- * gemini module, or with a user's own settings that name no context file,
- * GEMINI.md is still Gemini's manual. The core's retired list can't tell
- * (SPEC.md §7.2, S8).
- */
-function geminiReadsAgentsMd(vaultRoot: string): boolean {
-	try {
-		const settings = JSON.parse(readFileSync(join(vaultRoot, ".gemini", "settings.json"), "utf-8")) as { context?: { fileName?: unknown } };
-		const names = settings.context?.fileName;
-		const list = Array.isArray(names) ? names : typeof names === "string" ? [names] : [];
-		return list.includes(INSTRUCTION_FILE) && !list.some((n) => typeof n === "string" && n.toLowerCase() === "gemini.md");
-	} catch {
-		return false;
-	}
-}
-
 function isOpen(note: Note): boolean {
 	return statusOf(note.content) === "open";
 }
@@ -151,10 +133,13 @@ export const extension: Extension = {
 			render: (ctx) => {
 				let names: string[];
 				try {
-					const gemini = geminiReadsAgentsMd(ctx.vaultRoot);
-					names = readdirSync(ctx.vaultRoot)
-						.filter((n) => isRetiredInstructionFile(n) && (gemini || n.toLowerCase() !== "gemini.md"))
-						.sort();
+					// CLAUDE.md always, and GEMINI.md only where the vault's Gemini
+					// settings point Gemini at AGENTS.md, each name matched the way the
+					// agent opens it (the core's retiredInVault, mindframe #91 and #104).
+					// The settings are read only when a candidate is there.
+					const candidates = readdirSync(ctx.vaultRoot).filter((n) => isRetiredInstructionFile(n));
+					if (candidates.length === 0) return null;
+					names = candidates.filter(retiredInVault(ctx.vaultRoot)).sort();
 				} catch {
 					return null;
 				}
@@ -163,7 +148,7 @@ export const extension: Extension = {
 				// Each retired file's own harm: Claude Code reads a CLAUDE.md in place of
 				// AGENTS.md, and Gemini, pointed at AGENTS.md, no longer reads a GEMINI.md.
 				const why = names
-					.map((n) => (n.toLowerCase() === "claude.md" ? `Claude Code reads \`${n}\` in place of it` : `Gemini no longer reads \`${n}\``))
+					.map((n) => (sameOnDisk(n, CLAUDE_MD) ? `Claude Code reads \`${n}\` in place of it` : `Gemini no longer reads \`${n}\``))
 					.join("; ");
 				return `⚠️ ${names.map((n) => `\`${n}\``).join(" and ")} ${is} retired: \`${INSTRUCTION_FILE}\` is this vault's one instruction file (${why}). Move anything of your own from ${it} into \`${INSTRUCTION_FILE}\` (or \`.claude/rules/\` for Claude-only notes), then delete ${it}.`;
 			},

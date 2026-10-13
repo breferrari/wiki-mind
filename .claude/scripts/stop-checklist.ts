@@ -70,8 +70,7 @@ async function report(): Promise<void> {
 	const vaultRoot = resolveProjectDir(process.cwd());
 	const { registry, ctx } = await openVault(vaultRoot, "stop");
 	// Stop's effects (QMD's index refresh among them) first: the detector pass
-	// can be slow, and a checklist item can throw out of collectChecklist, and
-	// neither may cost the refresh.
+	// can be slow, and it may not cost the refresh.
 	const effects = await runEffects(registry, { event: "stop" }, ctx);
 	const checklist = collectChecklist(registry);
 	const detected = await runDetectors(registry, ctx);

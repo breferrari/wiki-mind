@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HOOK_OUTPUT_MAX_CHARS, parseHookContext } from "../lib/hook-io.ts";
+import { filesystemIgnoresCase } from "../lib/instruction-files.ts";
 import { METER_HEADROOM } from "../lib/session-start.ts";
 import { rmTemp, runScript } from "./_helpers.ts";
 
@@ -22,6 +23,11 @@ let vault = "";
 let state = "";
 const fm = (fields: Record<string, string>) => `---\n${Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join("\n")}\n---\n`;
 const BASE = { date: "2026-10-05", description: "d", tags: "[t]" };
+
+/** The extensions the shipped vault-manifest.json declares. */
+function shipped(): { id: string }[] {
+	return (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
+}
 
 function manifest(extra: Record<string, unknown> = {}, extensions?: unknown[]): void {
 	const base = JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as Record<string, unknown>;
@@ -85,7 +91,7 @@ describe("session-start", () => {
 	});
 
 	test("a vault that sets QMD keys without declaring the qmd extension sees how to declare it on the meter (#102)", () => {
-		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
+		const declared = shipped();
 		manifest({}, declared.filter((d) => d.id !== "qmd"));
 		let context: string;
 		try {
@@ -135,7 +141,7 @@ describe("session-start", () => {
 			join(vault, ".claude", "extensions", "big", "big.mjs"),
 			`export default { id: "big", sections: [{ id: "big.quotes", header: "### Quotes", render: () => ${JSON.stringify('"'.repeat(6000))} }] };\n`,
 		);
-		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		const declared = shipped();
 		manifest({}, [...declared, { id: "big", module: ".claude/extensions/big/big.mjs", events: ["session-start"] }]);
 		let out: ReturnType<typeof startContext>;
 		try {
@@ -390,7 +396,7 @@ describe("validate-write", () => {
 			assert.doesNotMatch(context, /Old\.md/);
 		});
 
-		test("on Windows, one note named in two cases is validated once, and a case-only rename under its new name", { skip: process.platform !== "win32" }, () => {
+		test("where case is ignored, one note named in two cases is validated once, and a case-only rename under its new name", { skip: !filesystemIgnoresCase() }, () => {
 			const twice = applyPatch("*** Begin Patch\n*** Update File: concepts/Lonely.md\n*** Update File: CONCEPTS/lonely.md\n*** End Patch\n");
 			assert.equal(parseHookContext(twice.stdout, "PostToolUse").match(/Cites no source/g)?.length, 1);
 			const renamed = applyPatch("*** Begin Patch\n*** Update File: concepts/LONELY.md\n*** Move to: concepts/Lonely.md\n*** End Patch\n");
@@ -406,7 +412,29 @@ describe("validate-write", () => {
 		});
 	});
 
-	test("on Windows, a path whose case differs from the vault root's is still inside it", { skip: process.platform !== "win32" }, () => {
+	test("a root claude.md is skipped where the agent loads it as CLAUDE.md, and a nested Claude.md is always a note (mindframe #91)", () => {
+		// A probe validator that would flag any file it sees: the skip rules decide.
+		mkdirSync(join(vault, ".claude", "extensions", "seer"), { recursive: true });
+		writeFileSync(join(vault, ".claude", "extensions", "seer", "index.mjs"), 'export default { id: "seer", validators: [{ id: "seer.any", appliesTo: () => true, validate: () => ["seen"] }] };\n');
+		const declared = shipped();
+		manifest({}, [...declared, { id: "seer", module: ".claude/extensions/seer/index.mjs", events: ["write"] }]);
+		writeFileSync(join(vault, "claude.md"), "# mine\n");
+		writeFileSync(join(vault, "concepts", "Claude.md"), fm(BASE) + "[[Paper]]\n");
+		try {
+			// Where the filesystem ignores case (Windows, macOS) a root claude.md is the
+			// retired CLAUDE.md; on Linux the agent never loads it, so it stays a note.
+			const root = write(join(vault, "claude.md")).stdout;
+			if (!filesystemIgnoresCase()) assert.match(root, /seen/);
+			else assert.equal(root, "");
+			assert.match(write(join(vault, "concepts", "Claude.md")).stdout, /seen/);
+		} finally {
+			manifest();
+			rmSync(join(vault, "claude.md"), { force: true });
+			rmSync(join(vault, "concepts", "Claude.md"), { force: true });
+		}
+	});
+
+	test("where case is ignored, a path whose case differs from the vault root's is still inside it", { skip: !filesystemIgnoresCase() }, () => {
 		const out = write(join(vault, "concepts", "Lonely.md").toUpperCase().replace("LONELY.MD", "Lonely.md").replace("CONCEPTS", "concepts"));
 		assert.match(out.stdout, /Cites no source/);
 	});
@@ -475,7 +503,7 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 			// A write effect also logs its target's path, one per line, to `write-paths`.
 			`import { appendFileSync, writeFileSync } from "node:fs";\nimport { join } from "node:path";\nconst dir = () => process.env["EFFECT_PROBE_DIR"] ?? ".";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string; target?: { relPath: string } }) => { writeFileSync(join(dir(), trigger.event), ""); if (trigger.target) appendFileSync(join(dir(), "write-paths"), trigger.target.relPath + "\\n"); } }] };\n`,
 		);
-		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		const declared = shipped();
 		manifest({}, [...declared, { id: "probe", module: ".claude/extensions/probe/index.ts", events: EVENTS }]);
 	});
 	after(() => manifest());
