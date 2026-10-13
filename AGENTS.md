@@ -140,6 +140,7 @@ The hook layer keeps four zones. Its core is vendored from mindframe, and the ot
 
 - **`lib/`** is vendored upstream code. `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json` say where each file came from. It changes only by parameterized changes, each recorded as a patch in `vendor-patches/`. Under Claude Code, a guard stops a direct edit and names the routes; under Codex and Gemini, CI's `vendor check` is what catches one.
 - **`core/`** is vendored from mindframe and imports only `lib/`.
+- **`.claude/scripts/extensions/qmd/`** is mindframe's qmd extension, vendored like `core/`: it changes only through a patch.
 - **`.claude/extensions/`** imports only `core/index.ts`.
 - **The entry points** are thin dispatchers.
 - **Divergence:** every divergence from upstream is a parameter with a patch and a seam row in the shard's spec (see CONTRIBUTING.md).
