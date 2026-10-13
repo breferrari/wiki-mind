@@ -439,8 +439,8 @@ describe("pre-compact", () => {
 		try {
 			for (const input of [{ hook_event_name: "PreCompact", trigger: "manual", transcript_path: join(state, "gone.jsonl") }, { hook_event_name: "PreCompact" }]) {
 				const r = run("pre-compact", input, { VAULT_EXTENSIONS: "off" });
-				assert.equal(r.code, 0, r.stderr);
-				assert.equal(r.stdout, "");
+				assert.equal(r.code, 0, `${JSON.stringify(input)}: ${r.stderr}`);
+				assert.equal(r.stdout, "", JSON.stringify(input));
 			}
 		} finally {
 			rmSync(join(vault, "thinking"), { recursive: true, force: true });
