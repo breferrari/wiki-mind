@@ -65,12 +65,14 @@ export function pruneBackups(dir: string, retain: number): void {
 	}
 }
 
-/** Copy the transcript to `thinking/session-logs/` and prune; every failure is non-fatal. */
+/** Copy the transcript to `thinking/session-logs/` and prune; a failed copy is non-fatal, and the caller catches the rest. */
 function backUp(vaultRoot: string, input: HookInput): void {
 	const transcriptPath =
 		typeof input.transcript_path === "string" ? input.transcript_path : "";
+	// The trigger names the backup file, so only a plain word is taken: an
+	// agent's own value can't escape the folder or break a Windows name.
 	const trigger =
-		typeof input.trigger === "string" ? input.trigger : "unknown";
+		typeof input.trigger === "string" && /^[A-Za-z]+$/.test(input.trigger) ? input.trigger : "unknown";
 
 	if (!transcriptPath) {
 		debug("pre-compact: no transcript_path in input");
@@ -111,7 +113,12 @@ if (isMainModule(import.meta.url)) {
 
 	// The backup first: it is a quick copy, and it survives a hook killed by
 	// its time limit while an extension loads.
-	backUp(vaultRoot, input);
+	try {
+		backUp(vaultRoot, input);
+	} catch (err) {
+		// A backup folder that can't be made never costs the effects below.
+		debug(`pre-compact: backup: ${err instanceof Error ? err.message : String(err)}`);
+	}
 
 	// Then the pre-compact effects, QMD's index refresh among them: writes
 	// tend to cluster right before compaction, and catching them now means the
@@ -123,5 +130,7 @@ if (isMainModule(import.meta.url)) {
 	} catch (err) {
 		debug(`pre-compact: effects: ${err instanceof Error ? err.message : String(err)}`);
 	}
-	process.exit(0);
+	// Exit once the debug lines have flushed: an extension call that timed out
+	// may have left a timer or a socket behind.
+	process.stderr.write("", () => process.exit(0));
 }

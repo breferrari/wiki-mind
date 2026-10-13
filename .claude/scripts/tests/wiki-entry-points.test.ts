@@ -1,5 +1,5 @@
 /**
- * wiki-mind's four hook entry points, spawned the way .claude/settings.json
+ * wiki-mind's hook entry points, spawned the way .claude/settings.json
  * runs them, in a temp vault that holds a copy of .claude/ and the
  * manifest. Each test holds one protocol obligation the entry points keep
  * from obsidian-mind's (SPEC.md §7.2), or one registry guarantee as the hook
@@ -435,6 +435,19 @@ describe("pre-compact", () => {
 		}
 	});
 
+	test("a trigger that isn't a plain word names the backup `unknown`, inside the backup folder", () => {
+		const transcript = join(state, "transcript.jsonl");
+		writeFileSync(transcript, "{}\n");
+		try {
+			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "../../escape", transcript_path: transcript }, { VAULT_EXTENSIONS: "off" });
+			assert.equal(r.code, 0, r.stderr);
+			assert.deepEqual(readdirSync(join(vault, "thinking")), ["session-logs"], "nothing written beside the backup folder");
+			assert.match(readdirSync(join(vault, "thinking", "session-logs"))[0]!, /^session_unknown_\d{8}_\d{6}\.jsonl$/);
+		} finally {
+			rmSync(join(vault, "thinking"), { recursive: true, force: true });
+		}
+	});
+
 	test("a missing transcript, or none named, exits 0 with no output", () => {
 		try {
 			for (const input of [{ hook_event_name: "PreCompact", trigger: "manual", transcript_path: join(state, "gone.jsonl") }, { hook_event_name: "PreCompact" }]) {
@@ -485,6 +498,34 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "manual" }, { EFFECT_PROBE_DIR: markers, VAULT_EXTENSIONS: "off" });
 		assert.equal(r.code, 0, r.stderr);
 		assert.equal(existsSync(join(markers, "pre-compact")), false);
+	});
+
+	test("pre-compact.ts runs no effect of an extension declared enabled: false (#104)", () => {
+		rmSync(join(markers, "pre-compact"), { force: true });
+		const declared = (JSON.parse(readFileSync(join(vault, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
+		manifest({}, declared.map((d) => (d.id === "probe" ? { ...d, enabled: false } : d)));
+		try {
+			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "manual" }, { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.equal(existsSync(join(markers, "pre-compact")), false);
+		} finally {
+			manifest({}, declared);
+		}
+	});
+
+	test("pre-compact.ts still runs the effects when the backup can't be written (#104)", () => {
+		rmSync(join(markers, "pre-compact"), { force: true });
+		// A file named `thinking` stops the backup folder from being made.
+		writeFileSync(join(vault, "thinking"), "not a folder");
+		const transcript = join(state, "transcript.jsonl");
+		writeFileSync(transcript, "{}\n");
+		try {
+			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "manual", transcript_path: transcript }, { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.ok(existsSync(join(markers, "pre-compact")), "the pre-compact effect ran");
+		} finally {
+			rmSync(join(vault, "thinking"), { force: true });
+		}
 	});
 
 	test("validate-write.ts runs the write effects before the skip rules, for a file it does not validate", () => {
