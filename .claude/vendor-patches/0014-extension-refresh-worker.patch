@@ -1,5 +1,5 @@
 Description: Match a leftover refresh worker by refresh-run in its command line, not qmd-refresh-run, so the test runner's guard also names and stops the worker mindframe's qmd extension starts (extensions/qmd/refresh-run.ts)
-Forwarded: not-needed: obsidian-mind runs no extension worker until it adopts mindframe's core (mindframe Phase 4)
+Forwarded: https://github.com/breferrari/mindframe/issues/125
 Last-Update: 2026-10-13
 
 diff --git a/.claude/scripts/tests/_proc.ts b/.claude/scripts/tests/_proc.ts

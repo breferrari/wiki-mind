@@ -410,7 +410,8 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		mkdirSync(join(vault, ".claude", "extensions", "probe"), { recursive: true });
 		writeFileSync(
 			join(vault, ".claude", "extensions", "probe", "index.ts"),
-			`import { writeFileSync } from "node:fs";\nimport { join } from "node:path";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string }) => writeFileSync(join(process.env["EFFECT_PROBE_DIR"] ?? ".", trigger.event), "") }] };\n`,
+			// A write effect also logs its target's path, one per line, to `write-paths`.
+			`import { appendFileSync, writeFileSync } from "node:fs";\nimport { join } from "node:path";\nconst dir = () => process.env["EFFECT_PROBE_DIR"] ?? ".";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string; target?: { relPath: string } }) => { writeFileSync(join(dir(), trigger.event), ""); if (trigger.target) appendFileSync(join(dir(), "write-paths"), trigger.target.relPath + "\\n"); } }] };\n`,
 		);
 		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
 		manifest({}, [...declared, { id: "probe", module: ".claude/extensions/probe/index.ts", events: EVENTS }]);
@@ -441,6 +442,16 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		} finally {
 			rmSync(join(vault, "templates"), { recursive: true, force: true });
 		}
+	});
+
+	test("validate-write.ts runs the write effects for each note an apply_patch writes, deletes or moves, once each (#100)", () => {
+		writeFileSync(join(vault, "concepts", "New.md"), fm(BASE) + "[[Paper]]\n");
+		rmSync(join(markers, "write-paths"), { force: true });
+		const command = "*** Begin Patch\n*** Delete File: concepts/Gone.md\n*** Update File: concepts/Old.md\n*** Move to: concepts/New.md\n*** End Patch\n";
+		const r = run("validate-write", { hook_event_name: "PostToolUse", tool_name: "apply_patch", cwd: vault, tool_input: { command } }, { EFFECT_PROBE_DIR: markers });
+		assert.equal(r.code, 0, r.stderr);
+		const paths = readFileSync(join(markers, "write-paths"), "utf-8").split("\n").filter(Boolean).sort();
+		assert.deepEqual(paths, ["concepts/Gone.md", "concepts/New.md", "concepts/Old.md"], "the index sees a deleted note and a moved note's old path");
 	});
 
 	test("stop-checklist.ts runs the stop effects before its checks, so a checklist item that throws keeps them", () => {
