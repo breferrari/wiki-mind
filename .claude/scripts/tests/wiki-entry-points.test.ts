@@ -418,6 +418,32 @@ describe("validate-write", () => {
 	});
 });
 
+describe("pre-compact", () => {
+	test("backs the transcript up to thinking/session-logs, as obsidian-mind's does", () => {
+		const transcript = join(state, "transcript.jsonl");
+		writeFileSync(transcript, '{"type":"user"}\n');
+		try {
+			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "auto", transcript_path: transcript });
+			assert.equal(r.code, 0, r.stderr);
+			const backups = readdirSync(join(vault, "thinking", "session-logs"));
+			assert.equal(backups.length, 1);
+			assert.match(backups[0]!, /^session_auto_\d{8}_\d{6}\.jsonl$/);
+			assert.equal(readFileSync(join(vault, "thinking", "session-logs", backups[0]!), "utf-8"), '{"type":"user"}\n');
+		} finally {
+			rmSync(join(vault, "thinking"), { recursive: true, force: true });
+		}
+	});
+
+	test("a missing transcript, or none named, exits 0 with no output", () => {
+		for (const input of [{ hook_event_name: "PreCompact", trigger: "manual", transcript_path: join(state, "gone.jsonl") }, { hook_event_name: "PreCompact" }]) {
+			const r = run("pre-compact", input);
+			assert.equal(r.code, 0, r.stderr);
+			assert.equal(r.stdout, "");
+		}
+		rmSync(join(vault, "thinking"), { recursive: true, force: true });
+	});
+});
+
 describe("each entry point runs the effects declared on its event (#90)", () => {
 	// A probe extension: an effect on every effect event, writing a marker named after the event.
 	const EVENTS = ["session-start", "write", "pre-compact", "stop"];
@@ -441,6 +467,7 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		["session-start", "session-start", () => ({ hook_event_name: "SessionStart", source: "startup", session_id: "e1" })],
 		["validate-write", "write", () => ({ hook_event_name: "PostToolUse", tool_name: "Write", tool_input: { file_path: join(vault, "concepts", "Lonely.md") } })],
 		["stop-checklist", "stop", () => ({ hook_event_name: "Stop", session_id: "e3" })],
+		["pre-compact", "pre-compact", () => ({ hook_event_name: "PreCompact", trigger: "manual", session_id: "e5" })],
 	] as const) {
 		test(`${script}.ts runs the ${event} effects`, () => {
 			const r = run(script, stdin(), { EFFECT_PROBE_DIR: markers });
@@ -448,6 +475,13 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 			assert.ok(existsSync(join(markers, event)), `the ${event} effect ran`);
 		});
 	}
+
+	test("pre-compact.ts runs no effect under VAULT_EXTENSIONS=off, the switch QMD's refresh obeys elsewhere (#104)", () => {
+		rmSync(join(markers, "pre-compact"), { force: true });
+		const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "manual" }, { EFFECT_PROBE_DIR: markers, VAULT_EXTENSIONS: "off" });
+		assert.equal(r.code, 0, r.stderr);
+		assert.equal(existsSync(join(markers, "pre-compact")), false);
+	});
 
 	test("validate-write.ts runs the write effects before the skip rules, for a file it does not validate", () => {
 		mkdirSync(join(vault, "templates"), { recursive: true });
