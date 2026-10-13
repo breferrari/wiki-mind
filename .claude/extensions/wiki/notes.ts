@@ -6,7 +6,7 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { extractFrontmatterField, extractWikilinkTargets } from "../../scripts/core/index.ts";
+import { extractFrontmatterField, extractWikilinkTargets, frontmatterBlock } from "../../scripts/core/index.ts";
 
 /** Each note type's folder (SPEC.md §2). */
 export const FOLDERS = {
@@ -65,15 +65,9 @@ export function listNotes(vaultRoot: string, type: NoteType): Note[] {
 	return notes;
 }
 
-/** The content without a leading byte-order mark, which some editors write. */
-function unbom(content: string): string {
-	return content.startsWith("﻿") ? content.slice(1) : content;
-}
-
-/** The frontmatter block, without its fences, or null when there is none. An empty block is "". */
+/** The frontmatter block, without its fences, or null when there is none: the core's one rule (mindframe #82), which reads past a byte-order mark. */
 export function frontmatter(content: string): string | null {
-	const m = unbom(content).match(/^---\r?\n(?:([\s\S]*?)\r?\n)?---(\r?\n|$)/);
-	return m ? (m[1] ?? "") : null;
+	return frontmatterBlock(content)?.yaml ?? null;
 }
 
 /**
@@ -88,7 +82,7 @@ export function hasField(content: string, name: string): boolean {
 
 /** A one-line field's value, or null (lib/session-start's small parser). */
 export function field(content: string, name: string): string | null {
-	return extractFrontmatterField(unbom(content), name);
+	return extractFrontmatterField(content, name);
 }
 
 /**
