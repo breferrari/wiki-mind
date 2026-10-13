@@ -121,6 +121,27 @@ describe("session-start", () => {
 		assert.doesNotMatch(out.context, /truncated to fit/, "the budget gives sections up before the cap cuts");
 	});
 
+	test("a load-bearing section over the cap is cut to the envelope's limit, and the meter survives (#98)", () => {
+		// A section without a pointer is never given up, so only the cap holds
+		// it. 6000 quotes fit the plain cap as characters but not encoded: cut
+		// to the plain cap, the envelope would lose the meter.
+		mkdirSync(join(vault, ".claude", "extensions", "big"), { recursive: true });
+		writeFileSync(
+			join(vault, ".claude", "extensions", "big", "big.mjs"),
+			`export default { id: "big", sections: [{ id: "big.quotes", header: "### Quotes", render: () => ${JSON.stringify('"'.repeat(6000))} }] };\n`,
+		);
+		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		manifest({}, [...declared, { id: "big", module: ".claude/extensions/big/big.mjs", events: ["session-start"] }]);
+		let out: ReturnType<typeof startContext>;
+		try {
+			out = startContext({ source: "startup" });
+		} finally {
+			manifest();
+		}
+		assert.ok(out.stdout.length <= HOOK_OUTPUT_MAX_CHARS, `${out.stdout.length} characters is over the cap`);
+		assert.match(out.context, /_context injected: [^\n]*truncated to fit the hook output cap[^\n]*\n$/);
+	});
+
 	test("a resume gets pointers for the sections that have one", () => {
 		const { context } = startContext({ source: "resume" });
 		assert.match(context, /### Wiki\nsources: 1/);
