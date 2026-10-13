@@ -50,12 +50,14 @@ const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
 // Where the filesystem ignores case (Windows, macOS), `C:/Vault` and
 // `c:/vault/x.md` are the same folder, and a case mismatch must not read as
 // outside the vault: the core's rule (mindframe #91), the one shouldSkipFile
-// uses too.
-const fold = (p: string) => foldOnDisk(p);
+// uses too. It goes by platform, so a case-sensitive volume on macOS is folded
+// as well (the core's gap, mindframe #112).
+const fold = foldOnDisk;
+const rootKey = `${fold(rootFwd)}/`;
 
 /**
- * Each changed file inside the vault, once, keyed so that on Windows one
- * file named in two cases is one file; a written spelling wins over a
+ * Each changed file inside the vault, once, keyed so that where the
+ * filesystem ignores case one file named in two cases is one file; a written spelling wins over a
  * removed one, so a case-only rename is validated under its new name.
  */
 const byFile = new Map<string, { filePath: string; relPath: string; written: boolean }>();
@@ -65,11 +67,12 @@ const listed: { filePath: string; isWritten: boolean }[] = [
 ];
 for (const { filePath, isWritten } of listed) {
 	const fileFwd = filePath.replaceAll("\\", "/");
-	if (!fold(fileFwd).startsWith(`${fold(rootFwd)}/`)) {
+	const key = fold(fileFwd);
+	if (!key.startsWith(rootKey)) {
 		debug(`validate: outside the vault root, skipped: ${filePath}`);
 		continue;
 	}
-	if (!byFile.has(fold(fileFwd))) byFile.set(fold(fileFwd), { filePath, relPath: fileFwd.slice(rootFwd.length + 1), written: isWritten });
+	if (!byFile.has(key)) byFile.set(key, { filePath, relPath: fileFwd.slice(rootFwd.length + 1), written: isWritten });
 }
 
 /**

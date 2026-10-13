@@ -17,7 +17,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENTS_MD_MAX_BYTES, INSTRUCTION_FILE, isRetiredInstructionFile } from "../core/index.ts";
+import { AGENTS_MD_MAX_BYTES, INSTRUCTION_FILE, filesystemIgnoresCase, isRetiredInstructionFile } from "../core/index.ts";
 import { collectSections, fromLoaded } from "../core/registry.ts";
 import type { HookContext } from "../core/types.ts";
 import { extension } from "../../extensions/wiki/index.ts";
@@ -120,7 +120,7 @@ describe("session-start warns about a retired instruction file left at the vault
 		writeFileSync(join(root, "claude.md"), "# mine\n");
 		try {
 			const w = (await warning())?.body ?? "";
-			if (process.platform === "linux") assert.equal(w, "");
+			if (!filesystemIgnoresCase()) assert.equal(w, "");
 			else assert.match(w, /Claude Code reads `claude\.md` in place of it/);
 		} finally {
 			rmSync(join(root, "claude.md"), { force: true });

@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HOOK_OUTPUT_MAX_CHARS, parseHookContext } from "../lib/hook-io.ts";
+import { filesystemIgnoresCase } from "../lib/instruction-files.ts";
 import { METER_HEADROOM } from "../lib/session-start.ts";
 import { rmTemp, runScript } from "./_helpers.ts";
 
@@ -395,7 +396,7 @@ describe("validate-write", () => {
 			assert.doesNotMatch(context, /Old\.md/);
 		});
 
-		test("on Windows, one note named in two cases is validated once, and a case-only rename under its new name", { skip: process.platform !== "win32" }, () => {
+		test("where case is ignored, one note named in two cases is validated once, and a case-only rename under its new name", { skip: !filesystemIgnoresCase() }, () => {
 			const twice = applyPatch("*** Begin Patch\n*** Update File: concepts/Lonely.md\n*** Update File: CONCEPTS/lonely.md\n*** End Patch\n");
 			assert.equal(parseHookContext(twice.stdout, "PostToolUse").match(/Cites no source/g)?.length, 1);
 			const renamed = applyPatch("*** Begin Patch\n*** Update File: concepts/LONELY.md\n*** Move to: concepts/Lonely.md\n*** End Patch\n");
@@ -423,7 +424,7 @@ describe("validate-write", () => {
 			// Where the filesystem ignores case (Windows, macOS) a root claude.md is the
 			// retired CLAUDE.md; on Linux the agent never loads it, so it stays a note.
 			const root = write(join(vault, "claude.md")).stdout;
-			if (process.platform === "linux") assert.match(root, /seen/);
+			if (!filesystemIgnoresCase()) assert.match(root, /seen/);
 			else assert.equal(root, "");
 			assert.match(write(join(vault, "concepts", "Claude.md")).stdout, /seen/);
 		} finally {
@@ -433,7 +434,7 @@ describe("validate-write", () => {
 		}
 	});
 
-	test("on Windows, a path whose case differs from the vault root's is still inside it", { skip: process.platform !== "win32" }, () => {
+	test("where case is ignored, a path whose case differs from the vault root's is still inside it", { skip: !filesystemIgnoresCase() }, () => {
 		const out = write(join(vault, "concepts", "Lonely.md").toUpperCase().replace("LONELY.MD", "Lonely.md").replace("CONCEPTS", "concepts"));
 		assert.match(out.stdout, /Cites no source/);
 	});
