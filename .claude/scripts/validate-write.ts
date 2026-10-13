@@ -50,23 +50,28 @@ const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
 const fold = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
 
 /**
- * Each changed file inside the vault, with its vault-relative path, read
- * once. A written file that can't be read is left out; a removed one has
- * empty content and is not validated.
+ * Each changed file inside the vault, once (on Windows, one file named in
+ * two cases is one file), with its vault-relative path, read once. A removed
+ * file, or a written one that is gone or can't be read (a patch that adds a
+ * note and then moves it away), has empty content and is not validated: its
+ * effects still run, so the index hears it changed.
  */
+const seen = new Set<string>();
 const targets = changed.flatMap((filePath) => {
 	const fileFwd = filePath.replaceAll("\\", "/");
 	if (!fold(fileFwd).startsWith(`${fold(rootFwd)}/`)) {
 		debug(`validate: outside the vault root, skipped: ${filePath}`);
 		return [];
 	}
+	if (seen.has(fold(fileFwd))) return [];
+	seen.add(fold(fileFwd));
 	const relPath = fileFwd.slice(rootFwd.length + 1);
 	if (!written.has(filePath)) return [{ relPath, content: "", validate: false }];
 	try {
 		return [{ relPath, content: readFileSync(filePath, "utf-8"), validate: true }];
 	} catch {
 		debug(`validate: could not read ${filePath}`);
-		return [];
+		return [{ relPath, content: "", validate: false }];
 	}
 });
 if (targets.length === 0) process.exit(0);

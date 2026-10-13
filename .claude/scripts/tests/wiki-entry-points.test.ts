@@ -364,6 +364,8 @@ describe("validate-write", () => {
 		test("each note it adds, updates or moves to is validated, in one envelope; CRLF and an absolute path too", () => {
 			writeFileSync(join(vault, "concepts", "Added.md"), "no frontmatter");
 			writeFileSync(join(vault, "concepts", "Moved.md"), fm(BASE) + "no citation\n");
+			// A moved note's old path is never validated, even while a file is there.
+			writeFileSync(join(vault, "concepts", "Old.md"), "no frontmatter");
 			const command = [
 				"*** Begin Patch",
 				"*** Add File: concepts/Added.md",
@@ -380,6 +382,13 @@ describe("validate-write", () => {
 			assert.match(context, /concepts\/Added\.md:\n- Missing YAML frontmatter/);
 			assert.match(context, /concepts\/Lonely\.md:\n- Cites no source/);
 			assert.match(context, /concepts\/Moved\.md:\n- Cites no source/);
+			assert.doesNotMatch(context, /Old\.md/);
+			rmSync(join(vault, "concepts", "Old.md"));
+		});
+
+		test("on Windows, one note named in two cases is validated once", { skip: process.platform !== "win32" }, () => {
+			const { stdout } = applyPatch("*** Begin Patch\n*** Update File: concepts/Lonely.md\n*** Update File: CONCEPTS/lonely.md\n*** End Patch\n");
+			assert.equal(parseHookContext(stdout, "PostToolUse").match(/Cites no source/g)?.length, 1);
 		});
 
 		test("a patch that only deletes, or writes only outside the vault or no Markdown, writes nothing", () => {
@@ -451,11 +460,18 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		writeFileSync(join(vault, "concepts", "New.md"), fm(BASE) + "[[Paper]]\n");
 		writeFileSync(join(vault, "concepts", "data.txt"), "x");
 		rmSync(join(markers, "write-paths"), { force: true });
-		const command = "*** Begin Patch\n*** Delete File: concepts/Gone.md\n*** Update File: concepts/Old.md\n*** Move to: concepts/New.md\n*** Add File: concepts/data.txt\n+x\n*** End Patch\n";
+		// Brief.md is added and then moved away in the same patch: written, but gone.
+		const command =
+			"*** Begin Patch\n*** Delete File: concepts/Gone.md\n*** Update File: concepts/Old.md\n*** Move to: concepts/New.md\n*** Add File: concepts/data.txt\n+x\n" +
+			"*** Add File: concepts/Brief.md\n+x\n*** Update File: concepts/Brief.md\n*** Move to: concepts/New.md\n*** End Patch\n";
 		const r = applyPatch(command, { EFFECT_PROBE_DIR: markers });
 		assert.equal(r.code, 0, r.stderr);
 		const paths = readFileSync(join(markers, "write-paths"), "utf-8").split("\n").filter(Boolean).sort();
-		assert.deepEqual(paths, ["concepts/Gone.md", "concepts/New.md", "concepts/Old.md", "concepts/data.txt"], "the index sees a deleted note and a moved note's old path");
+		assert.deepEqual(
+			paths,
+			["concepts/Brief.md", "concepts/Gone.md", "concepts/New.md", "concepts/Old.md", "concepts/data.txt"],
+			"the index sees a deleted note, a moved note's old path, and a written file that is gone",
+		);
 	});
 
 	test("stop-checklist.ts runs the stop effects before its checks, so a checklist item that throws keeps them", () => {
