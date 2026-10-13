@@ -6,7 +6,8 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { join } from "node:path";
-import { EMPTY_STORE_BYTES, QMD_SWITCH, qmdSessionStart, type QmdDeps } from "./qmd-session.ts";
+import { manifestOf } from "../lib/manifest.ts";
+import { EMPTY_STORE_BYTES, QMD_SWITCH, REFRESH_SWITCH, qmdSessionStart, qmdSessionStartOf, type QmdDeps } from "./qmd-session.ts";
 
 const MANIFEST = JSON.stringify({ template: "wiki-mind", qmd_index: "", qmd_min_version: "2.0.0" });
 const VAULT = join("/", "vaults", "My Wiki");
@@ -98,5 +99,63 @@ describe("QMD's session-start work", () => {
 		const noFloor = fakeDeps({ version: "qmd 0.1.0\n" });
 		assert.deepEqual(qmdSessionStart(VAULT, JSON.stringify({ template: "wiki-mind" }), undefined, noFloor.deps).notes, []);
 		assert.ok(!noFloor.calls.sync.some((c) => c.includes("--version")), "no floor declared, no version probe");
+	});
+});
+
+describe("the parsed-manifest form (#52)", () => {
+	test("qmdSessionStartOf on the parsed manifest does what qmdSessionStart does on its text", () => {
+		for (const source of [MANIFEST, JSON.stringify({ qmd_index: "pinned", qmd_min_version: "9.0.0" }), "not json", null]) {
+			for (const opts of [{}, { version: "qmd 1.0.0\n" }, { storeBytes: 10 }, { status: { status: 1, stderr: "NODE_MODULE_VERSION 127" } }]) {
+				const fromText = fakeDeps(opts);
+				const fromObject = fakeDeps(opts);
+				const a = qmdSessionStart(VAULT, source, undefined, fromText.deps);
+				const b = qmdSessionStartOf(VAULT, manifestOf(source), undefined, fromObject.deps);
+				assert.deepEqual(b, a, String(source));
+				assert.deepEqual(fromObject.calls, fromText.calls, String(source));
+			}
+		}
+	});
+});
+
+describe("VAULT_QMD_REFRESH=off: no detached refresh (#94, as obsidian-mind #338)", () => {
+	test("the switch's name is obsidian-mind's", () => {
+		assert.equal(REFRESH_SWITCH, "VAULT_QMD_REFRESH");
+	});
+
+	test("off: no detached update or bootstrap, refresh null, and the notes still show", () => {
+		for (const storeBytes of [EMPTY_STORE_BYTES * 10, 10]) {
+			const { deps, calls } = fakeDeps({ env: { [REFRESH_SWITCH]: "off" }, version: "qmd 1.0.0\n", storeBytes });
+			const result = qmdSessionStart(VAULT, MANIFEST, undefined, deps);
+			assert.deepEqual(calls.detached, [], "nothing detached");
+			assert.equal(result.refresh, null);
+			assert.ok(calls.sync.some((c) => c.endsWith("--index my-wiki status")), "the ABI probe still runs");
+			assert.equal(result.notes.length, 1, "the version note still shows");
+		}
+	});
+
+	test("off: an ABI mismatch is still rebuilt, and its note still shows", () => {
+		const mismatch = { status: 1, stderr: "NODE_MODULE_VERSION 115" };
+		const { deps, calls } = fakeDeps({ env: { [REFRESH_SWITCH]: "off" }, status: mismatch, rebuild: 0 });
+		const result = qmdSessionStart(VAULT, MANIFEST, undefined, deps);
+		assert.ok(calls.sync.some((c) => c.includes("npm rebuild better-sqlite3")));
+		assert.deepEqual(result.notes.map((n) => n.header), ["### QMD Self-Heal"]);
+		assert.deepEqual(calls.detached, []);
+	});
+
+	test("only the exact value off turns the refresh off", () => {
+		for (const value of ["Off", "OFF", "0", "", "false", undefined]) {
+			const env = value === undefined ? {} : { [REFRESH_SWITCH]: value };
+			const { deps, calls } = fakeDeps({ env });
+			assert.equal(qmdSessionStart(VAULT, MANIFEST, undefined, deps).refresh, "update", String(value));
+			assert.equal(calls.detached.length, 1, String(value));
+		}
+	});
+
+	test("VAULT_QMD=off turns everything off, whatever VAULT_QMD_REFRESH says: no probe, no note, no spawn", () => {
+		for (const refresh of ["on", "off"]) {
+			const { deps, calls } = fakeDeps({ env: { [QMD_SWITCH]: "off", [REFRESH_SWITCH]: refresh }, version: "qmd 1.0.0\n" });
+			assert.deepEqual(qmdSessionStart(VAULT, MANIFEST, undefined, deps), { notes: [], refresh: null }, refresh);
+			assert.deepEqual(calls, { sync: [], detached: [] }, refresh);
+		}
 	});
 });

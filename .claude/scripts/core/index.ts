@@ -27,10 +27,15 @@ export type {
 	Validator,
 	WriteTarget,
 } from "./types.ts";
+/** The parsed manifest an extension receives as `ctx.manifest`: frozen, or null. */
+export type { ManifestObject } from "../lib/manifest.ts";
 export { HOOK_EVENTS } from "./types.ts";
 
 /** Frontmatter helpers: one-line field values, and the body without its frontmatter. */
 export { extractFrontmatterField, stripFrontmatter } from "../lib/session-start.ts";
+
+/** Where a note's frontmatter is, by the core's one rule: its yaml and where the body starts, or null. */
+export { frontmatterBlock } from "../lib/frontmatter-block.ts";
 
 /** The note names a body links to, with alias tails, fragments and embeds removed. */
 export { extractWikilinkTargets } from "../lib/wikilinks.ts";

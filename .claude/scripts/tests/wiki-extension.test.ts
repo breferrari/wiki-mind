@@ -156,7 +156,7 @@ describe("listField", () => {
 		const empty = await runValidators(registry, { relPath: "concepts/E.md", content: "---\n---\n[[New Paper]]" }, ctx);
 		assert.ok(!empty.result.includes("Missing YAML frontmatter"));
 		assert.ok(empty.result.some((w) => w.includes("`date`")));
-		const bom = await runValidators(registry, { relPath: "entities/B.md", content: "﻿" + fm({ ...BASE, kind: "tool" }) + "[[New Paper]]" }, ctx);
+		const bom = await runValidators(registry, { relPath: "entities/B.md", content: "\uFEFF" + fm({ ...BASE, kind: "tool" }) + "[[New Paper]]" }, ctx);
 		assert.deepEqual(bom.result, []);
 	});
 });

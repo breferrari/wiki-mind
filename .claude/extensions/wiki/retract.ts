@@ -22,6 +22,7 @@ import {
 	currentSourceNames,
 	findHeading,
 	joinLines,
+	type Lines,
 	lastContentLine,
 	type LinkSpan,
 	linkSpans,
@@ -30,7 +31,6 @@ import {
 	type Region,
 	regions,
 	splitLines,
-	startsWithBom,
 	trimTrailingBlanks,
 	unmarkedLinks,
 	WITHDRAWN_HEADING,
@@ -85,7 +85,7 @@ export type Applied = {
 };
 
 export class RetractError extends Error {
-	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "BAD_NEWER" | "BOM";
+	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "BAD_NEWER";
 	constructor(code: RetractError["code"], message: string) {
 		super(message);
 		this.code = code;
@@ -180,13 +180,6 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 	}
 	const sourceNote = editSourceNote(pass);
 	if (sourceNote !== target.content) writes.push({ relPath: target.relPath, content: sourceNote });
-	// The core reads a block behind a byte-order mark as body, not frontmatter, until
-	// mindframe #82: rewriting such a note would put frontmatter in the wrong place.
-	const touched = new Map([...notes.values()].flat().map((n) => [n.relPath, n.content] as const));
-	const bom = [...new Set([target.relPath, ...writes.map((w) => w.relPath)])].filter((rel) => startsWithBom(touched.get(rel) ?? ""));
-	if (bom.length > 0) {
-		throw new RetractError("BOM", `${bom.join(", ")} ${bom.length === 1 ? "starts" : "start"} with a byte-order mark: remove the BOM first. Nothing was written.`);
-	}
 	return { source: target.name, options, outcomes: pass.outcomes, writes };
 }
 
@@ -268,7 +261,10 @@ function editSourceNote(pass: Pass): string {
 	return joinLines(doc);
 }
 
-/** Set a one-line frontmatter field, or remove it when value is null. A new field goes last. */
+/**
+ * Set a one-line frontmatter field, or remove it when value is null. A new field goes last.
+ * `lines` come from splitLines, which has taken any byte-order mark off; joinLines puts it back first.
+ */
 function setField(lines: string[], name: string, value: string | null): void {
 	const kinds = regions(lines);
 	const at = lines.findIndex((l, i) => kinds[i] === "frontmatter" && l.startsWith(`${name}:`));
@@ -297,7 +293,7 @@ function editIndex(pass: Pass, content: string): string {
 // Every other note, by type.
 
 /** A note read line by line: its lines, their regions, and each line's links (none in a fence). */
-type Read = { readonly doc: ReturnType<typeof splitLines>; readonly kinds: readonly Region[]; readonly spans: readonly (readonly LinkSpan[])[] };
+type Read = { readonly doc: Lines; readonly kinds: readonly Region[]; readonly spans: readonly (readonly LinkSpan[])[] };
 
 function readNote(note: Note): Read {
 	const doc = splitLines(note.content);

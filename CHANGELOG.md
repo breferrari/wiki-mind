@@ -21,6 +21,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Fixed
 
+- **`/wiki-retract` handles a note saved with a byte-order mark.** Some Windows editors start a file with one. The note's frontmatter is read as frontmatter, and the mark stays the file's first character.
 - **`/wiki-retract` finds the vault when the session started in a subfolder.** Before, it looked for `sources/` inside that subfolder and found nothing.
 - **Your name and research focus head `Index.md`** when you give them at install. Before, ShardMind recorded them but never ran the step that writes them.
 
