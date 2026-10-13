@@ -98,12 +98,12 @@ let extensionSections: BudgetSection[] = [];
 let notes: string[];
 let migration: readonly string[] = [];
 try {
-	const opened = await openVault(vaultRoot, "session-start", process.env, now);
-	const { registry, ctx } = opened;
+	const { registry, ctx, notes: migrationLines } = await openVault(vaultRoot, "session-start", process.env, now);
+	// Kept before anything below can throw: the meter still says what to migrate.
+	migration = migrationLines;
 	const collected = await collectSections(registry, ctx, mode);
 	const effects = await runEffects(registry, { event: "session-start" }, ctx);
 	extensionSections = collected.result;
-	migration = opened.notes;
 	notes = [
 		...formatFailures([...registry.failures, ...collected.failures, ...effects.failures]),
 		...undispatched(registry).map((slot) => `ℹ️  ${slot}: declared, not dispatched yet`),

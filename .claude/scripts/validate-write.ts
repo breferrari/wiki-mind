@@ -25,6 +25,7 @@
 import { readFileSync } from "node:fs";
 import { debug, readStdinJson, writeHookOutput } from "./lib/hook-io.ts";
 import { shouldSkipFile } from "./lib/frontmatter.ts";
+import { foldOnDisk } from "./lib/instruction-files.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
 import { refreshTargets, writeTargets } from "./lib/write-targets.ts";
 import { openVault } from "./core/context.ts";
@@ -46,9 +47,11 @@ if (written.size === 0 && removed.length === 0) {
 }
 
 const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
-// Windows paths compare without case: `C:/Vault` and `c:/vault/x.md` are
-// the same folder, and a case mismatch must not read as outside the vault.
-const fold = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
+// Where the filesystem ignores case (Windows, macOS), `C:/Vault` and
+// `c:/vault/x.md` are the same folder, and a case mismatch must not read as
+// outside the vault: the core's rule (mindframe #91), the one shouldSkipFile
+// uses too.
+const fold = (p: string) => foldOnDisk(p);
 
 /**
  * Each changed file inside the vault, once, keyed so that on Windows one

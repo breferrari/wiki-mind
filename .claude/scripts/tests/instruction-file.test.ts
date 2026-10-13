@@ -8,8 +8,8 @@
  *   AGENTS.md, and a GEMINI.md where the vault's Gemini settings point Gemini
  *   at AGENTS.md instead.
  *
- * Only the exact names are tested: the core's match will become
- * filesystem-case-aware (mindframe #91).
+ * Names match as the agent opens them (mindframe #91): in any case where the
+ * filesystem ignores case (Windows, macOS), exactly on Linux.
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
@@ -35,7 +35,7 @@ describe("AGENTS.md ships, and is the only instruction file", () => {
 	});
 
 	test("no retired instruction file installs", () => {
-		assert.deepEqual([...installSet(REPO)].filter((f) => !f.includes("/") && isRetiredInstructionFile(f)), []);
+		assert.deepEqual([...installSet(REPO)].filter((f) => !f.includes("/") && isRetiredInstructionFile(f, "win32")), [], "matched as Windows does, so no case variant ships either");
 	});
 });
 
@@ -107,12 +107,16 @@ describe("session-start warns about a retired instruction file left at the vault
 		});
 
 		test("settings behind a byte-order mark name nothing, as Gemini refuses them: no warning", async () => {
-			writeFileSync(join(root, ".gemini", "settings.json"), '﻿{"context":{"fileName":["AGENTS.md"]}}\n');
+			writeFileSync(join(root, ".gemini", "settings.json"), '\uFEFF{"context":{"fileName":["AGENTS.md"]}}\n');
 			assert.equal(await warning(), undefined);
 		});
 	});
 
 	test("a lowercase claude.md is named where the filesystem ignores case, and not on Linux (mindframe #91)", async () => {
+		// Its own fixture: no GEMINI.md and no Gemini settings, so only claude.md can be named.
+		rmSync(join(root, "GEMINI.md"), { force: true });
+		rmSync(join(root, "CLAUDE.md"), { force: true });
+		rmSync(join(root, ".gemini"), { recursive: true, force: true });
 		writeFileSync(join(root, "claude.md"), "# mine\n");
 		try {
 			const w = (await warning())?.body ?? "";
