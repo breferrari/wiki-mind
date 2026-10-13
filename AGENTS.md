@@ -110,6 +110,8 @@ This manual is for every agent that opens the vault. Each one runs the same hook
 | Codex | natively | `.codex/hooks.json` | type the command's name, `wiki-ingest`, without the slash: it reads `.claude/commands/wiki-ingest.md` |
 | Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | ask for the command by name, `wiki-ingest`: it reads `.claude/commands/wiki-ingest.md` |
 
+A command file's `$ARGUMENTS` is what follows its name: in `wiki-retract "Smith 2024" --superseded-by "Lee 2025"`, it is everything after `wiki-retract`.
+
 Under Gemini, the Stop report runs once, when the session ends, rather than after each answer. What only Claude Code needs is in `.claude/rules/`, which only Claude Code reads.
 
 ## Vault layout
@@ -136,7 +138,7 @@ This manual installs into every vault. The rules for changing the shard itself l
 
 The hook layer keeps four zones. Its core is vendored from mindframe, and the other vendored libraries from upstream. The full rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md#zones-keeping-the-core-liftable).
 
-- **`lib/`** is vendored upstream code. `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json` say where each file came from. It changes only by parameterized changes, each recorded as a patch in `vendor-patches/`. A guard stops a direct edit and names the routes.
+- **`lib/`** is vendored upstream code. `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json` say where each file came from. It changes only by parameterized changes, each recorded as a patch in `vendor-patches/`. Under Claude Code, a guard stops a direct edit and names the routes; under Codex and Gemini, CI's `vendor check` is what catches one.
 - **`core/`** is vendored from mindframe and imports only `lib/`.
 - **`.claude/extensions/`** imports only `core/index.ts`.
 - **The entry points** are thin dispatchers.

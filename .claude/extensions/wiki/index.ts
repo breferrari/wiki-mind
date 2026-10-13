@@ -134,7 +134,12 @@ export const extension: Extension = {
 			render: (ctx) => {
 				let names: string[];
 				try {
-					names = readdirSync(ctx.vaultRoot).filter((n) => isRetiredInstructionFile(n)).sort();
+					// A GEMINI.md is retired only where the gemini module points Gemini at
+					// AGENTS.md; without that module, it is Gemini's own manual.
+					const gemini = existsSync(join(ctx.vaultRoot, ".gemini", "settings.json"));
+					names = readdirSync(ctx.vaultRoot)
+						.filter((n) => isRetiredInstructionFile(n) && (gemini || n.toLowerCase() !== "gemini.md"))
+						.sort();
 				} catch {
 					return null;
 				}

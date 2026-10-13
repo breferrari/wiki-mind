@@ -11,7 +11,7 @@
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,7 +54,14 @@ describe("session-start warns about a retired instruction file left at the vault
 		assert.equal(await warning(), undefined);
 	});
 
-	test("a GEMINI.md alone gets Gemini's reason, not Claude's", async () => {
+	test("without the gemini module, a GEMINI.md is Gemini's own manual: no warning", async () => {
+		writeFileSync(join(root, "GEMINI.md"), "# mine\n");
+		assert.equal(await warning(), undefined);
+	});
+
+	test("with the gemini module, a GEMINI.md alone gets Gemini's reason, not Claude's", async () => {
+		mkdirSync(join(root, ".gemini"));
+		writeFileSync(join(root, ".gemini", "settings.json"), '{"context":{"fileName":["AGENTS.md"]}}\n');
 		writeFileSync(join(root, "GEMINI.md"), "# old\n");
 		const w = await warning();
 		assert.ok(w, "a warning section");

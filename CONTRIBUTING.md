@@ -55,6 +55,8 @@ Update this table in the same PR that adds or removes a top-level path.
 | `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod in `wiki-mind/` (vendored). |
 | `.scripts/` | QMD index bootstrap. |
 | `.mcp.json` | Registers the QMD MCP server. |
+| `.codex/` | Codex's hook config, vendored from obsidian-mind; the removable codex module. |
+| `.gemini/` | Gemini's settings (its hooks, and `AGENTS.md` as its context file), vendored from obsidian-mind; the removable gemini module. |
 
 ## Zones: keeping the core liftable
 
