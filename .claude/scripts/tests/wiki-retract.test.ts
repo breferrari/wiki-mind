@@ -444,35 +444,27 @@ describe("code-review fixes", () => {
 	});
 });
 
-describe("a note that starts with a byte-order mark (until mindframe #82)", () => {
-	const BOM = "\uFEFF";
-	const snapshot = (root: string) => Object.fromEntries(["sources/Smith 2024.md", "concepts/RAG.md", "Index.md", "entities/Cites.md"].map((r) => [r, (() => { try { return read(root, r); } catch { return null; } })()]));
+describe("a note that starts with a byte-order mark (#101)", () => {
+	const BOM = "﻿";
 
-	test("a source note with a BOM stops the pass before any write, and names it", () => {
+	test("a source note with a BOM keeps it first, and its status goes inside its one frontmatter block", () => {
 		const root = wiki({ "sources/Smith 2024.md": BOM + fm(SOURCE) + "# Smith 2024\n" });
-		const before = snapshot(root);
-		assert.throws(
-			() => planRetraction(root, { date: DATE, source: "Smith 2024" }),
-			(e: unknown) => e instanceof RetractError && e.code === "BOM" && /sources\/Smith 2024\.md/.test(e.message) && /remove the BOM first/.test(e.message),
-		);
-		assert.deepEqual(snapshot(root), before);
+		run(root, { source: "Smith 2024" });
+		assert.equal(read(root, "sources/Smith 2024.md"), `${BOM}${fm(SOURCE).slice(0, -4)}status: retracted\n---\n# Smith 2024\n\n## Retracted\n\n- ${DATE}: retracted.\n`);
 	});
 
-	test("a source note with a BOM and no frontmatter stops the pass too", () => {
-		const root = wiki({ "sources/Smith 2024.md": BOM + "# Smith 2024\n\nBody.\n" });
-		const before = snapshot(root);
-		assert.throws(() => planRetraction(root, { date: DATE, source: "Smith 2024" }), (e: unknown) => e instanceof RetractError && e.code === "BOM");
-		assert.deepEqual(snapshot(root), before);
+	test("a source note with a BOM and no frontmatter gets its new block after the BOM, not before it", () => {
+		const root = wiki({ "sources/Smith 2024.md": `${BOM}# Smith 2024\n\nBody.\n` });
+		run(root, { source: "Smith 2024" });
+		assert.equal(read(root, "sources/Smith 2024.md"), `${BOM}---\nstatus: retracted\n---\n# Smith 2024\n\n## Retracted\n\n- ${DATE}: retracted.\n\nBody.\n`);
 	});
 
-	test("a citing note with a BOM, its link in frontmatter, stops the pass too, and every note is listed", () => {
-		const root = wiki({ "entities/Cites.md": BOM + fm({ ...BASE, kind: "tool", sources: '"[[Smith 2024]]"' }) + "- [[Lee 2025]].\n" });
-		const before = snapshot(root);
-		assert.throws(
-			() => planRetraction(root, { date: DATE, source: "Smith 2024" }),
-			(e: unknown) => e instanceof RetractError && e.code === "BOM" && /entities\/Cites\.md/.test(e.message),
-		);
-		assert.deepEqual(snapshot(root), before);
+	test("a citing note with a BOM: its frontmatter link is KEPT, and the note is left as it is", () => {
+		const cites = BOM + fm({ ...BASE, kind: "tool", sources: '"[[Smith 2024]]"' }) + "- [[Lee 2025]].\n";
+		const root = wiki({ "entities/Cites.md": cites });
+		const { plan } = run(root, { source: "Smith 2024" });
+		assert.ok(plan.outcomes.some((o) => o.kind === "KEPT" && o.relPath === "entities/Cites.md" && o.line === 6), JSON.stringify(plan.outcomes));
+		assert.equal(read(root, "entities/Cites.md"), cites);
 	});
 });
 
