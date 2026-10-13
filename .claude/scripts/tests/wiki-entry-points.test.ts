@@ -354,6 +354,40 @@ describe("validate-write", () => {
 		assert.match(out.stdout, /Missing YAML frontmatter/);
 	});
 
+	describe("a Codex apply_patch, whose payload names its files in the patch (#100)", () => {
+		const patch = (command: string) =>
+			run("validate-write", { hook_event_name: "PostToolUse", tool_name: "apply_patch", cwd: vault, tool_input: { command } });
+
+		test("each note it adds, updates or moves to is validated, in one envelope; CRLF and an absolute path too", () => {
+			writeFileSync(join(vault, "concepts", "Added.md"), "no frontmatter");
+			writeFileSync(join(vault, "concepts", "Moved.md"), fm(BASE) + "no citation\n");
+			const command = [
+				"*** Begin Patch",
+				"*** Add File: concepts/Added.md",
+				"+no frontmatter",
+				`*** Update File: ${join(vault, "concepts", "Lonely.md")}`,
+				"@@",
+				"+x",
+				"*** Update File: concepts/Old.md",
+				"*** Move to: concepts/Moved.md",
+				"*** End Patch",
+			].join("\r\n");
+			const { stdout } = patch(command);
+			const context = parseHookContext(stdout, "PostToolUse");
+			assert.match(context, /concepts\/Added\.md:\n- Missing YAML frontmatter/);
+			assert.match(context, /concepts\/Lonely\.md:\n- Cites no source/);
+			assert.match(context, /concepts\/Moved\.md:\n- Cites no source/);
+		});
+
+		test("a patch that only deletes, or writes only outside the vault or no Markdown, writes nothing", () => {
+			assert.equal(patch("*** Begin Patch\n*** Delete File: concepts/Lonely.md\n*** End Patch\n").stdout, "");
+			writeFileSync(join(state, "elsewhere.md"), "no frontmatter");
+			writeFileSync(join(vault, "concepts", "notes.txt"), "x");
+			const command = `*** Begin Patch\n*** Update File: ${join(state, "elsewhere.md")}\n*** Add File: concepts/notes.txt\n+x\n*** End Patch\n`;
+			assert.equal(patch(command).stdout, "");
+		});
+	});
+
 	test("on Windows, a path whose case differs from the vault root's is still inside it", { skip: process.platform !== "win32" }, () => {
 		const out = write(join(vault, "concepts", "Lonely.md").toUpperCase().replace("LONELY.MD", "Lonely.md").replace("CONCEPTS", "concepts"));
 		assert.match(out.stdout, /Cites no source/);

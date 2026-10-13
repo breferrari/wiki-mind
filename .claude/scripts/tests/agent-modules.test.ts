@@ -72,17 +72,23 @@ describe("every hook command runs from the vault root", () => {
 	});
 	after(() => rmTemp(vault));
 
-	/** What each event's hook reads on stdin, as the agent sends it. */
-	const payload = (event: string): object => {
+	/**
+	 * What each event's hook reads on stdin, as the agent sends it. A write
+	 * is the agent's own file tool: Codex's apply_patch names its files in the
+	 * patch, with the session's cwd (#100); Gemini's write_file names one.
+	 */
+	const payload = (event: string, agentVar: string): object => {
+		if (event === "PostToolUse" && agentVar === "CODEX_PROJECT_DIR") {
+			const command = "*** Begin Patch\n*** Update File: concepts/C.md\n@@\n+No source.\n*** End Patch\n";
+			return { hook_event_name: event, tool_name: "apply_patch", cwd: vault, tool_input: { command }, session_id: "s" };
+		}
+		if (event === "AfterTool") return { hook_event_name: event, tool_name: "write_file", tool_input: { file_path: join(vault, "concepts", "C.md") }, session_id: "s" };
 		switch (event) {
 			case "SessionStart":
 				return { hook_event_name: event, source: "startup", session_id: "s" };
 			case "UserPromptSubmit":
 			case "BeforeAgent":
 				return { hook_event_name: event, prompt: "hello", session_id: "s" };
-			case "PostToolUse":
-			case "AfterTool":
-				return { hook_event_name: event, tool_name: "Write", tool_input: { file_path: join(vault, "concepts", "C.md") }, session_id: "s" };
 			default:
 				return { hook_event_name: event, session_id: "s", trigger: "manual" };
 		}
@@ -94,7 +100,7 @@ describe("every hook command runs from the vault root", () => {
 			shell: true,
 			encoding: "utf-8",
 			timeout: 60_000,
-			input: JSON.stringify(payload(event)),
+			input: JSON.stringify(payload(event, agentVar)),
 			// The agent's own variable names the temp vault, and the other agents' are
 			// cleared, so an inherited one (a suite run from a Codex session, say) can't
 			// point a hook at the developer's vault. The hooks' state and env-file
@@ -139,10 +145,44 @@ describe("every hook command runs from the vault root", () => {
 						// additionalContext: Gemini per its hook reference, Codex as
 						// obsidian-mind#345 verified (#98).
 						if (event === "SessionStart") assert.match(parseHookContext(out, "SessionStart"), /^## Session Context\n/, `${path} ${event}`);
+						// The agent's own write payload reaches the validators.
+						else if (hook.command.includes("validate-write.ts")) assert.match(parseHookContext(out, event), /concepts\/C\.md:\n- Cites no source/, `${path} ${event}`);
 						else if (out !== "") assert.doesNotThrow(() => JSON.parse(out), `${path} ${event} prints JSON or nothing: ${out.slice(0, 200)}`);
 					}
 				}
 			}
+		});
+	}
+});
+
+/** A matcher read as a regex over the whole name, as Codex reads it (and Gemini, for tool events). */
+const regex = (matcher: string, name: string) => new RegExp(`^(?:${matcher})$`).test(name);
+/**
+ * Gemini compares a lifecycle event's matcher exactly, "" or "*" matching all
+ * (gemini-cli hooks/hookPlanner.ts, per obsidian-mind#352, as of 2026-10-13).
+ */
+const exact = (matcher: string, name: string) => ["", "*", name].includes(matcher.trim());
+
+/** Whether any of `event`'s entries that run `script` fires on `name`: one with no matcher fires on everything. */
+function firesOn(path: string, event: string, script: string, name: string, matches: (matcher: string, name: string) => boolean): boolean {
+	const entries = (config(path).hooks[event] ?? []).filter((e) => e.hooks.some((h) => h.command.includes(script)));
+	return entries.some((e) => e.matcher === undefined || matches(e.matcher, name));
+}
+
+describe("each agent's matchers select the hooks for what it sends (#100)", () => {
+	// The sources and tool names each agent documents, as obsidian-mind's
+	// hook-config test records them (#352, #353): Codex's SessionStart sources
+	// and its apply_patch (developers.openai.com/codex/hooks), Gemini's sources
+	// and its file tools write_file and replace (gemini-cli docs/hooks).
+	const agents = [
+		{ path: ".codex/hooks.json", sources: ["startup", "resume", "clear", "compact"], sourceMatch: regex, writeEvent: "PostToolUse", tools: ["Write", "Edit", "apply_patch"] },
+		{ path: ".gemini/settings.json", sources: ["startup", "resume", "clear"], sourceMatch: exact, writeEvent: "AfterTool", tools: ["write_file", "replace"] },
+	] as const;
+
+	for (const { path, sources, sourceMatch, writeEvent, tools } of agents) {
+		test(`${path}: session-start runs on every source, validate-write on every file tool`, () => {
+			for (const source of sources) assert.ok(firesOn(path, "SessionStart", "session-start.ts", source, sourceMatch), `no SessionStart matcher fires on "${source}"`);
+			for (const tool of tools) assert.ok(firesOn(path, writeEvent, "validate-write.ts", tool, regex), `no ${writeEvent} matcher fires on ${tool}`);
 		});
 	}
 });
