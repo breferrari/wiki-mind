@@ -108,7 +108,7 @@ This manual is for every agent that opens the vault. Each one runs the same hook
 |-------|-------------------|-------------|----------|
 | Claude Code | natively | `.claude/settings.json` | `/wiki-ingest` and the rest |
 | Codex | natively | `.codex/hooks.json` | type the command's name, `wiki-ingest`, without the slash: it reads `.claude/commands/wiki-ingest.md` |
-| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | `/wiki-ingest` and the rest |
+| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | ask for the command by name, `wiki-ingest`: it reads `.claude/commands/wiki-ingest.md` |
 
 Under Gemini, the Stop report runs once, when the session ends, rather than after each answer. What only Claude Code needs is in `.claude/rules/`, which only Claude Code reads.
 
@@ -122,10 +122,10 @@ Under Gemini, the Stop report runs once, when the session ends, rather than afte
 | `templates/` | One template per note type. |
 | `bases/` | Bases views over each note type, embedded in `Index.md`. |
 | `AGENTS.md` | This manual, read by every agent. |
-| `.claude/rules/` | What only Claude Code reads. |
-| `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
 | `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions. |
 | `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. |
+| `.claude/rules/` | What only Claude Code reads. |
+| `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
 | `.scripts/` | The QMD index bootstrap. |
 
 ## Developing this shard

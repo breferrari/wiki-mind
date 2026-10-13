@@ -139,7 +139,13 @@ export const extension: Extension = {
 					return null;
 				}
 				if (names.length === 0) return null;
-				return `⚠️ ${names.map((n) => `\`${n}\``).join(" and ")} ${names.length === 1 ? "is" : "are"} retired: \`${INSTRUCTION_FILE}\` is this vault's one instruction file, and a leftover \`CLAUDE.md\` is read in its place. Move anything of your own from ${names.length === 1 ? "it" : "them"} into \`${INSTRUCTION_FILE}\` (or \`.claude/rules/\` for Claude-only notes), then delete ${names.length === 1 ? "it" : "them"}.`;
+				const [is, it] = names.length === 1 ? ["is", "it"] : ["are", "them"];
+				// Each retired file's own harm: Claude Code reads a CLAUDE.md in place of
+				// AGENTS.md, and Gemini, pointed at AGENTS.md, no longer reads a GEMINI.md.
+				const why = names
+					.map((n) => (n.toLowerCase() === "claude.md" ? `Claude Code reads \`${n}\` in place of it` : `Gemini no longer reads \`${n}\``))
+					.join("; ");
+				return `⚠️ ${names.map((n) => `\`${n}\``).join(" and ")} ${is} retired: \`${INSTRUCTION_FILE}\` is this vault's one instruction file (${why}). Move anything of your own from ${it} into \`${INSTRUCTION_FILE}\` (or \`.claude/rules/\` for Claude-only notes), then delete ${it}.`;
 			},
 		},
 		{

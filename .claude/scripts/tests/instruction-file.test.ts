@@ -15,7 +15,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENTS_MD_MAX_BYTES, INSTRUCTION_FILE, RETIRED_INSTRUCTION_FILES, isRetiredInstructionFile } from "../core/index.ts";
+import { AGENTS_MD_MAX_BYTES, INSTRUCTION_FILE, isRetiredInstructionFile } from "../core/index.ts";
 import { collectSections, fromLoaded } from "../core/registry.ts";
 import type { HookContext } from "../core/types.ts";
 import { extension } from "../../extensions/wiki/index.ts";
@@ -33,7 +33,6 @@ describe("AGENTS.md ships, and is the only instruction file", () => {
 	});
 
 	test("no retired instruction file installs", () => {
-		assert.deepEqual([...RETIRED_INSTRUCTION_FILES].sort(), ["CLAUDE.md", "GEMINI.md"]);
 		assert.deepEqual([...installSet(REPO)].filter((f) => !f.includes("/") && isRetiredInstructionFile(f)), []);
 	});
 });
@@ -55,6 +54,14 @@ describe("session-start warns about a retired instruction file left at the vault
 		assert.equal(await warning(), undefined);
 	});
 
+	test("a GEMINI.md alone gets Gemini's reason, not Claude's", async () => {
+		writeFileSync(join(root, "GEMINI.md"), "# old\n");
+		const w = await warning();
+		assert.ok(w, "a warning section");
+		assert.match(w.body, /Gemini no longer reads `GEMINI\.md`/);
+		assert.doesNotMatch(w.body, /Claude Code reads/);
+	});
+
 	test("a CLAUDE.md or GEMINI.md left behind is named, with what to do", async () => {
 		writeFileSync(join(root, "CLAUDE.md"), "# my own notes\n");
 		writeFileSync(join(root, "GEMINI.md"), "# old\n");
@@ -63,5 +70,6 @@ describe("session-start warns about a retired instruction file left at the vault
 		assert.match(w.body, /CLAUDE\.md/);
 		assert.match(w.body, /GEMINI\.md/);
 		assert.match(w.body, /AGENTS\.md/);
+		assert.match(w.body, /Claude Code reads `CLAUDE\.md` in place of it/);
 	});
 });

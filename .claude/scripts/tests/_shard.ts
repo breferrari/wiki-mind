@@ -5,7 +5,7 @@
  * contract test, so both read the same rule. shardmind#320 adopts the same
  * rule for `validate`.
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -50,3 +50,19 @@ export function installSet(repo: string): Set<string> {
 
 /** Relative import specifiers: static, re-exported, dynamic with a literal, and side-effect. */
 export const RELATIVE_IMPORT = /(?:import|export)\s[^'"]*?from\s*['"](\.[^'"]+)['"]|import\(\s*['"](\.[^'"]+)['"]\s*\)|import\s+['"](\.[^'"]+)['"]/g;
+
+/**
+ * Run shardmind in `cwd`, as the contract and update tests do: the cli.js
+ * WIKI_CONTRACT_CLI names, or else `npx shardmind@<the version ci.yml pins>`.
+ * Throws when neither is available.
+ */
+export function shardmind(repo: string, cwd: string, ...args: string[]): SpawnSyncReturns<string> {
+	const cli = process.env["WIKI_CONTRACT_CLI"];
+	if (cli !== undefined && cli !== "") {
+		return spawnSync(process.execPath, [cli, ...args, "--no-update-check"], { cwd, encoding: "utf-8", timeout: 300_000 });
+	}
+	const version = readFileSync(join(repo, ".github", "workflows", "ci.yml"), "utf-8").match(/SHARDMIND_VERSION:\s*([0-9.]+)/)?.[1];
+	if (version === undefined) throw new Error("ci.yml pins no SHARDMIND_VERSION");
+	// npx is a .cmd on Windows, which needs a shell; the arguments are fixed strings.
+	return spawnSync(`npx --yes shardmind@${version} ${args.join(" ")} --no-update-check`, { cwd, encoding: "utf-8", shell: true, timeout: 300_000 });
+}

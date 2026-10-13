@@ -27,7 +27,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rmTemp } from "./_helpers.ts";
-import { installSet } from "./_shard.ts";
+import { installSet, shardmind } from "./_shard.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const REF = process.env["WIKI_CONTRACT_REF"] ?? "";
@@ -47,14 +47,7 @@ function listFiles(dir: string, prefix = ""): string[] {
 }
 
 function install(into: string) {
-	const cli = process.env["WIKI_CONTRACT_CLI"];
-	if (cli !== undefined && cli !== "") {
-		return spawnSync(process.execPath, [cli, "install", "--defaults", SHARD, "."], { cwd: into, encoding: "utf-8", timeout: 300_000 });
-	}
-	const version = readFileSync(join(REPO, ".github", "workflows", "ci.yml"), "utf-8").match(/SHARDMIND_VERSION:\s*([0-9.]+)/)?.[1];
-	assert.ok(version, "ci.yml pins SHARDMIND_VERSION");
-	// npx is a .cmd on Windows, which needs a shell; the arguments are fixed strings.
-	return spawnSync(`npx --yes shardmind@${version} install --defaults ${SHARD} .`, { cwd: into, encoding: "utf-8", shell: true, timeout: 300_000 });
+	return shardmind(REPO, into, "install", "--defaults", SHARD, ".");
 }
 
 describe("Invariant 1 and Invariant 2: install --defaults equals a clone", { skip: REF === "" ? "WIKI_CONTRACT_REF is unset (CI sets it to the PR head)" : false }, () => {

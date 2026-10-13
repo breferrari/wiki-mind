@@ -4,7 +4,7 @@ Only Claude Code reads this file. The vault's manual for every agent is `AGENTS.
 
 ## Search
 
-The QMD MCP tools are registered for Claude Code through `.mcp.json`: `mcp__qmd__query`, `mcp__qmd__get`, `mcp__qmd__multi_get` and `mcp__qmd__status`. Use them first, as `AGENTS.md` "Search" says.
+The QMD MCP tools `AGENTS.md` "Search" puts first are `mcp__qmd__query`, `mcp__qmd__get`, `mcp__qmd__multi_get` and `mcp__qmd__status`.
 
 ## The wiki-mind mod
 

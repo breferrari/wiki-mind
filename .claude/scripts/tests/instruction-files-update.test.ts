@@ -19,12 +19,12 @@
  */
 import { after, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rmTemp } from "./_helpers.ts";
+import { shardmind } from "./_shard.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const REF = process.env["WIKI_CONTRACT_REF"] ?? "";
@@ -36,22 +36,11 @@ after(() => {
 	for (const f of folders) rmTemp(f);
 });
 
-function shardmind(cwd: string, ...args: string[]) {
-	const cli = process.env["WIKI_CONTRACT_CLI"];
-	if (cli !== undefined && cli !== "") {
-		return spawnSync(process.execPath, [cli, ...args, "--no-update-check"], { cwd, encoding: "utf-8", timeout: 300_000 });
-	}
-	const version = readFileSync(join(REPO, ".github", "workflows", "ci.yml"), "utf-8").match(/SHARDMIND_VERSION:\s*([0-9.]+)/)?.[1];
-	assert.ok(version, "ci.yml pins SHARDMIND_VERSION");
-	// npx is a .cmd on Windows, which needs a shell; the arguments are fixed strings.
-	return spawnSync(`npx --yes shardmind@${version} ${args.join(" ")} --no-update-check`, { cwd, encoding: "utf-8", shell: true, timeout: 300_000 });
-}
-
 /** Install wiki-mind 0.1.0 into a new scratch folder, and point its recorded ref at the commit under test. */
 function installBase(): string {
 	const vault = mkdtempSync(join(tmpdir(), "wiki-update-"));
 	folders.push(vault);
-	const run = shardmind(vault, "install", "--defaults", `${SHARD}#${BASE_REF}`, ".");
+	const run = shardmind(REPO, vault, "install", "--defaults", `${SHARD}#${BASE_REF}`, ".");
 	assert.equal(run.status, 0, `install of ${BASE_REF} failed:\n${run.stdout}\n${run.stderr}`);
 	assert.ok(existsSync(join(vault, "CLAUDE.md")), "0.1.0 ships CLAUDE.md");
 	const statePath = join(vault, ".shardmind", "state.json");
@@ -62,7 +51,7 @@ function installBase(): string {
 }
 
 function update(vault: string) {
-	const run = shardmind(vault, "update", "--yes");
+	const run = shardmind(REPO, vault, "update", "--yes");
 	assert.equal(run.status, 0, `update to ${REF} failed:\n${run.stdout}\n${run.stderr}`);
 	return run;
 }
