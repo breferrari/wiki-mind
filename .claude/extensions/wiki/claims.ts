@@ -26,13 +26,6 @@ export function splitLines(content: string): Lines {
 
 export const joinLines = ({ lines, eol }: Lines): string => lines.join(eol);
 
-/**
- * True when a note starts with a byte-order mark. The core reads what follows
- * as body, frontmatter included, until mindframe #82, so the pass refuses such
- * a note and lint leaves it alone.
- */
-export const startsWithBom = (content: string): boolean => content.startsWith("\uFEFF");
-
 /** Which part of a note a line is in: the core's regions, plus the wiki's Withdrawn claims. */
 export type Region = "frontmatter" | "fence" | "heading" | "withdrawn" | "body";
 

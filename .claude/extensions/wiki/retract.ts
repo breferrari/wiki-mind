@@ -30,7 +30,6 @@ import {
 	type Region,
 	regions,
 	splitLines,
-	startsWithBom,
 	trimTrailingBlanks,
 	unmarkedLinks,
 	WITHDRAWN_HEADING,
@@ -85,7 +84,7 @@ export type Applied = {
 };
 
 export class RetractError extends Error {
-	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "BAD_NEWER" | "BOM";
+	readonly code: "NO_SOURCE" | "NO_NEWER_SOURCE" | "BAD_NEWER";
 	constructor(code: RetractError["code"], message: string) {
 		super(message);
 		this.code = code;
@@ -180,13 +179,6 @@ export function planRetraction(vaultRoot: string, options: RetractOptions): Plan
 	}
 	const sourceNote = editSourceNote(pass);
 	if (sourceNote !== target.content) writes.push({ relPath: target.relPath, content: sourceNote });
-	// The core reads a block behind a byte-order mark as body, not frontmatter, until
-	// mindframe #82: rewriting such a note would put frontmatter in the wrong place.
-	const touched = new Map([...notes.values()].flat().map((n) => [n.relPath, n.content] as const));
-	const bom = [...new Set([target.relPath, ...writes.map((w) => w.relPath)])].filter((rel) => startsWithBom(touched.get(rel) ?? ""));
-	if (bom.length > 0) {
-		throw new RetractError("BOM", `${bom.join(", ")} ${bom.length === 1 ? "starts" : "start"} with a byte-order mark: remove the BOM first. Nothing was written.`);
-	}
 	return { source: target.name, options, outcomes: pass.outcomes, writes };
 }
 
@@ -278,7 +270,11 @@ function setField(lines: string[], name: string, value: string | null): void {
 	} else if (at !== -1) {
 		lines[at] = `${name}: ${value}`;
 	} else if (close === -1) {
-		lines.unshift("---", `${name}: ${value}`, "---");
+		// A new block goes at the very top, after a byte-order mark if the note has
+		// one: the mark stays the file's first character (SPEC.md §2.1).
+		const bom = (lines[0] ?? "").startsWith("\uFEFF");
+		if (bom) lines[0] = (lines[0] ?? "").slice(1);
+		lines.unshift(`${bom ? "\uFEFF" : ""}---`, `${name}: ${value}`, "---");
 	} else {
 		lines.splice(close, 0, `${name}: ${value}`);
 	}

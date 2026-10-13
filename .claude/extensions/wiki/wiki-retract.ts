@@ -10,7 +10,7 @@
  * ran (or would run) in full, 1 when a write failed midway (the report says
  * what was and wasn't written; run it again to finish), and 2 when nothing
  * was written because the call can't run: no such source, no note for the
- * newer source, a newer source that can't supersede, a note behind a BOM,
+ * newer source, a newer source that can't supersede,
  * bad arguments, or any other failure while planning.
  *
  * The exit code is set, not forced, so stdout and stderr drain before the
