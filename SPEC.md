@@ -236,6 +236,8 @@ The same events obsidian-mind hooks, wired the same way in `.claude/settings.jso
 | PreCompact | `pre-compact.ts` | Vendored unmodified. |
 | Stop | `stop-checklist.ts` | Stop detectors: the `wiki-lint` checks. |
 
+**Decided (2026-10-13, maintainer may overrule):** QMD is an extension, mindframe's first-party `qmd` (#102, mindframe #70 and #95). Its session-start notes are sections, and its index refresh runs as effects, so the entry points carry no QMD code of their own. `session-start.ts`, `validate-write.ts` and `stop-checklist.ts` each call the registry's `runEffects` for their event: session start, every write before any check that skips a file, and Stop. The vault declares the extension in `vault-manifest.json`. `pre-compact.ts`, vendored from obsidian-mind, keeps obsidian-mind's own refresh trigger; both use the one sentinel `.claude/scripts/.qmd-refresh-sentinel`, so a compaction spawns one worker, not two.
+
 ### 6.4 The Claude Code mod
 
 **Decided:** wiki-mind ships the Claude Code mod as well as the hooks, with the same two paths obsidian-mind has.
@@ -335,7 +337,7 @@ The keys of obsidian-mind's unvendored code are not carried over: `open_loop_dir
 | S1 | obsidian-mind's hygiene scan (`active-hygiene`) imports the memory layer (`memory-promoted` → `mcp-exposure` → `mcp-qmd-client`) to check captures already promoted into `brain/`. | That check becomes a Stop detector obsidian-mind registers. The core's hygiene path imports no memory code. |
 | S2 | `lib/session-start.ts` is mostly generic: the injection budget, listing collapse, QMD index resolution and frontmatter helpers. It also holds three obsidian-mind formatters (`formatActiveWork`, `hasBrainContent`, `formatBrainIndex`). The QMD libraries import their index helpers from it. | Split it. The budget, listing and QMD helpers move to the core; the formatters become obsidian-mind's session-start extensions. |
 | S3 | `lib/matcher.ts` classifies prompts against obsidian-mind's fixed signal set (`lib/signals.ts`). | The matcher takes its signals from the registry (prompt signals, §7.4), with no built-in set. |
-| S4 | The QMD refresh trigger lives inside obsidian-mind's `validate-write.ts` entry point. | It becomes a core write hook that runs whatever validators are registered. |
+| S4 | The QMD refresh trigger lives inside obsidian-mind's `validate-write.ts` entry point. | It becomes a core write hook that runs whatever validators are registered. *Resolved in #102:* the refresh is the qmd extension's effects, and the entry points run whatever effects are registered (`runEffects`). |
 
 #### Per entry point
 
@@ -354,7 +356,7 @@ Every entry point used to read and parse `vault-manifest.json` itself. *Resolved
 
 | ID | Seam (continued) | What the extraction does with it |
 |----|------------------|----------------------------------|
-| S5 | QMD's session-start work lived in obsidian-mind's `session-start.ts`, not in a library. *Resolved in #42:* `core/qmd-session.ts` runs it for any vault's session-start. It covers the background index update (or the idempotent bootstrap when the store is missing or near-empty), the native-ABI self-heal, and the minimum-version note, and its side effects are injectable. `VAULT_QMD=off` turns it off, so tests never touch the user's QMD store. | A core session-start step, run before the sections. It lifts with `core/` as it is. |
+| S5 | QMD's session-start work lived in obsidian-mind's `session-start.ts`, not in a library. *Resolved in #42:* `core/qmd-session.ts` runs it for any vault's session-start. It covers the background index update (or the idempotent bootstrap when the store is missing or near-empty), the native-ABI self-heal, and the minimum-version note, and its side effects are injectable. `VAULT_QMD=off` turns it off, so tests never touch the user's QMD store. | A core session-start step, run before the sections. It lifts with `core/` as it is. *Moved in #102:* to mindframe's qmd extension (`extensions/qmd/session.ts`), which a vault declares. |
 | S6 | `lib/stop-report.ts`'s `MOD_PREFACE` told the agent a notice may come "from the obsidian-mind plugin". *Patched in #7:* `modPreface(modName)` builds it for any vault's mod, and `MOD_PREFACE` keeps obsidian-mind's value. wiki-mind's `stop-checklist.ts` passes `wiki-mind`, and a test holds that equal to the mod's `plugin.json`. | The mod's name comes from the mod's declaration, so no entry point names it. *Taken upstream in v10.0.0 (#96):* the patch retired. |
 | S7 | `lib/qmd-refresh.ts`'s trigger gave tests no way to stop its detached worker. A fresh test sentinel only debounced it, so a trailing worker still spawned, outlived the test, and called qmd about 30 s later; suites run at once piled them up (#93). *Patched in #93 (`0013-vault-qmd-refresh-switch.patch`, forwarded to obsidian-mind#337):* with `VAULT_QMD_REFRESH=off` and no test seam, the trigger's spawn is a no-op; its decisions and its sentinel and pending writes still run, as obsidian-mind#337 rules. `runScript` sets it for every hook it spawns, `tests/_run-tests.ts` for every test file, and `tests/_qmd-cache-guard.ts` for a direct run. The runner points TMPDIR, TEMP and TMP into its temp folder, and after the run names each refresh worker that names that folder, kills it with its children, and fails. | mindframe #70 moves the refresh into an extension as effects; the switch moves with it, and the patch retires when obsidian-mind takes #337. |
 | S8 | The core's retired instruction-file list (`isRetiredInstructionFile`) names `GEMINI.md` unconditionally, but a `GEMINI.md` is retired only where the vault's `.gemini/settings.json` points Gemini at `AGENTS.md`. The core doesn't export its Gemini settings path. wiki-mind's session-start warning narrows the list itself, reading the settings' `context.fileName` (#25). | The core takes a vault-aware predicate (retired given this vault's agent configs), which the warning and obsidian-mind's hygiene scan both use. |
@@ -387,7 +389,8 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 
 | Path | Holds | Written by |
 |------|-------|------------|
-| `.claude/scripts/core/` | `types.ts` (the API), `registry.ts` (loading and dispatch), `context.ts` (opening the vault), `qmd-session.ts`, and their tests. Imports only `../lib`. | a vendor update from mindframe (§7.5) |
+| `.claude/scripts/core/` | `types.ts` (the API), `registry.ts` (loading and dispatch, effects included), `context.ts` (opening the vault, `migrationNotes`), and their tests. Imports only `../lib`. | a vendor update from mindframe (§7.5) |
+| `.claude/scripts/extensions/qmd/` | mindframe's first-party qmd extension: QMD's session-start notes as sections, and its index refresh as effects (#102). | a vendor update from mindframe (§7.5) |
 | `.claude/scripts/lib/` | the vendored libraries (§7.1) | a vendor update only, from mindframe or obsidian-mind (§7.5) |
 | `.claude/scripts/*.ts` | the entry points `.claude/settings.json` runs | wiki-mind now; the core once extracted |
 | `.claude/extensions/` | the vault's own extensions | the vault only |
