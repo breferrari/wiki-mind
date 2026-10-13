@@ -390,7 +390,7 @@ These are shared between obsidian-mind and wiki-mind, and stay shared through th
 | Path | Holds | Written by |
 |------|-------|------------|
 | `.claude/scripts/core/` | `types.ts` (the API), `registry.ts` (loading and dispatch, effects included), `context.ts` (opening the vault, `migrationNotes`), and their tests. Imports only `../lib`. | a vendor update from mindframe (§7.5) |
-| `.claude/scripts/extensions/qmd/` | mindframe's first-party qmd extension: QMD's session-start notes as sections, and its index refresh as effects (#102). | a vendor update from mindframe (§7.5) |
+| `.claude/scripts/extensions/qmd/` | mindframe's first-party qmd extension: QMD's session-start notes as sections, and its index refresh as effects (#102). Imports only itself and `core/index.ts`. Until mindframe #96, `lib/qmd.ts` and `lib/session-start.ts` re-export its `lib/qmd.ts` and `lib/index-name.ts`, the one import out of `lib/`. | a vendor update from mindframe (§7.5) |
 | `.claude/scripts/lib/` | the vendored libraries (§7.1) | a vendor update only, from mindframe or obsidian-mind (§7.5) |
 | `.claude/scripts/*.ts` | the entry points `.claude/settings.json` runs | wiki-mind now; the core once extracted |
 | `.claude/extensions/` | the vault's own extensions | the vault only |
