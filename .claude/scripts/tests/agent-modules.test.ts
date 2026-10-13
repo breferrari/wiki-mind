@@ -114,10 +114,10 @@ describe("every hook command runs from the vault root", () => {
 						const command = windowsKey && process.platform === "win32" && hook.commandWindows !== undefined ? hook.commandWindows : hook.command;
 						const r = runHook(command, event, agentVar);
 						assert.equal(r.status, 0, `${path} ${event}: ${command}\n${r.stdout}\n${r.stderr}`);
-						// SessionStart prints its context as plain text, as obsidian-mind's
-						// does for every agent. Gemini's contract wants it as JSON
-						// (hookSpecificOutput.additionalContext), and Codex's is unverified:
-						// an upstream issue tracks it, and wiki-mind takes the fix from there.
+						// SessionStart prints its context as plain text. Gemini's contract
+						// wants JSON (hookSpecificOutput.additionalContext), and Codex's is
+						// unverified. obsidian-mind#341 fixes it upstream; wiki-mind takes it
+						// when its record moves past that (#98), and this check tightens then.
 						if (event === "SessionStart") continue;
 						const out = r.stdout.trim();
 						if (out !== "") assert.doesNotThrow(() => JSON.parse(out), `${path} ${event} prints JSON or nothing: ${out.slice(0, 200)}`);
