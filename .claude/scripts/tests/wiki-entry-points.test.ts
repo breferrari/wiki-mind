@@ -273,3 +273,34 @@ describe("validate-write", () => {
 		assert.equal(existsSync(join(vault, ".claude", "scripts", ".stop-handoff")), false);
 	});
 });
+
+describe("each entry point runs the effects declared on its event (#90)", () => {
+	// A probe extension: an effect on every effect event, writing a marker named after the event.
+	const EVENTS = ["session-start", "write", "pre-compact", "stop"];
+	let markers = "";
+	before(() => {
+		markers = join(state, "markers");
+		mkdirSync(markers);
+		mkdirSync(join(vault, ".claude", "extensions", "probe"), { recursive: true });
+		writeFileSync(
+			join(vault, ".claude", "extensions", "probe", "index.ts"),
+			`import { writeFileSync } from "node:fs";\nimport { join } from "node:path";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string }) => writeFileSync(join(process.env["EFFECT_PROBE_DIR"] ?? ".", trigger.event), "") }] };\n`,
+		);
+		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		manifest({}, [...declared, { id: "probe", module: ".claude/extensions/probe/index.ts", events: EVENTS }]);
+	});
+	after(() => manifest());
+
+	// Inputs are functions: the vault's path is known only once the suite's `before` has run.
+	for (const [script, event, stdin] of [
+		["session-start", "session-start", () => ({ hook_event_name: "SessionStart", source: "startup", session_id: "e1" })],
+		["validate-write", "write", () => ({ hook_event_name: "PostToolUse", tool_name: "Write", tool_input: { file_path: join(vault, "concepts", "Lonely.md") } })],
+		["stop-checklist", "stop", () => ({ hook_event_name: "Stop", session_id: "e3" })],
+	] as const) {
+		test(`${script}.ts runs the ${event} effects`, () => {
+			const r = run(script, stdin(), { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.ok(existsSync(join(markers, event)), `the ${event} effect ran`);
+		});
+	}
+});

@@ -17,6 +17,7 @@ import {
 	parseQmdIndex,
 	parseQmdMinVersion,
 } from "../lib/session-start.ts";
+import { migrationNotes, QMD_DECLARATION } from "../core/context.ts";
 import { parseDeclarations, parseManifest } from "../core/registry.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -51,7 +52,13 @@ describe("vault-manifest.json", () => {
 	test("the declared extensions parse with no failure", () => {
 		const { result, failures } = parseDeclarations(manifest);
 		assert.deepEqual(failures, []);
-		assert.deepEqual(result.map((d) => d.id), ["wiki"]);
+		assert.deepEqual(result.map((d) => d.id), ["qmd", "wiki"]);
+	});
+
+	test("declares mindframe's qmd extension as the core gives it, so the meter has no migration note (#102)", () => {
+		const declared = (manifest?.["extensions"] as unknown[] | undefined)?.find((d) => (d as { id?: unknown }).id === "qmd");
+		assert.deepEqual(declared, JSON.parse(QMD_DECLARATION));
+		assert.deepEqual(migrationNotes(manifest), []);
 	});
 
 	test("obsidian-mind's keys for code wiki-mind does not vendor are absent", () => {
