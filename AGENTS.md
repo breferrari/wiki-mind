@@ -90,7 +90,7 @@ When the user asks something the wiki covers, answer from the notes and cite the
 
 Use the most capable search available, and stop there:
 
-1. **The QMD MCP tools** (`mcp__qmd__query`, `mcp__qmd__get`, `mcp__qmd__multi_get`, `mcp__qmd__status`). They are already scoped to this vault's index.
+1. **The QMD MCP tools**, where your agent has them registered (Claude Code does, through `.mcp.json`). They are already scoped to this vault's index.
 2. **The QMD CLI:** `qmd --index <name> query|search|get`. `<name>` is `qmd_index` in `vault-manifest.json` when it is set, and otherwise the vault folder's name as a slug.
 3. **Grep and Glob**, only when QMD is not installed.
 
@@ -99,6 +99,20 @@ Use the most capable search available, and stop there:
 - **A Stop report** comes with the user's next message: a wrap-up checklist, and any drift found (unsourced notes, one-sided syntheses, unannotated notes). Deal with the user's message first. Then act on what bears on the current work, ask about what needs their call, and leave the rest.
 - **A routing hint** (a new source, a comparison, a question) suggests the `wiki-` command that fits. Use it when the user's message calls for it.
 - **A write warning** after you save a note names what its note type requires and the note lacks. Fix it in the same turn.
+
+## Agents
+
+This manual is for every agent that opens the vault. Each one runs the same hook scripts from `.claude/scripts/`, wired by its own config:
+
+| Agent | Reads this manual | Hook config | Commands |
+|-------|-------------------|-------------|----------|
+| Claude Code | natively | `.claude/settings.json` | `/wiki-ingest` and the rest |
+| Codex | natively | `.codex/hooks.json` | type the command's name, `wiki-ingest`, without the slash: it reads `.claude/commands/wiki-ingest.md` |
+| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | ask for the command by name, `wiki-ingest`: it reads `.claude/commands/wiki-ingest.md` |
+
+A command file's `$ARGUMENTS` is the input the user gave with the command: for `wiki-retract`, the source and any flags; for `wiki-ingest`, the URL or inbox path.
+
+Under Gemini, the Stop report runs once, when the session ends, rather than after each answer. What only Claude Code needs is in `.claude/rules/`, which only Claude Code reads.
 
 ## Vault layout
 
@@ -109,9 +123,11 @@ Use the most capable search available, and stop there:
 | `inbox/` | Raw material before ingest. |
 | `templates/` | One template per note type. |
 | `bases/` | Bases views over each note type, embedded in `Index.md`. |
-| `CLAUDE.md` | This manual. |
+| `AGENTS.md` | This manual, read by every agent. |
 | `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions. |
 | `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. |
+| `.claude/rules/` | What only Claude Code reads. |
+| `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
 | `.scripts/` | The QMD index bootstrap. |
 
 ## Developing this shard
@@ -122,7 +138,7 @@ This manual installs into every vault. The rules for changing the shard itself l
 
 The hook layer keeps four zones. Its core is vendored from mindframe, and the other vendored libraries from upstream. The full rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md#zones-keeping-the-core-liftable).
 
-- **`lib/`** is vendored upstream code. `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json` say where each file came from. It changes only by parameterized changes, each recorded as a patch in `vendor-patches/`. A guard stops a direct edit and names the routes.
+- **`lib/`** is vendored upstream code. `.claude/VENDOR.json` and `.claude/scripts/VENDOR.json` say where each file came from. It changes only by parameterized changes, each recorded as a patch in `vendor-patches/`. Under Claude Code, a guard stops a direct edit and names the routes; under Codex and Gemini, CI's `vendor check` is what catches one.
 - **`core/`** is vendored from mindframe and imports only `lib/`.
 - **`.claude/extensions/`** imports only `core/index.ts`.
 - **The entry points** are thin dispatchers.

@@ -1,6 +1,6 @@
 # Contributing
 
-This file holds the rules for working on the wiki-mind repo. `.shardmindignore` keeps it out of installed vaults: it is about the repo, not the vault. The root `CLAUDE.md` is the vault's agent manual and ships in every install; its "Developing this shard" section points here.
+This file holds the rules for working on the wiki-mind repo. `.shardmindignore` keeps it out of installed vaults: it is about the repo, not the vault. The root `AGENTS.md` is the vault's agent manual and ships in every install; its "Developing this shard" section points here.
 
 ## Workflow
 
@@ -36,8 +36,8 @@ Update this table in the same PR that adds or removes a top-level path.
 
 | Path | What |
 |------|------|
-| `CLAUDE.md` | The vault's agent manual; ships in every install. |
-| `Index.md`, `sources/`, `concepts/`, `entities/`, `syntheses/`, `questions/`, `inbox/`, `templates/`, `bases/` | The vault content (CLAUDE.md, "Vault layout"). |
+| `AGENTS.md` | The vault's agent manual, read by every agent; ships in every install. `.claude/rules/` holds what only Claude Code reads. |
+| `Index.md`, `sources/`, `concepts/`, `entities/`, `syntheses/`, `questions/`, `inbox/`, `templates/`, `bases/` | The vault content (AGENTS.md, "Vault layout"). |
 | `.obsidian/` | Vault config: core plugins, the templates folder, attachments to `inbox/`. |
 | `CONTRIBUTING.md` | Rules for working on the repo; repo-only. |
 | `SPEC.md` | The shard contract: what installs and why; repo-only. |
@@ -55,6 +55,9 @@ Update this table in the same PR that adds or removes a top-level path.
 | `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod in `wiki-mind/` (vendored). |
 | `.scripts/` | QMD index bootstrap. |
 | `.mcp.json` | Registers the QMD MCP server. |
+| `.claude/rules/` | What only Claude Code reads, beside `AGENTS.md`. |
+| `.codex/` | Codex's hook config, vendored from obsidian-mind; the removable codex module. |
+| `.gemini/` | Gemini's settings (its hooks, and `AGENTS.md` as its context file), vendored from obsidian-mind; the removable gemini module. |
 
 ## Zones: keeping the core liftable
 

@@ -16,7 +16,7 @@ wiki-mind is a [ShardMind](https://github.com/breferrari/shardmind) shard, built
 | `inbox/` | Raw material before it is read: PDFs, saved pages, notes. |
 | `Index.md` | The entry point: the agent's one-line annotations above a Bases view of each note type. |
 | `templates/`, `bases/` | A template and a Bases view per note type. |
-| `CLAUDE.md` | The agent's manual for the vault. |
+| `AGENTS.md` | The agent's manual for the vault, read by Claude Code, Codex and Gemini. |
 
 Claude Code hooks keep the wiki honest as you work. The session starts with the wiki's state and open questions. Each write is checked against the note type's rules. Each answer ends with a short drift report: notes that cite no source, one-sided comparisons, orphans, notes `Index.md` doesn't annotate, stale questions.
 

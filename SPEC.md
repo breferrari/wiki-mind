@@ -144,13 +144,14 @@ The command prints what it did and what it left alone:
 | `.obsidian/` | Vault config: core plugins, templates folder, attachment folder. No user state (ShardMind's Tier 1 excludes it anyway). |
 | `README.md`, `LICENSE` | As today. |
 
-**Decided (2026-10-05, maintainer may overrule):** `inbox/` and `bases/` ship. `brain/` and `thinking/` don't in v0.1: the wiki is the memory, and `CLAUDE.md` is the manual (Q2).
+**Decided (2026-10-05, maintainer may overrule):** `inbox/` and `bases/` ship. `brain/` and `thinking/` don't in v0.1: the wiki is the memory, and `AGENTS.md` is the manual (Q2).
 
 ### 3.2 Agent layer (installed)
 
 | Path | What |
 |------|------|
-| `CLAUDE.md` | The vault's agent manual. |
+| `AGENTS.md` | The vault's agent manual, read by every agent (§6.1). |
+| `.claude/rules/` | Rules only Claude Code reads (§6.1). |
 | `.claude/commands/` | Slash commands (§6.2). |
 | `.claude/scripts/` | The vendored libraries and QMD MCP server, wiki-mind's entry points, and the extension registry in `core/` (§7). |
 | `.claude/extensions/` | wiki-mind's own sections, detectors, signals and validators (§7.4). |
@@ -159,7 +160,8 @@ The command prints what it did and what it left alone:
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
 | `.scripts/qmd-bootstrap.ts` | Builds the QMD index on a fresh clone. |
-| `AGENTS.md` + `.codex/`, `GEMINI.md` + `.gemini/` | Not in the first release: a later roadmap phase (§5). |
+| `.codex/` | Codex's hook config, `hooks.json`, vendored from obsidian-mind (§5). |
+| `.gemini/` | Gemini's `settings.json`: its hooks, and `context.fileName` pointing it at `AGENTS.md`, vendored from obsidian-mind (§5). |
 
 ### 3.3 Repo-only (in `.shardmindignore`)
 
@@ -186,10 +188,11 @@ Every value has a default (ShardMind rejects one without). The defaults are what
 | Module | Paths | Removable | Why |
 |--------|-------|-----------|-----|
 | `wiki` | the five note folders, `inbox/`, `bases/`, `Index.md`, `templates/` | no | The product. |
-| `claude` | `CLAUDE.md`, `.claude/` except `scripts/`, `.claude-plugin/` if shipped | no | As in obsidian-mind: other agents' hook configs resolve into `.claude/scripts/`, so removing Claude would orphan them. `.claude/scripts/` is claimed by no module and so always installs. |
-| `codex`, `gemini` | their manual and dotfolder | yes | **Later roadmap phase**, not the first release. Planned, as in obsidian-mind, not dropped. |
+| `claude` | `.claude/` except `scripts/` and `extensions/`, including `.claude/rules/`; `.claude-plugin/` if shipped | no | As in obsidian-mind: other agents' hook configs resolve into `.claude/scripts/`, so removing Claude would orphan them. `.claude/scripts/` is claimed by no module and so always installs. |
+| `codex` | `.codex/` | yes | Codex reads `AGENTS.md` natively; its module is its hook config (#25). |
+| `gemini` | `.gemini/` | yes | Gemini reads `AGENTS.md` through `context.fileName`; its module is its settings (#25). |
 
-**Decided (2026-10-05, maintainer may overrule):** the first release is Claude only (Q6).
+**Decided (2026-10-05, maintainer may overrule):** the first release is Claude only (Q6). *Landed in #25:* Codex and Gemini are removable modules. `AGENTS.md` is in no module, so it always installs.
 
 **Decided (2026-10-05, maintainer may overrule):** QMD search is a value (`qmd_enabled`), not a module, as in obsidian-mind (Q7). Its files are small scripts that do nothing when QMD is absent, and keeping them installed means turning it on later needs no reinstall. The vendored `bootstrap` already works this way.
 
@@ -197,9 +200,11 @@ Default wizard state is every module selected (ShardMind rule), so a defaults in
 
 ## 6. Claude-side machinery
 
-### 6.1 The vault `CLAUDE.md`
+### 6.1 The vault `AGENTS.md`
 
-**Decided:** the root `CLAUDE.md` is the vault's agent manual and ships in every install. It covers the ontology, the ingest and synthesis workflows, linking rules, and search order (QMD MCP, then QMD CLI, then grep). It keeps a "Developing this shard" section that points at `CONTRIBUTING.md`; contributor rules live there, kept out of installs by `.shardmindignore`. Until the vault manual is written, that section repeats the hard rules.
+**Decided (2026-10-12, the maintainer, replacing `CLAUDE.md`):** the root `AGENTS.md` is the vault's agent manual and ships in every install, on obsidian-mind v10.0.0's model (its #321): one instruction file every agent reads. Claude Code and Codex read `AGENTS.md` natively, and Gemini through `.gemini/settings.json`'s `context.fileName`. It stays under the core's size cap for it (22,000 B: Antigravity truncated a larger one near 24 KB, and Codex stops near 32 KiB). What only Claude Code needs goes in `.claude/rules/`, which only Claude Code reads. A `CLAUDE.md` left at the vault root is retired, since Claude Code would read it in place of `AGENTS.md`. So is a `GEMINI.md` where the vault's `.gemini/settings.json` points Gemini at `AGENTS.md`; without the gemini module, it is still Gemini's manual. On update, ShardMind removes the unmodified one, keeps a user-edited one, and session-start warns about a kept one. The core's instruction-files list (mindframe) names the retired files.
+
+The manual covers the ontology, the ingest and synthesis workflows, linking rules, and search order (QMD MCP, then QMD CLI, then grep). It keeps a "Developing this shard" section that points at `CONTRIBUTING.md`; contributor rules live there, kept out of installs by `.shardmindignore`. Until the vault manual is written, that section repeats the hard rules.
 
 ### 6.2 Commands
 
@@ -352,6 +357,7 @@ Every entry point used to read and parse `vault-manifest.json` itself. *Resolved
 | S5 | QMD's session-start work lived in obsidian-mind's `session-start.ts`, not in a library. *Resolved in #42:* `core/qmd-session.ts` runs it for any vault's session-start. It covers the background index update (or the idempotent bootstrap when the store is missing or near-empty), the native-ABI self-heal, and the minimum-version note, and its side effects are injectable. `VAULT_QMD=off` turns it off, so tests never touch the user's QMD store. | A core session-start step, run before the sections. It lifts with `core/` as it is. |
 | S6 | `lib/stop-report.ts`'s `MOD_PREFACE` told the agent a notice may come "from the obsidian-mind plugin". *Patched in #7:* `modPreface(modName)` builds it for any vault's mod, and `MOD_PREFACE` keeps obsidian-mind's value. wiki-mind's `stop-checklist.ts` passes `wiki-mind`, and a test holds that equal to the mod's `plugin.json`. | The mod's name comes from the mod's declaration, so no entry point names it. *Taken upstream in v10.0.0 (#96):* the patch retired. |
 | S7 | `lib/qmd-refresh.ts`'s trigger gave tests no way to stop its detached worker. A fresh test sentinel only debounced it, so a trailing worker still spawned, outlived the test, and called qmd about 30 s later; suites run at once piled them up (#93). *Patched in #93 (`0013-vault-qmd-refresh-switch.patch`, forwarded to obsidian-mind#337):* with `VAULT_QMD_REFRESH=off` and no test seam, the trigger's spawn is a no-op; its decisions and its sentinel and pending writes still run, as obsidian-mind#337 rules. `runScript` sets it for every hook it spawns, `tests/_run-tests.ts` for every test file, and `tests/_qmd-cache-guard.ts` for a direct run. The runner points TMPDIR, TEMP and TMP into its temp folder, and after the run names each refresh worker that names that folder, kills it with its children, and fails. | mindframe #70 moves the refresh into an extension as effects; the switch moves with it, and the patch retires when obsidian-mind takes #337. |
+| S8 | The core's retired instruction-file list (`isRetiredInstructionFile`) names `GEMINI.md` unconditionally, but a `GEMINI.md` is retired only where the vault's `.gemini/settings.json` points Gemini at `AGENTS.md`. The core doesn't export its Gemini settings path. wiki-mind's session-start warning narrows the list itself, reading the settings' `context.fileName` (#25). | The core takes a vault-aware predicate (retired given this vault's agent configs), which the warning and obsidian-mind's hygiene scan both use. |
 
 #### Live run (#36)
 
@@ -525,7 +531,7 @@ The draft's open questions, all answered 2026-10-05. The maintainer may overrule
 | Q3 | Frontmatter | As proposed. | §2 |
 | Q4 | `Index.md` shape | Agent-curated annotations plus embedded Bases views. | §2, §6.2 |
 | Q5 | Values | `user_name`, `research_focus`, `qmd_enabled`. | §4 |
-| Q6 | Codex and Gemini | Claude only in the first release; Codex and Gemini in a later phase. | §3.2, §5 |
+| Q6 | Codex and Gemini | Claude only in the first release; Codex and Gemini in a later phase. Landed in #25, with `AGENTS.md` as the one manual. | §3.2, §5, §6.1 |
 | Q7 | QMD as value or module | A value. | §5 |
 | Q8 | Command prefix | `wiki-`. | §6.2 |
 | Q9 | Generic obsidian-mind commands | Not in v0.1. | §6.2 |
@@ -537,7 +543,7 @@ The draft's open questions, all answered 2026-10-05. The maintainer may overrule
 
 Planned for phases after the first release, so they are scheduled rather than dropped:
 
-- **Codex and Gemini** as removable modules, as in obsidian-mind (§5).
+- **Codex and Gemini** as removable modules: built by #25 (§5, §6.1).
 - **Corrections for a retracted or superseded source:** specified in §2.1, built by #86.
 - **`wrap-up` and `tidy`**, through the extraction rather than as wiki-mind copies (§6.2).
 - **A diagram skill for syntheses** (mermaid): built by #33, §6.2.

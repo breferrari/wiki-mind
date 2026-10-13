@@ -62,7 +62,7 @@ if (hints.length > 0) {
 	parts.push(
 		"Wiki routing hints (act on these if the user's message contains relevant info):\n" +
 			hints.map((h) => `- ${h}`).join("\n") +
-			"\n\nRemember: use the templates, link every claim to its source, follow CLAUDE.md.",
+			"\n\nRemember: use the templates, link every claim to its source, follow AGENTS.md.",
 	);
 }
 if (failureLines.length > 0) parts.push(`Extensions:\n${failureLines.join("\n")}`);

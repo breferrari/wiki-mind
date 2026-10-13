@@ -5,11 +5,11 @@ argument-hint: "<the question>"
 
 # File a question
 
-Files `$ARGUMENTS` as a note in `questions/`: the wiki's intake queue (CLAUDE.md, "The wiki").
+Files `$ARGUMENTS` as a note in `questions/`: the wiki's intake queue (AGENTS.md, "The wiki").
 
 ## Steps
 
-1. **Check it isn't already filed.** Search `questions/` (QMD first, see CLAUDE.md "Search") for a question that asks the same thing. If one exists, say so and link it instead. If it was `dropped` and the user still wants it, set it back to `open`.
+1. **Check it isn't already filed.** Search `questions/` (QMD first, see AGENTS.md "Search") for a question that asks the same thing. If one exists, say so and link it instead. If it was `dropped` and the user still wants it, set it back to `open`.
 2. **Name it** as the question itself, short enough for a file name, with no date prefix: `questions/Why does retrieval degrade on long documents.md`.
 3. **Write it** from `templates/Question.md`:
    - `status: open`;

@@ -5,7 +5,7 @@ argument-hint: "<url, or a path in inbox/>"
 
 # Ingest a source
 
-Turns `$ARGUMENTS` (a URL, or a file in `inbox/`) into wiki notes (CLAUDE.md, "The wiki"). This is the core workflow: everything in the wiki traces back to a source ingested here.
+Turns `$ARGUMENTS` (a URL, or a file in `inbox/`) into wiki notes (AGENTS.md, "The wiki"). This is the core workflow: everything in the wiki traces back to a source ingested here.
 
 ## 1. Read the source in full
 
@@ -18,7 +18,7 @@ If it can't be read at all (paywalled, scanned without text, a dead link), say s
 
 ## 2. Check what the wiki already has
 
-Search (QMD first, see CLAUDE.md "Search") for:
+Search (QMD first, see AGENTS.md "Search") for:
 - the source itself, so it is not ingested twice. If it exists, update that note instead.
 - the concepts and entities it is about, so each idea keeps one note.
 - open questions it might answer.
@@ -53,4 +53,4 @@ Add a one-line annotation for each new note to its section of `Index.md`: what t
 
 List what you created and what you updated, as links, plus any disagreement with existing notes and any question answered. Then stop: the user reads and corrects.
 
-The hooks check every note as you write it (CLAUDE.md, "The wiki"). Fix any warning they raise in the same turn.
+The hooks check every note as you write it (AGENTS.md, "The wiki"). Fix any warning they raise in the same turn.

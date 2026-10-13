@@ -5,13 +5,13 @@ argument-hint: "<source> [--superseded-by <newer source>] [--notice <url>] [--re
 
 # Retract or supersede a source
 
-Marks the source named in `$ARGUMENTS` retracted or superseded, and updates every note that cites it (CLAUDE.md, "Retract or supersede a source"). The user reports a retraction: never infer one.
+Marks the source named in `$ARGUMENTS` retracted or superseded, and updates every note that cites it (AGENTS.md, "Retract or supersede a source"). The user reports a retraction: never infer one.
 
 A source note is the record of what the source said. Its body is never rewritten, and no note is deleted.
 
 ## 1. Check the request
 
-- The source has a note in `sources/`. Find it by name (QMD first, see CLAUDE.md "Search").
+- The source has a note in `sources/`. Find it by name (QMD first, see AGENTS.md "Search").
 - For a supersession, the newer source has a note too. If it doesn't, stop and say which source to ingest first: the user can run `/wiki-ingest` for it.
 - Ask for the notice's URL and a one-line reason if the user didn't give them. Both are optional.
 

@@ -6,11 +6,13 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Added
 
+- **Codex and Gemini.** The vault ships hook configs for both, in `.codex/` and `.gemini/`. Each is a module you can leave out at install. Codex and Gemini read `AGENTS.md` and run the same hooks as Claude Code. Under Codex, run a command by typing its name without the slash, as `wiki-ingest`.
 - **Diagrams in syntheses.** When a comparison has a shape a picture shows, `/wiki-synthesize` offers a mermaid diagram, drawn with the bundled `mermaid-visualizer` skill. A diagram adds no claim: everything in it is already in the note's text, with its source.
 - **Retract or supersede a source with `/wiki-retract`.** The source note stays as the record of what it said. Each claim that cites it is marked when another source still backs it, or moved to the note's Withdrawn claims when nothing does. For a newer source, the agent restates the claim from it. Syntheses that rest on it are flagged for review, and answered questions that rested on it alone reopen. `--undo` reverses it when a retraction is itself withdrawn. `/wiki-lint` reports a link to such a source that nothing has marked.
 
 ### Changed
 
+- **The vault's manual is `AGENTS.md`, not `CLAUDE.md`.** One instruction file every agent reads; what only Claude Code needs is in `.claude/rules/`. On `shardmind update`, an unmodified `CLAUDE.md` is removed. One you edited is kept, and session-start warns you about it: Claude Code would read it in place of `AGENTS.md`, so move anything of your own into `AGENTS.md` and delete it.
 - **Install names its folder, and needs ShardMind 1.0 or later.** ShardMind 1.0 makes the vault's folder itself, so these steps replace 0.1.0's `mkdir` first:
   1. `npx shardmind install breferrari/wiki-mind my-wiki`
   2. `cd my-wiki`

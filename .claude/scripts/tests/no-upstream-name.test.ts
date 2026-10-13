@@ -127,7 +127,7 @@ describe("no runtime output names the upstream vault", () => {
 			".scripts/package.json",
 			".mcp.json",
 			"vault-manifest.json",
-			"CLAUDE.md",
+			"AGENTS.md",
 			"Index.md",
 			"sources/README.md",
 			"concepts/README.md",
