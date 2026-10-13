@@ -26,9 +26,10 @@
  * that outlives the test and calls qmd later; several suites at once pile
  * them up. The runner sets VAULT_QMD_REFRESH=off, which the trigger honours
  * by spawning nothing, and points TMPDIR, TEMP and TMP into its temp folder,
- * so a trailing worker a test starts names that folder in its arguments. An
- * immediate worker carries no arguments, so the guard can't attribute it;
- * the switch is what stops that one. After the run it looks for
+ * so a trailing worker a test starts names that folder in its arguments, as
+ * does every worker the qmd extension starts (`--vault`). An immediate
+ * worker of the hooks' own trigger carries no arguments, so the guard can't
+ * attribute it; the switch is what stops that one. After the run it looks for
  * such workers: it names each one, kills it, and fails the run, since a
  * guard that only killed would hide the leak.
  *

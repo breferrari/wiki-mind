@@ -7,7 +7,7 @@
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -303,4 +303,14 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 			assert.ok(existsSync(join(markers, event)), `the ${event} effect ran`);
 		});
 	}
+
+	test("validate-write.ts runs the write effects before the skip rules, for a file it does not validate", () => {
+		mkdirSync(join(vault, "templates"), { recursive: true });
+		writeFileSync(join(vault, "templates", "Concept.md"), "---\ndate:\n---\n");
+		rmSync(join(markers, "write"), { force: true });
+		const r = run("validate-write", { hook_event_name: "PostToolUse", tool_name: "Write", tool_input: { file_path: join(vault, "templates", "Concept.md") } }, { EFFECT_PROBE_DIR: markers });
+		assert.equal(r.code, 0, r.stderr);
+		assert.equal(r.stdout.trim(), "", "a skipped file gets no warnings");
+		assert.ok(existsSync(join(markers, "write")), "the write effect ran");
+	});
 });

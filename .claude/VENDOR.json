@@ -118,7 +118,7 @@
       "patches": [
         "0013-vault-qmd-refresh-switch.patch"
       ],
-      "sha256": "9f01600152feda2f0e870952dee703fc10e1aa5ff51491c680147f785a3ac7ed",
+      "sha256": "4b9c13520cf384dadf224d8ac7e09577cc636d60bb8aa0b9f1252fe48bf1ed74",
       "upstream": ".claude/scripts/tests/_run-tests.ts",
       "upstreamSha256": "2f115b04cfd0c8ebc1138f5126d647b8163556b5bd300fa8790e95086da2c74b"
     },

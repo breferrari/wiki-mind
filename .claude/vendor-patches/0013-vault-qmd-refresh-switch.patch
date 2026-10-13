@@ -39,7 +39,7 @@ diff --git a/.claude/scripts/lib/qmd-refresh.ts b/.claude/scripts/lib/qmd-refres
 diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-tests.ts
 --- a/.claude/scripts/tests/_run-tests.ts
 +++ b/.claude/scripts/tests/_run-tests.ts
-@@ -21,14 +21,27 @@
+@@ -21,14 +21,28 @@
   * 3. after the run, fails if a new store or config appeared in the user's
   *    folders, naming each, then removes the temp folder.
   *
@@ -48,9 +48,10 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
 + * that outlives the test and calls qmd later; several suites at once pile
 + * them up. The runner sets VAULT_QMD_REFRESH=off, which the trigger honours
 + * by spawning nothing, and points TMPDIR, TEMP and TMP into its temp folder,
-+ * so a trailing worker a test starts names that folder in its arguments. An
-+ * immediate worker carries no arguments, so the guard can't attribute it;
-+ * the switch is what stops that one. After the run it looks for
++ * so a trailing worker a test starts names that folder in its arguments, as
++ * does every worker the qmd extension starts (`--vault`). An immediate
++ * worker of the hooks' own trigger carries no arguments, so the guard can't
++ * attribute it; the switch is what stops that one. After the run it looks for
 + * such workers: it names each one, kills it, and fails the run, since a
 + * guard that only killed would hide the leak.
 + *
@@ -69,7 +70,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  import { homedir, tmpdir } from "node:os";
  import { join } from "node:path";
  
-@@ -49,8 +62,42 @@
+@@ -49,8 +63,42 @@
  	}
  }
  
@@ -112,7 +113,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  
  const run = spawnSync(
  	process.execPath,
-@@ -62,10 +109,48 @@
+@@ -62,10 +110,48 @@
  			XDG_CACHE_HOME: join(isolated, "cache"),
  			QMD_CONFIG_DIR: join(isolated, "config", "qmd"),
  			OM_QMD_ISOLATED: isolated,
@@ -161,7 +162,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  const added = watched.flatMap(({ dir, ext }, i) =>
  	[...listing(dir, ext)].filter((f) => !before[i]!.has(f)).sort().map((f) => join(dir, f)),
  );
-@@ -83,4 +168,5 @@
+@@ -83,4 +169,5 @@
  	);
  	process.exit(1);
  }

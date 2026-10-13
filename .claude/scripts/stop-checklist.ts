@@ -14,7 +14,7 @@
  *   when it cannot be saved;
  * - SessionEnd, or an input with no session, reports in full;
  * - Stop's effects (QMD's debounced index refresh among them) run once the
- *   registry has loaded, before the checks.
+ *   registry has loaded, after the checks.
  */
 
 import { dirname, join } from "node:path";
@@ -69,11 +69,11 @@ if (input?.stop_hook_active === true && omMod !== "report") {
 async function report(): Promise<void> {
 	const vaultRoot = resolveProjectDir(process.cwd());
 	const { registry, ctx } = await openVault(vaultRoot, "stop");
-	// Stop's effects (QMD's index refresh among them) first: a checklist or a
-	// detector that throws must not cost the refresh.
-	const effects = await runEffects(registry, { event: "stop" }, ctx);
 	const checklist = collectChecklist(registry);
 	const detected = await runDetectors(registry, ctx);
+	// Stop's effects (QMD's index refresh among them), after the checks have
+	// read the vault. Each dispatch reports a throw as a failure, never throws.
+	const effects = await runEffects(registry, { event: "stop" }, ctx);
 	const failures = [...registry.failures, ...checklist.failures, ...detected.failures, ...effects.failures];
 
 	const items = checklist.result;
