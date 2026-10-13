@@ -22,6 +22,7 @@ import {
 	currentSourceNames,
 	findHeading,
 	joinLines,
+	type Lines,
 	lastContentLine,
 	type LinkSpan,
 	linkSpans,
@@ -260,7 +261,10 @@ function editSourceNote(pass: Pass): string {
 	return joinLines(doc);
 }
 
-/** Set a one-line frontmatter field, or remove it when value is null. A new field goes last. */
+/**
+ * Set a one-line frontmatter field, or remove it when value is null. A new field goes last.
+ * `lines` come from splitLines, which has taken any byte-order mark off; joinLines puts it back first.
+ */
 function setField(lines: string[], name: string, value: string | null): void {
 	const kinds = regions(lines);
 	const at = lines.findIndex((l, i) => kinds[i] === "frontmatter" && l.startsWith(`${name}:`));
@@ -289,7 +293,7 @@ function editIndex(pass: Pass, content: string): string {
 // Every other note, by type.
 
 /** A note read line by line: its lines, their regions, and each line's links (none in a fence). */
-type Read = { readonly doc: ReturnType<typeof splitLines>; readonly kinds: readonly Region[]; readonly spans: readonly (readonly LinkSpan[])[] };
+type Read = { readonly doc: Lines; readonly kinds: readonly Region[]; readonly spans: readonly (readonly LinkSpan[])[] };
 
 function readNote(note: Note): Read {
 	const doc = splitLines(note.content);

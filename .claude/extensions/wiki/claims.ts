@@ -16,7 +16,6 @@ import { linkName, listNotes, type Note, statusOf } from "./notes.ts";
 export const MARK = " (no longer current)";
 export const WITHDRAWN_HEADING = "## Withdrawn claims";
 
-/** A note's lines and the line ending it uses, so a rewrite keeps CRLF as CRLF. */
 /**
  * A note's lines, the line ending it uses, and whether it starts with a
  * byte-order mark. A rewrite joins them back as they came: CRLF stays CRLF,
