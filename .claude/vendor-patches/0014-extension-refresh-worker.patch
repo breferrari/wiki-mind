@@ -1,0 +1,82 @@
+Description: Match a leftover refresh worker by refresh-run in its command line, not qmd-refresh-run, so the test runner's guard also names and stops the worker mindframe's qmd extension starts (extensions/qmd/refresh-run.ts)
+Forwarded: not-needed: obsidian-mind runs no extension worker until it adopts mindframe's core (mindframe Phase 4)
+Last-Update: 2026-10-13
+
+diff --git a/.claude/scripts/tests/_proc.ts b/.claude/scripts/tests/_proc.ts
+--- a/.claude/scripts/tests/_proc.ts
++++ b/.claude/scripts/tests/_proc.ts
+@@ -1,6 +1,8 @@
+ /**
+- * Process helpers for the test runner (#337): finding the qmd-refresh-run
+- * workers a run may leave behind, and stopping each one's whole tree.
++ * Process helpers for the test runner (#337): finding the refresh workers a
++ * run may leave behind, and stopping each one's whole tree. A worker is the
++ * hooks' own `qmd-refresh-run.ts` or the qmd extension's
++ * `extensions/qmd/refresh-run.ts`; `refresh-run` matches both.
+  *
+  * A worker can be blocked in `qmd embed` for up to five minutes, so killing
+  * only its own pid would leave that qmd running. A detached worker leads its
+@@ -36,7 +38,7 @@
+ 				// PowerShell itself, whose own command line holds the filter text;
+ 				// and each command line on one line, so a continuation line can
+ 				// never read as a pid of its own.
+-				"[Console]::OutputEncoding = [Text.Encoding]::UTF8; Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%qmd-refresh-run%'\" | Where-Object { $_.ProcessId -ne $PID } | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine -replace '[\\r\\n]+', ' ')\" }",
++				"[Console]::OutputEncoding = [Text.Encoding]::UTF8; Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%refresh-run%'\" | Where-Object { $_.ProcessId -ne $PID } | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine -replace '[\\r\\n]+', ' ')\" }",
+ 			],
+ 		};
+ 	}
+@@ -53,7 +55,7 @@
+ }
+ 
+ /**
+- * The running qmd-refresh-run workers, or why the listing failed (an error
++ * The running refresh workers, or why the listing failed (an error
+  * such as a missing `ps` or PowerShell, a killing signal, a non-zero exit),
+  * so the caller can say the check did not run rather than report none.
+  */
+@@ -66,7 +68,7 @@
+ 	if (r.error !== undefined) return { failed: `${cmd}: ${r.error.message}` };
+ 	if (r.signal) return { failed: `${cmd} killed by ${r.signal}` };
+ 	if (r.status !== 0 || typeof r.stdout !== "string") return { failed: `${cmd} exit ${r.status}` };
+-	return { workers: parseProcessList(r.stdout).filter((p) => p.pid !== process.pid && /qmd-refresh-run/.test(p.cmd)) };
++	return { workers: parseProcessList(r.stdout).filter((p) => p.pid !== process.pid && /refresh-run/.test(p.cmd)) };
+ }
+ 
+ const isEsrch = (err: unknown) => (err as NodeJS.ErrnoException)?.code === "ESRCH";
+diff --git a/.claude/scripts/tests/proc.test.ts b/.claude/scripts/tests/proc.test.ts
+--- a/.claude/scripts/tests/proc.test.ts
++++ b/.claude/scripts/tests/proc.test.ts
+@@ -1,6 +1,6 @@
+ /**
+  * The test runner's process helpers (tests/_proc.ts, #337): listing the
+- * qmd-refresh-run workers a run may leave behind, and killing each one's
++ * refresh workers a run may leave behind, and killing each one's
+  * whole tree, since a worker blocked in `qmd embed` has a live qmd child.
+  */
+ 
+@@ -26,7 +26,7 @@
+ 		const { cmd, args } = listingCommand("win32");
+ 		assert.equal(cmd, "powershell");
+ 		const script = args.join(" ");
+-		assert.match(script, /CommandLine LIKE '%qmd-refresh-run%'/);
++		assert.match(script, /CommandLine LIKE '%refresh-run%'/);
+ 		assert.doesNotMatch(script, /Name\s*=/);
+ 	});
+ 
+@@ -65,10 +65,13 @@
+ 		assert.match(reason({ status: null, signal: "SIGTERM", stdout: "" }), /killed by SIGTERM/);
+ 	});
+ 
+-	test("keeps only qmd-refresh-run workers", () => {
+-		const stdout = "1 node qmd-refresh-run.ts --trailing=x\n2 node other.ts\n";
++	test("keeps only refresh workers: the hooks' own and the qmd extension's", () => {
++		const stdout = "1 node qmd-refresh-run.ts --trailing=x\n2 node other.ts\n3 node extensions/qmd/refresh-run.ts --vault=v\n";
+ 		assert.deepEqual(listRefreshWorkers(fake({ status: 0, stdout })), {
+-			workers: [{ pid: 1, cmd: "node qmd-refresh-run.ts --trailing=x" }],
++			workers: [
++				{ pid: 1, cmd: "node qmd-refresh-run.ts --trailing=x" },
++				{ pid: 3, cmd: "node extensions/qmd/refresh-run.ts --vault=v" },
++			],
+ 		});
+ 	});
+ });
