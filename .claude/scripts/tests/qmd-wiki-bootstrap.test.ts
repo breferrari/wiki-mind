@@ -28,8 +28,10 @@ before(() => {
 	mkdirSync(join(vault, ".claude"), { recursive: true });
 	cpSync(join(REPO, ".scripts"), join(vault, ".scripts"), { recursive: true });
 	cpSync(join(REPO, ".claude", "scripts", "lib"), join(vault, ".claude", "scripts", "lib"), { recursive: true });
-	// lib/qmd.ts re-exports the qmd extension's libraries (mindframe #96).
+	// lib/qmd.ts re-exports the qmd extension's libraries (mindframe #96),
+	// and the extension's lib/qmd.ts imports the core's index.
 	cpSync(join(REPO, ".claude", "scripts", "extensions", "qmd", "lib"), join(vault, ".claude", "scripts", "extensions", "qmd", "lib"), { recursive: true });
+	cpSync(join(REPO, ".claude", "scripts", "core"), join(vault, ".claude", "scripts", "core"), { recursive: true });
 	cpSync(join(REPO, ".claude", "scripts", "package.json"), join(vault, ".claude", "scripts", "package.json"));
 	cpSync(join(REPO, "vault-manifest.json"), join(vault, "vault-manifest.json"));
 	const fake = join(vault, ".claude", "scripts", "node_modules", "@tobilu", "qmd");

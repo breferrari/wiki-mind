@@ -11,6 +11,8 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { HOOK_OUTPUT_MAX_CHARS, parseHookContext } from "../lib/hook-io.ts";
+import { METER_HEADROOM } from "../lib/session-start.ts";
 import { rmTemp, runScript } from "./_helpers.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -38,6 +40,23 @@ function run(script: string, stdin: string | object | null, env: Record<string, 
 	});
 }
 
+/**
+ * session-start on the hook path: the context its SessionStart envelope
+ * carries. It never throws, so a test's state restore still runs; output
+ * that is not the envelope comes back as a context no assertion matches,
+ * with the exit code and stderr.
+ */
+function startContext(stdin: object, env: Record<string, string> = {}) {
+	const { stdout, stderr, code } = run("session-start", stdin, env);
+	let context: string;
+	try {
+		context = parseHookContext(stdout, "SessionStart");
+	} catch (err) {
+		context = `<${err instanceof Error ? err.message : String(err)}; exit ${code}; stderr: ${stderr}>`;
+	}
+	return { code, stdout, context };
+}
+
 before(() => {
 	vault = mkdtempSync(join(tmpdir(), "wiki-entry-"));
 	state = mkdtempSync(join(tmpdir(), "wiki-entry-state-"));
@@ -56,44 +75,105 @@ after(() => {
 
 describe("session-start", () => {
 	test("started in a vault subfolder, it walks up to vault-manifest.json and serves the vault (SPEC.md §7.3)", () => {
-		const { stdout } = run("session-start", { source: "startup" }, { CLAUDE_PROJECT_DIR: join(vault, "questions") });
-		assert.match(stdout, /### Open questions\n- \[\[Why\]\]/);
+		const { context } = startContext({ source: "startup" }, { CLAUDE_PROJECT_DIR: join(vault, "questions") });
+		assert.match(context, /### Open questions\n- \[\[Why\]\]/);
 	});
 
 	test("a vault that sets QMD keys without declaring the qmd extension sees how to declare it on the meter (#102)", () => {
 		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
 		manifest({}, declared.filter((d) => d.id !== "qmd"));
-		let stdout: string;
+		let context: string;
 		try {
-			stdout = run("session-start", { source: "startup" }).stdout;
+			context = startContext({ source: "startup" }).context;
 		} finally {
 			manifest();
 		}
-		assert.match(stdout, /QMD off: extensions needs \{"id":"qmd"/);
+		assert.match(context, /QMD off: extensions needs \{"id":"qmd"/);
 	});
 
 	test("a startup gets the core sections, then the extension's, under the meter", () => {
-		const { stdout, code } = run("session-start", { source: "startup" });
+		const { context, code } = startContext({ source: "startup" });
 		assert.equal(code, 0);
-		const order = ["## Session Context", "### Date", "### Wiki", "### Open questions", "### Recent sources", "### Index"].map((h) => stdout.indexOf(h));
-		assert.ok(order.every((i) => i >= 0), stdout);
+		const order = ["## Session Context", "### Date", "### Wiki", "### Open questions", "### Recent sources", "### Index"].map((h) => context.indexOf(h));
+		assert.ok(order.every((i) => i >= 0), context);
 		assert.deepEqual([...order].sort((a, b) => a - b), order);
-		assert.match(stdout, /- \[\[Why\]\] — why slow/);
-		assert.match(stdout, /_context injected: [\d.]+kB \/ [\d.]+kB budget_\n$/);
+		assert.match(context, /- \[\[Why\]\] — why slow/);
+		assert.match(context, /_context injected: [\d.]+kB \/ [\d.]+kB budget_\n$/);
+		assert.doesNotMatch(context, /configured, held under/, "the shipped budget is under the core's ceiling");
+	});
+
+	test("on the hook path, the context goes out in one SessionStart envelope within the hook output cap (#98)", () => {
+		// JSON escapes double a quote, a backslash or a tab. The Index section
+		// shows Index.md's head, about 7 kB in UTF-8 bytes here and twice that
+		// encoded. Measured in bytes, the budget would keep it whole and the cap
+		// would then cut it: the "truncated to fit" check is the guard.
+		const line = "- " + '"\\\t'.repeat(60) + " 🧪\n";
+		writeFileSync(join(vault, "Index.md"), "# Index\n" + line.repeat(40));
+		let out: ReturnType<typeof startContext>;
+		try {
+			out = startContext({ source: "startup" });
+		} finally {
+			writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n");
+		}
+		assert.ok(out.stdout.length <= HOOK_OUTPUT_MAX_CHARS, `${out.stdout.length} characters is over the cap`);
+		assert.match(out.context, /^## Session Context\n/);
+		assert.match(out.context, /_context injected: [^\n]*budget[^\n]*_\n$/);
+		assert.doesNotMatch(out.context, /truncated to fit/, "the budget gives sections up before the cap cuts");
+	});
+
+	test("a load-bearing section over the cap is cut to the envelope's limit, and the meter survives (#98)", () => {
+		// A section without a pointer is never given up, so only the cap holds
+		// it. 6000 quotes fit the plain cap as characters but not encoded: cut
+		// to the plain cap, the envelope would lose the meter.
+		mkdirSync(join(vault, ".claude", "extensions", "big"), { recursive: true });
+		writeFileSync(
+			join(vault, ".claude", "extensions", "big", "big.mjs"),
+			`export default { id: "big", sections: [{ id: "big.quotes", header: "### Quotes", render: () => ${JSON.stringify('"'.repeat(6000))} }] };\n`,
+		);
+		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		manifest({}, [...declared, { id: "big", module: ".claude/extensions/big/big.mjs", events: ["session-start"] }]);
+		let out: ReturnType<typeof startContext>;
+		try {
+			out = startContext({ source: "startup" });
+		} finally {
+			manifest();
+		}
+		assert.ok(out.stdout.length <= HOOK_OUTPUT_MAX_CHARS, `${out.stdout.length} characters is over the cap`);
+		assert.match(out.context, /_context injected: [^\n]*truncated to fit the hook output cap[^\n]*\n$/);
 	});
 
 	test("a resume gets pointers for the sections that have one", () => {
-		const { stdout } = run("session-start", { source: "resume" });
-		assert.match(stdout, /### Wiki\nsources: 1/);
-		assert.match(stdout, /### Open questions\n\(Over budget: list questions\//);
-		assert.doesNotMatch(stdout, /why slow/);
+		const { context } = startContext({ source: "resume" });
+		assert.match(context, /### Wiki\nsources: 1/);
+		assert.match(context, /### Open questions\n\(Over budget: list questions\//);
+		assert.doesNotMatch(context, /why slow/);
 	});
 
-	test("under the mod: standdown writes nothing, deliver writes the full layer", () => {
+	test("under the mod: standdown writes nothing, deliver writes the full layer as plain text", () => {
 		assert.equal(run("session-start", { source: "startup", om_mod: "standdown" }).stdout, "");
 		const delivered = run("session-start", { source: "resume", om_mod: "deliver" }).stdout;
+		assert.match(delivered, /^## Session Context\n/, "the instruction file gets Markdown, not the hook envelope");
 		assert.match(delivered, /why slow/);
 		assert.match(delivered, /budget_\n$/);
+	});
+
+	test("under the mod, deliver holds the layer to the instruction budget, in UTF-8 bytes", () => {
+		// About 1.7 kB as UTF-8 and 3 kB JSON-encoded: the Index fits a 2000 B
+		// instruction budget only when deliver measures bytes, as it should.
+		writeFileSync(join(vault, "Index.md"), "# Index\n" + `- ${'"'.repeat(30)}\n`.repeat(40));
+		manifest({ eager_layer_instruction_budget_bytes: 2000 });
+		let result: ReturnType<typeof run>;
+		try {
+			result = run("session-start", { source: "startup", om_mod: "deliver" });
+		} finally {
+			manifest();
+			writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n");
+		}
+		const delivered = result.stdout;
+		assert.match(delivered, /^## Session Context\n/, `exit ${result.code}; stderr: ${result.stderr}`);
+		assert.ok(Buffer.byteLength(delivered) <= 2000 + METER_HEADROOM, `${Buffer.byteLength(delivered)} B`);
+		assert.doesNotMatch(delivered, /collapsed: [^\n]*Index/, "measured in bytes, the Index fits");
+		assert.match(delivered, /### Index\n# Index\n- """/);
 	});
 
 	test("VAULT_PATH is exported to CLAUDE_ENV_FILE, even when standing down", () => {
@@ -105,11 +185,11 @@ describe("session-start", () => {
 	test("over budget, the meter names what was given up", () => {
 		writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n" + "filler line\n".repeat(30));
 		manifest({ eager_layer_budget_bytes: 300 });
-		const { stdout } = run("session-start", { source: "startup" });
+		const { context } = startContext({ source: "startup" });
 		manifest();
 		writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n");
-		assert.match(stdout, /collapsed: [^\n]*Index/);
-		assert.match(stdout, /### Wiki\nsources: 1/, "the load-bearing section stays");
+		assert.match(context, /collapsed: [^\n]*Index/);
+		assert.match(context, /### Wiki\nsources: 1/, "the load-bearing section stays");
 	});
 
 	test("a broken extension is reported and skipped; the working one still renders", () => {
@@ -117,17 +197,17 @@ describe("session-start", () => {
 			{ id: "wiki", module: ".claude/extensions/wiki/index.ts", events: ["session-start", "stop", "prompt", "write"], priority: 100 },
 			{ id: "broken", module: ".claude/extensions/missing.ts", events: ["session-start"] },
 		]);
-		const { stdout, code } = run("session-start", { source: "startup" });
+		const { context, code } = startContext({ source: "startup" });
 		manifest();
 		assert.equal(code, 0);
-		assert.match(stdout, /### Extensions\n⚠️  extension broken: skipped/);
-		assert.match(stdout, /### Open questions/);
+		assert.match(context, /### Extensions\n⚠️  extension broken: skipped/);
+		assert.match(context, /### Open questions/);
 	});
 
 	test("VAULT_EXTENSIONS=off runs no extension and says so", () => {
-		const { stdout } = run("session-start", { source: "startup" }, { VAULT_EXTENSIONS: "off" });
-		assert.match(stdout, /extensions are off \(VAULT_EXTENSIONS=off\)/);
-		assert.doesNotMatch(stdout, /### Wiki/);
+		const { context } = startContext({ source: "startup" }, { VAULT_EXTENSIONS: "off" });
+		assert.match(context, /extensions are off \(VAULT_EXTENSIONS=off\)/);
+		assert.doesNotMatch(context, /### Wiki/);
 	});
 });
 
@@ -207,7 +287,7 @@ describe("rule 3 across the hooks", () => {
 			run("validate-write", { hook_event_name: "PostToolUse", tool_input: { file_path: join(vault, "concepts", "Lonely.md") } }).stdout,
 		];
 		const imported = existsSync(marker);
-		const start = run("session-start", { source: "startup" }).stdout;
+		const start = startContext({ source: "startup" }).context;
 		manifest();
 		assert.equal(imported, false, "stop, prompt or write imported a session-start extension");
 		for (const out of others) assert.doesNotMatch(out, /extension (side|gone)/);

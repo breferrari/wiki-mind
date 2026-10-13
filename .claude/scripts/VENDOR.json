@@ -1,5 +1,5 @@
 {
-  "commit": "9045cc8cdeaaade54103ca8033189398b7d6c7ae",
+  "commit": "c2b8f3b7c03efa76209f845ec46a8ae5917f1820",
   "copyright": "Brenno Ferrari",
   "files": {
     "core/context.test.ts": {
@@ -53,14 +53,14 @@
       "upstreamSha256": "9e1ca754341e33360c754bc38f1f11d87294e6973bcd0967c29d16eab47addba"
     },
     "extensions/qmd/lib/qmd.ts": {
-      "sha256": "887487cc52b17e8494c248d65faaba6b2006e9844acfe67164c78fb06af86848",
+      "sha256": "6032ae8466fa4da4e6fe1435645abd17a473a1c5483e3279d42a4764ad6e6a8d",
       "upstream": "extensions/qmd/lib/qmd.ts",
-      "upstreamSha256": "887487cc52b17e8494c248d65faaba6b2006e9844acfe67164c78fb06af86848"
+      "upstreamSha256": "6032ae8466fa4da4e6fe1435645abd17a473a1c5483e3279d42a4764ad6e6a8d"
     },
     "extensions/qmd/lib/refresh.ts": {
-      "sha256": "575722a340f90f1527cec495f4c12d8fd9d63d1d221cf49468d1d12f86f4ec87",
+      "sha256": "94c2d8679eaa21ddd9d5eab622f53ed22a22529de9e97f5dd98f3b2ce97a353b",
       "upstream": "extensions/qmd/lib/refresh.ts",
-      "upstreamSha256": "575722a340f90f1527cec495f4c12d8fd9d63d1d221cf49468d1d12f86f4ec87"
+      "upstreamSha256": "94c2d8679eaa21ddd9d5eab622f53ed22a22529de9e97f5dd98f3b2ce97a353b"
     },
     "extensions/qmd/lib/switches.ts": {
       "sha256": "cdc228103645bb1b069173bb5da212f2000fdeeeda026f6801e90398a1e10354",
@@ -113,9 +113,9 @@
       "upstreamSha256": "bb9deba3a751e877d0910361f02037e7e27b87693cfda06035eeacd75d1be838"
     },
     "lib/hook-io.ts": {
-      "sha256": "6eddaeb3e73c7d31af51264974c998b28433c9051fc21d4d4d6aefdad91f4822",
+      "sha256": "fc4321da5005fad97279068758d4dfab27304e8957a797f6f9c8db01c17ea9b9",
       "upstream": "lib/hook-io.ts",
-      "upstreamSha256": "6eddaeb3e73c7d31af51264974c998b28433c9051fc21d4d4d6aefdad91f4822"
+      "upstreamSha256": "fc4321da5005fad97279068758d4dfab27304e8957a797f6f9c8db01c17ea9b9"
     },
     "lib/instruction-files.ts": {
       "sha256": "86ae26f2522746905c2bd5147bef639c0d6c700c225121c68d14ce8c9b620fa7",
@@ -153,24 +153,29 @@
       "upstreamSha256": "4bdbbb1e83027db42d459cb17c3d71af7a91e09e3b53356c02188e2feb093c96"
     },
     "lib/session-start.ts": {
-      "sha256": "63a7b06905b9b92155523457347e0caa28515bd292f93d7059d4b34ef9a6345a",
+      "sha256": "005e7c87fb392af352c6541e211f7b88ec19d8a8fd32fb706faeaf000e3d3d2e",
       "upstream": "lib/session-start.ts",
-      "upstreamSha256": "63a7b06905b9b92155523457347e0caa28515bd292f93d7059d4b34ef9a6345a"
+      "upstreamSha256": "005e7c87fb392af352c6541e211f7b88ec19d8a8fd32fb706faeaf000e3d3d2e"
     },
     "lib/wikilinks.ts": {
       "sha256": "4d25440ae887a631fa6edfbe453100580d17e2263415888b4c89db829523ffaa",
       "upstream": "lib/wikilinks.ts",
       "upstreamSha256": "4d25440ae887a631fa6edfbe453100580d17e2263415888b4c89db829523ffaa"
     },
+    "tests/budget-measure.test.ts": {
+      "sha256": "8bc966a22818d898f9c88a1d8119c2953b4b6638042d501ba8c524fb946036af",
+      "upstream": "tests/budget-measure.test.ts",
+      "upstreamSha256": "8bc966a22818d898f9c88a1d8119c2953b4b6638042d501ba8c524fb946036af"
+    },
     "tests/frontmatter.test.ts": {
-      "sha256": "057cdcf307b0217e2bebfb130ba584f0d250fae087e2b976ce58eeb7af774a04",
+      "sha256": "63704d42a152f0892f8345d96c92c2c810c849869c044a705fc20fe37702495b",
       "upstream": "tests/frontmatter.test.ts",
-      "upstreamSha256": "057cdcf307b0217e2bebfb130ba584f0d250fae087e2b976ce58eeb7af774a04"
+      "upstreamSha256": "63704d42a152f0892f8345d96c92c2c810c849869c044a705fc20fe37702495b"
     },
     "tests/hook-io.test.ts": {
-      "sha256": "9b3f3cc1399b67116a8ebb08f12110117dc06300b251ef57c1061a212096f9c7",
+      "sha256": "eb330a75f728ffe7a243b4c562292106b1a5ec2ee06cd6c24bc1e53ea7c42183",
       "upstream": "tests/hook-io.test.ts",
-      "upstreamSha256": "9b3f3cc1399b67116a8ebb08f12110117dc06300b251ef57c1061a212096f9c7"
+      "upstreamSha256": "eb330a75f728ffe7a243b4c562292106b1a5ec2ee06cd6c24bc1e53ea7c42183"
     },
     "tests/om-mod.test.ts": {
       "sha256": "ca15b12d08609ed8e698ffdda449afb6ee53de9bdc95e1457a5cfc7562cecd99",
