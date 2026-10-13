@@ -94,7 +94,8 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Install into a named folder in the README and release notes for ShardMind 1.0 | [#83](https://github.com/breferrari/wiki-mind/issues/83) |
 | ✅ | Codex and Gemini as removable modules, with AGENTS.md as the one manual | [#25](https://github.com/breferrari/wiki-mind/issues/25) |
 | ✅ | Take obsidian-mind#341's SessionStart JSON envelope, through mindframe c2b8f3b | [#98](https://github.com/breferrari/wiki-mind/issues/98) |
-| ⬜ | Take obsidian-mind's Codex and Gemini config fixes on the next re-vendor | [#100](https://github.com/breferrari/wiki-mind/issues/100) |
+| ✅ | Take obsidian-mind's Codex and Gemini config fixes on the next re-vendor | [#100](https://github.com/breferrari/wiki-mind/issues/100) |
+| ⬜ | Take obsidian-mind's Gemini Stop timing and command files when they land | [#109](https://github.com/breferrari/wiki-mind/issues/109) |
 | ✅ | Vendor mindframe's one frontmatter reader, and lift /wiki-retract's BOM refusal | [#101](https://github.com/breferrari/wiki-mind/issues/101) |
 | ✅ | Adopt mindframe's qmd extension and refresh effects in one migration | [#102](https://github.com/breferrari/wiki-mind/issues/102) |
 | ✅ | Spec corrections for a retracted or superseded source | [#26](https://github.com/breferrari/wiki-mind/issues/26) |
@@ -102,6 +103,8 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Find the vault from a subfolder in /wiki-retract | [#89](https://github.com/breferrari/wiki-mind/issues/89) |
 | ✅ | Run the effects extensions declare from wiki-mind's entry points | [#90](https://github.com/breferrari/wiki-mind/issues/90) |
 | ⬜ | Run the pre-compact effects extensions declare | [#104](https://github.com/breferrari/wiki-mind/issues/104) |
+| ⬜ | Take mindframe #91: case-aware retired instruction files | [#107](https://github.com/breferrari/wiki-mind/issues/107) |
+| ⬜ | Take mindframe #104: use the core's retiredInVault in place of S8's narrowing | [#108](https://github.com/breferrari/wiki-mind/issues/108) |
 | ✅ | Stop the test suite from leaving detached QMD refresh workers running | [#93](https://github.com/breferrari/wiki-mind/issues/93) |
 | ✅ | Re-vendor the obsidian-mind record to v10.0.0 | [#96](https://github.com/breferrari/wiki-mind/issues/96) |
 | ⬜ | wrap-up and tidy through the extraction | [#27](https://github.com/breferrari/wiki-mind/issues/27) |

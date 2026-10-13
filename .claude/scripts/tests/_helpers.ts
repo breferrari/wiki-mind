@@ -22,16 +22,19 @@
  * Every hook that writes or stops refreshes QMD through a debounce sentinel
  * beside the scripts. A test that names no sentinel of its own gets
  * TEST_SENTINEL instead, touched before each spawn, so the real one is never
- * written. A fresh sentinel only debounces the refresh: the trigger still
- * spawns a trailing worker. What keeps tests from starting one is
- * VAULT_QMD_REFRESH=off, which runScript sets for every hook, and which
- * `_run-tests.ts` and `_qmd-cache-guard.ts` set for every test process.
+ * written. A fresh sentinel does NOT stop the refresh: it sends the trigger
+ * down its trailing path, which schedules a detached worker. What stops it
+ * is VAULT_QMD_REFRESH=off, which every test process carries (set by
+ * `_run-tests.ts` and `_qmd-cache-guard.ts`), so no test starts a real
+ * index update or leaves a worker behind (#337).
  */
 
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { parseHookContext } from "../lib/hook-io.ts";
+import { REFRESH_SWITCH } from "../lib/qmd-refresh.ts";
 
 const SENTINEL_DIR = mkdtempSync(join(tmpdir(), "om-test-sentinel-"));
 export const TEST_SENTINEL = join(SENTINEL_DIR, ".qmd-refresh-sentinel");
@@ -48,20 +51,54 @@ export type RunResult = {
 	readonly code: number;
 };
 
+/**
+ * The context a SessionStart hook-path run carried: its stdout is one JSON
+ * envelope, `{ hookSpecificOutput: { hookEventName: "SessionStart",
+ * additionalContext } }` (#340). Throws on anything else, so a test of the
+ * hook path can never pass on plain text.
+ */
+export const hookContext = (stdout: string): string => parseHookContext(stdout, "SessionStart");
+
+/**
+ * How long a hook spawn may take before it is killed. One session-start spawn
+ * takes 5-12 s on Windows CI (#349), so the old 10 s left under a second of
+ * margin and failed a run on runner variance alone (#348). It also bounds what
+ * a hung hook costs: each spawn that hangs takes this long, one at a time.
+ */
+export const SCRIPT_TIMEOUT_MS = 30_000;
+
+/**
+ * Throw if `proc` was killed by its timeout. A killed run has no output to
+ * judge: say so, rather than hand the caller empty stdout to fail on as
+ * something else (#348).
+ */
+export function assertNotKilled(
+	proc: { readonly signal: NodeJS.Signals | null; readonly stderr?: string | null },
+	label: string,
+	timeoutMs: number,
+): void {
+	if (proc.signal === null) return;
+	const tail = (proc.stderr ?? "").trimEnd().split("\n").slice(-5).join("\n");
+	const detail = tail ? `: ${tail}` : "";
+	throw new Error(`${label} was killed after ${timeoutMs / 1000} s (${proc.signal})${detail}`);
+}
+
 export function runScript(
 	scriptPath: string,
 	stdin: string | object | null,
 	envOverrides?: Readonly<Record<string, string>>,
+	opts: { readonly timeoutMs?: number } = {},
 ): RunResult {
+	const timeoutMs = opts.timeoutMs ?? SCRIPT_TIMEOUT_MS;
 	const input =
 		stdin === null
 			? ""
 			: typeof stdin === "string"
 				? stdin
 				: JSON.stringify(stdin);
-	// Every hook a test runs gets the refresh turned off here, however the tests
-	// were started: no detached worker outlives the test.
-	const env = { ...process.env, QMD_REFRESH_SENTINEL: TEST_SENTINEL, VAULT_QMD_REFRESH: "off", ...envOverrides };
+	// The switch before the caller's overrides: every hook a test runs gets it,
+	// whatever this process carries, and a test can still opt back in (#337).
+	const env = { ...process.env, [REFRESH_SWITCH]: "off", QMD_REFRESH_SENTINEL: TEST_SENTINEL, ...envOverrides };
 	if (env.QMD_REFRESH_SENTINEL === TEST_SENTINEL) writeFileSync(TEST_SENTINEL, "");
 	const proc = spawnSync(
 		process.execPath,
@@ -73,10 +110,11 @@ export function runScript(
 		{
 			input,
 			encoding: "utf-8",
-			timeout: 10_000,
+			timeout: timeoutMs,
 			env,
 		},
 	);
+	assertNotKilled(proc, basename(scriptPath), timeoutMs);
 	return {
 		stdout: proc.stdout ?? "",
 		stderr: proc.stderr ?? "",

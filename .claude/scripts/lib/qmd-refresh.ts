@@ -17,7 +17,7 @@
 import { spawn } from "node:child_process";
 import { rmSync, statSync, writeFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
-import { buildQmdCommand, resolveQmdEntry } from "./qmd.ts";
+import { buildQmdCommand, REFRESH_SWITCH, refreshDisabled, resolveQmdEntry } from "./qmd.ts";
 import { debug } from "./hook-io.ts";
 import { qmdArgsWithIndex } from "./session-start.ts";
 
@@ -276,6 +276,10 @@ function touchSentinel(sentinelPath: string): void {
 	}
 }
 
+// The switch lives in lib/qmd.ts beside the detached qmd spawn it guards
+// (#347); re-exported here, where #338 defined it, so its importers hold.
+export { REFRESH_SWITCH, refreshDisabled } from "./qmd.ts";
+
 /**
  * Spawn the detached worker. `stdio: 'ignore'` + `.unref()` + `detached`
  * survive parent exit without leaving file descriptors open, and
@@ -307,14 +311,6 @@ function spawnDetachedWorker(
 		debug(`${logPrefix}: worker spawn error: ${err.message}`);
 	});
 	child.unref();
-}
-
-/**
- * True when the index refresh is turned off: `VAULT_QMD_REFRESH=off`. The
- * test runner sets it, so no test leaves a detached worker behind.
- */
-export function refreshDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
-	return env["VAULT_QMD_REFRESH"] === "off";
 }
 
 /**
@@ -356,13 +352,13 @@ export function triggerDebouncedRefresh(opts: {
 		debug(`${opts.logPrefix}: qmd not resolvable; skipping`);
 		return;
 	}
-	// With refresh off, the real spawn is a no-op: every decision and stamp still
-	// runs, so tests that observe the sentinel and pending marker hold, and no
-	// detached worker outlives a test. An explicit spawnWorker seam still runs.
+	// VAULT_QMD_REFRESH=off (set by the test runner) stops the detached worker
+	// and nothing else: the decision and its sentinel and pending stamps run
+	// as usual, so the trigger's observable behaviour is unchanged (#337).
 	const spawnWorker =
 		opts.spawnWorker ??
 		(refreshDisabled()
-			? () => debug(`${opts.logPrefix}: refresh off (VAULT_QMD_REFRESH)`)
+			? () => debug(`${opts.logPrefix}: refresh off (${REFRESH_SWITCH}=off); no worker spawned`)
 			: (path: string, args: readonly string[]) => spawnDetachedWorker(path, opts.logPrefix, args));
 
 	if (plan === "now") {

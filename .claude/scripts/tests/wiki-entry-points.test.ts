@@ -57,6 +57,11 @@ function startContext(stdin: object, env: Record<string, string> = {}) {
 	return { code, stdout, context };
 }
 
+/** validate-write given a Codex apply_patch, which names its files in the patch, relative to the session's cwd (#100). */
+function applyPatch(command: string, env: Record<string, string> = {}) {
+	return run("validate-write", { hook_event_name: "PostToolUse", tool_name: "apply_patch", cwd: vault, tool_input: { command } }, env);
+}
+
 before(() => {
 	vault = mkdtempSync(join(tmpdir(), "wiki-entry-"));
 	state = mkdtempSync(join(tmpdir(), "wiki-entry-state-"));
@@ -354,6 +359,53 @@ describe("validate-write", () => {
 		assert.match(out.stdout, /Missing YAML frontmatter/);
 	});
 
+	describe("a Codex apply_patch, whose payload names its files in the patch (#100)", () => {
+
+		test("each note it adds, updates or moves to is validated, in one envelope; CRLF and an absolute path too", () => {
+			writeFileSync(join(vault, "concepts", "Added.md"), "no frontmatter");
+			writeFileSync(join(vault, "concepts", "Moved.md"), fm(BASE) + "no citation\n");
+			// A moved note's old path is never validated, even while a file is there.
+			writeFileSync(join(vault, "concepts", "Old.md"), "no frontmatter");
+			const command = [
+				"*** Begin Patch",
+				"*** Add File: concepts/Added.md",
+				"+no frontmatter",
+				`*** Update File: ${join(vault, "concepts", "Lonely.md")}`,
+				"@@",
+				"+x",
+				"*** Update File: concepts/Old.md",
+				"*** Move to: concepts/Moved.md",
+				"*** End Patch",
+			].join("\r\n");
+			let stdout: string;
+			try {
+				stdout = applyPatch(command).stdout;
+			} finally {
+				rmSync(join(vault, "concepts", "Old.md"));
+			}
+			const context = parseHookContext(stdout, "PostToolUse");
+			assert.match(context, /concepts\/Added\.md:\n- Missing YAML frontmatter/);
+			assert.match(context, /concepts\/Lonely\.md:\n- Cites no source/);
+			assert.match(context, /concepts\/Moved\.md:\n- Cites no source/);
+			assert.doesNotMatch(context, /Old\.md/);
+		});
+
+		test("on Windows, one note named in two cases is validated once, and a case-only rename under its new name", { skip: process.platform !== "win32" }, () => {
+			const twice = applyPatch("*** Begin Patch\n*** Update File: concepts/Lonely.md\n*** Update File: CONCEPTS/lonely.md\n*** End Patch\n");
+			assert.equal(parseHookContext(twice.stdout, "PostToolUse").match(/Cites no source/g)?.length, 1);
+			const renamed = applyPatch("*** Begin Patch\n*** Update File: concepts/LONELY.md\n*** Move to: concepts/Lonely.md\n*** End Patch\n");
+			assert.match(parseHookContext(renamed.stdout, "PostToolUse"), /concepts\/Lonely\.md:\n- Cites no source/);
+		});
+
+		test("a patch that only deletes, or writes only outside the vault or no Markdown, writes nothing", () => {
+			assert.equal(applyPatch("*** Begin Patch\n*** Delete File: concepts/Lonely.md\n*** End Patch\n").stdout, "");
+			writeFileSync(join(state, "elsewhere.md"), "no frontmatter");
+			writeFileSync(join(vault, "concepts", "notes.txt"), "x");
+			const command = `*** Begin Patch\n*** Update File: ${join(state, "elsewhere.md")}\n*** Add File: concepts/notes.txt\n+x\n*** End Patch\n`;
+			assert.equal(applyPatch(command).stdout, "");
+		});
+	});
+
 	test("on Windows, a path whose case differs from the vault root's is still inside it", { skip: process.platform !== "win32" }, () => {
 		const out = write(join(vault, "concepts", "Lonely.md").toUpperCase().replace("LONELY.MD", "Lonely.md").replace("CONCEPTS", "concepts"));
 		assert.match(out.stdout, /Cites no source/);
@@ -376,7 +428,8 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		mkdirSync(join(vault, ".claude", "extensions", "probe"), { recursive: true });
 		writeFileSync(
 			join(vault, ".claude", "extensions", "probe", "index.ts"),
-			`import { writeFileSync } from "node:fs";\nimport { join } from "node:path";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string }) => writeFileSync(join(process.env["EFFECT_PROBE_DIR"] ?? ".", trigger.event), "") }] };\n`,
+			// A write effect also logs its target's path, one per line, to `write-paths`.
+			`import { appendFileSync, writeFileSync } from "node:fs";\nimport { join } from "node:path";\nconst dir = () => process.env["EFFECT_PROBE_DIR"] ?? ".";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string; target?: { relPath: string } }) => { writeFileSync(join(dir(), trigger.event), ""); if (trigger.target) appendFileSync(join(dir(), "write-paths"), trigger.target.relPath + "\\n"); } }] };\n`,
 		);
 		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
 		manifest({}, [...declared, { id: "probe", module: ".claude/extensions/probe/index.ts", events: EVENTS }]);
@@ -407,6 +460,25 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		} finally {
 			rmSync(join(vault, "templates"), { recursive: true, force: true });
 		}
+	});
+
+	test("validate-write.ts runs the write effects for each file an apply_patch writes, deletes or moves, once each, Markdown or not (#100)", () => {
+		writeFileSync(join(vault, "concepts", "New.md"), fm(BASE) + "[[Paper]]\n");
+		writeFileSync(join(vault, "concepts", "data.txt"), "x");
+		rmSync(join(markers, "write-paths"), { force: true });
+		// Brief.md is added and then moved away in the same patch: written, but gone.
+		const command =
+			"*** Begin Patch\n*** Delete File: concepts/Gone.md\n*** Update File: concepts/Old.md\n*** Move to: concepts/New.md\n*** Add File: concepts/data.txt\n+x\n" +
+			"*** Add File: concepts/Brief.md\n+x\n*** Update File: concepts/Brief.md\n*** Move to: concepts/Brief2.md\n*** End Patch\n";
+		writeFileSync(join(vault, "concepts", "Brief2.md"), fm(BASE) + "[[Paper]]\n");
+		const r = applyPatch(command, { EFFECT_PROBE_DIR: markers });
+		assert.equal(r.code, 0, r.stderr);
+		const paths = readFileSync(join(markers, "write-paths"), "utf-8").split("\n").filter(Boolean).sort();
+		assert.deepEqual(
+			paths,
+			["concepts/Brief.md", "concepts/Brief2.md", "concepts/Gone.md", "concepts/New.md", "concepts/Old.md", "concepts/data.txt"],
+			"the index sees a deleted note, a moved note's old path, and a written file that is gone",
+		);
 	});
 
 	test("stop-checklist.ts runs the stop effects before its checks, so a checklist item that throws keeps them", () => {

@@ -1,6 +1,7 @@
 Description: Let tests turn off the detached QMD refresh worker with VAULT_QMD_REFRESH=off (the spawn becomes a no-op; decisions and stamps still run), set it for every hook runScript spawns, in the test runner and in the per-file preload, and fail a run that leaves a refresh worker behind, matched by refresh-run in its command line so a qmd extension's worker counts too, killing it with its children
 Forwarded: https://github.com/breferrari/obsidian-mind/issues/337
 Last-Update: 2026-10-13
+Applied-Upstream: 70317e2
 
 diff --git a/.claude/scripts/lib/qmd-refresh.ts b/.claude/scripts/lib/qmd-refresh.ts
 --- a/.claude/scripts/lib/qmd-refresh.ts
