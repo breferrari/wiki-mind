@@ -13,7 +13,10 @@
       "upstreamSha256": "b7e032c1ae6889765831c29f5baa28c7d5a9c2bd8f4604b77b5966e9efec591a"
     },
     ".claude/scripts/lib/main-guard.ts": {
-      "sha256": "e76f8a95c5ee9c015f8afe455707660db40e3494405697d528aae5cf6965244c",
+      "patches": [
+        "0015-main-guard-symlink.patch"
+      ],
+      "sha256": "5640c5759655c9f463a388fa702e57c20d7a5b6f50045e92ca1d517401b67b1d",
       "upstream": ".claude/scripts/lib/main-guard.ts",
       "upstreamSha256": "e76f8a95c5ee9c015f8afe455707660db40e3494405697d528aae5cf6965244c"
     },
@@ -74,11 +77,6 @@
       "sha256": "86f417224a502dfe772c0d7152e910c02a96e7eaedd7f515c4822c17f02c1617",
       "upstream": ".claude/scripts/package.json",
       "upstreamSha256": "11526375fb7a5285bb05d546e8992fcf575a1974b5f4d71e29d91b81a2be940a"
-    },
-    ".claude/scripts/pre-compact.ts": {
-      "sha256": "f618672951a78376f597fd86e62e65617bdec6ff0adeeaf432c35573f5f127a7",
-      "upstream": ".claude/scripts/pre-compact.ts",
-      "upstreamSha256": "f618672951a78376f597fd86e62e65617bdec6ff0adeeaf432c35573f5f127a7"
     },
     ".claude/scripts/qmd-mcp.d.mts": {
       "sha256": "eeb94ce2c89404a9fbd580e3037d5b1e346e30a928a0b6d713fe26704385b489",
@@ -147,7 +145,10 @@
       "upstreamSha256": "c4423274c7be5e6e933027cf9afe96a999a105946d39b90533394db6f39cf28d"
     },
     ".claude/scripts/tests/main-guard.test.ts": {
-      "sha256": "11c030c708423358a78248fc7a4f308584c1b7e808985cf85de6a8ea83d74ff5",
+      "patches": [
+        "0015-main-guard-symlink.patch"
+      ],
+      "sha256": "5f08d73bcff38bf64ec0fd0690e30ce9c4d290f0703e42b752931f32568ba6f1",
       "upstream": ".claude/scripts/tests/main-guard.test.ts",
       "upstreamSha256": "11c030c708423358a78248fc7a4f308584c1b7e808985cf85de6a8ea83d74ff5"
     },
