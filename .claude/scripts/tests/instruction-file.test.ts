@@ -13,7 +13,7 @@
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,5 +88,33 @@ describe("session-start warns about a retired instruction file left at the vault
 		assert.match(w.body, /GEMINI\.md/);
 		assert.match(w.body, /AGENTS\.md/);
 		assert.match(w.body, /Claude Code reads `CLAUDE\.md` in place of it/);
+	});
+
+	describe("Gemini's settings read as Gemini reads them (mindframe #104, #119)", () => {
+		before(() => {
+			rmSync(join(root, "CLAUDE.md"), { force: true });
+			writeFileSync(join(root, "GEMINI.md"), "# old\n");
+			mkdirSync(join(root, ".gemini"), { recursive: true });
+		});
+		after(() => rmSync(join(root, ".gemini"), { recursive: true, force: true }));
+
+		test("settings with comments still name AGENTS.md, so a GEMINI.md is retired", async () => {
+			writeFileSync(join(root, ".gemini", "settings.json"), '// the vault\'s manual\n{"context":{"fileName":["AGENTS.md"]} /* one file */}\n');
+			assert.match((await warning())?.body ?? "", /Gemini no longer reads `GEMINI\.md`/);
+		});
+
+		test("settings behind a byte-order mark name nothing, as Gemini refuses them: no warning", async () => {
+			writeFileSync(join(root, ".gemini", "settings.json"), '﻿{"context":{"fileName":["AGENTS.md"]}}\n');
+			assert.equal(await warning(), undefined);
+		});
+	});
+
+	test("a lowercase claude.md is named where the filesystem ignores case (mindframe #91)", { skip: process.platform === "linux" }, async () => {
+		writeFileSync(join(root, "claude.md"), "# mine\n");
+		try {
+			assert.match((await warning())?.body ?? "", /Claude Code reads `claude\.md` in place of it/);
+		} finally {
+			rmSync(join(root, "claude.md"), { force: true });
+		}
 	});
 });

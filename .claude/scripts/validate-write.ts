@@ -103,7 +103,9 @@ try {
 		// The skip rules match path segments, so they get the vault-relative
 		// path: a vault that itself sits under a `.claude/` or `templates/`
 		// folder (a Claude Code worktree, say) would otherwise skip every file.
-		if (shouldSkipFile(relPath)) {
+		// The root lets a root `claude.md` match the retired CLAUDE.md where
+		// the filesystem ignores case (mindframe #91).
+		if (shouldSkipFile(relPath, { vaultRoot })) {
 			debug(`validate: skipped ${relPath}`);
 			continue;
 		}

@@ -406,6 +406,24 @@ describe("validate-write", () => {
 		});
 	});
 
+	test("a root claude.md is skipped as the agent loads it, and a nested Claude.md is still a note (mindframe #91)", { skip: process.platform === "linux" }, () => {
+		// A probe validator that would flag any file it sees: the skip rules decide.
+		mkdirSync(join(vault, ".claude", "extensions", "seer"), { recursive: true });
+		writeFileSync(join(vault, ".claude", "extensions", "seer", "index.mjs"), 'export default { id: "seer", validators: [{ id: "seer.any", appliesTo: () => true, validate: () => ["seen"] }] };\n');
+		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		manifest({}, [...declared, { id: "seer", module: ".claude/extensions/seer/index.mjs", events: ["write"] }]);
+		writeFileSync(join(vault, "claude.md"), "# mine\n");
+		writeFileSync(join(vault, "concepts", "Claude.md"), fm(BASE) + "[[Paper]]\n");
+		try {
+			assert.equal(write(join(vault, "claude.md")).stdout, "", "a root claude.md is the retired CLAUDE.md where case is ignored");
+			assert.match(write(join(vault, "concepts", "Claude.md")).stdout, /seen/);
+		} finally {
+			manifest();
+			rmSync(join(vault, "claude.md"), { force: true });
+			rmSync(join(vault, "concepts", "Claude.md"), { force: true });
+		}
+	});
+
 	test("on Windows, a path whose case differs from the vault root's is still inside it", { skip: process.platform !== "win32" }, () => {
 		const out = write(join(vault, "concepts", "Lonely.md").toUpperCase().replace("LONELY.MD", "Lonely.md").replace("CONCEPTS", "concepts"));
 		assert.match(out.stdout, /Cites no source/);

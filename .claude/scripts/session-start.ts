@@ -41,7 +41,7 @@ import {
 	utf8Bytes,
 } from "./lib/session-start.ts";
 import { collectSections, formatFailures, runEffects, undispatched } from "./core/registry.ts";
-import { migrationNotes, openVault } from "./core/context.ts";
+import { openVault } from "./core/context.ts";
 
 type HookInput = { readonly source?: unknown };
 
@@ -96,13 +96,13 @@ const now = Date.now();
 // unexpectedly, the session still gets the core sections and says why.
 let extensionSections: BudgetSection[] = [];
 let notes: string[];
-let migration: string[] = [];
+let migration: readonly string[] = [];
 try {
-	const { manifest, registry, ctx } = await openVault(vaultRoot, "session-start", process.env, now);
+	const { registry, ctx, notes: migrationNotes } = await openVault(vaultRoot, "session-start", process.env, now);
 	const collected = await collectSections(registry, ctx, mode);
 	const effects = await runEffects(registry, { event: "session-start" }, ctx);
 	extensionSections = collected.result;
-	migration = migrationNotes(manifest);
+	migration = migrationNotes;
 	notes = [
 		...formatFailures([...registry.failures, ...collected.failures, ...effects.failures]),
 		...undispatched(registry).map((slot) => `ℹ️  ${slot}: declared, not dispatched yet`),
