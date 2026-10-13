@@ -16,7 +16,7 @@
       "patches": [
         "0015-main-guard-symlink.patch"
       ],
-      "sha256": "131ed18d8b68759fbc66fcd06b4270ef161dda90ee78ebaff9e09cbfef1f6b22",
+      "sha256": "5640c5759655c9f463a388fa702e57c20d7a5b6f50045e92ca1d517401b67b1d",
       "upstream": ".claude/scripts/lib/main-guard.ts",
       "upstreamSha256": "e76f8a95c5ee9c015f8afe455707660db40e3494405697d528aae5cf6965244c"
     },
@@ -148,7 +148,7 @@
       "patches": [
         "0015-main-guard-symlink.patch"
       ],
-      "sha256": "f557299f9fe7e06d39ed84e875fb6c75fb158f286273a52a8b36ae342140a042",
+      "sha256": "5f08d73bcff38bf64ec0fd0690e30ce9c4d290f0703e42b752931f32568ba6f1",
       "upstream": ".claude/scripts/tests/main-guard.test.ts",
       "upstreamSha256": "11c030c708423358a78248fc7a4f308584c1b7e808985cf85de6a8ea83d74ff5"
     },

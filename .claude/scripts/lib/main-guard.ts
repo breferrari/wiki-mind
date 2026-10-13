@@ -6,9 +6,10 @@
  *     if (isMainModule(import.meta.url)) main();
  *
  * Equivalent of CommonJS's `require.main === module`. `fileURLToPath` strips
- * the `file://` prefix and URL-encoded segments so the comparison against
- * `process.argv[1]` (which is already an absolute resolved path) is
- * apples-to-apples on every platform.
+ * the `file://` prefix and URL-encoded segments. Node gives the entry module
+ * its real path, while `process.argv[1]` keeps the path as typed, so a
+ * symlinked folder on the way (macOS's /var, a link to /private/var) is
+ * resolved on the argv side too.
  */
 
 import { realpathSync } from "node:fs";
@@ -27,7 +28,7 @@ export function isMainModule(importMetaUrl: string): boolean {
 	const argv1 = process.argv[1];
 	if (argv1 === undefined) return false;
 	const modulePath = fileURLToPath(importMetaUrl);
-	// Node gives the entry module its real path; argv[1] keeps the path as
-	// typed, so a symlinked folder on the way (macOS's /var) still counts.
-	return modulePath === argv1 || real(modulePath) === real(argv1);
+	// The module's path is already real (the loader resolved it), so only
+	// argv[1] needs resolving.
+	return modulePath === argv1 || modulePath === real(argv1);
 }
