@@ -63,8 +63,10 @@ function listing(dir: string, ext: string): Set<string> {
 }
 
 /**
- * The processes running qmd-refresh-run.ts with `marker` in their
- * command line: the refresh workers this run's tests started. Listing
+ * The processes running a refresh worker with `marker` in their command
+ * line: the refresh workers this run's tests started. A worker is the
+ * hooks' own `qmd-refresh-run.ts` or the qmd extension's
+ * `extensions/qmd/refresh-run.ts`; `refresh-run` matches both. Listing
  * failures read as none; the run's own result still stands.
  */
 function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
@@ -74,7 +76,7 @@ function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 	const listed = windows
 		? spawnSync(
 				"powershell.exe",
-				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%qmd-refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
+				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
 				{ encoding: "utf-8", timeout: 30_000, windowsHide: true },
 			)
 		: spawnSync("ps", ["-ax", "-ww", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
@@ -89,7 +91,7 @@ function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 		.map((line) => /^\s*(\d+)\s+(.*)$/.exec(line))
 		.filter((m): m is RegExpExecArray => m !== null)
 		.map((m) => ({ pid: Number(m[1]), cmd: m[2] ?? "" }))
-		.filter((p) => p.cmd.includes("qmd-refresh-run") && fold(p.cmd).includes(fold(marker)));
+		.filter((p) => p.cmd.includes("refresh-run") && fold(p.cmd).includes(fold(marker)));
 }
 
 const before = watched.map(({ dir, ext }) => listing(dir, ext));
