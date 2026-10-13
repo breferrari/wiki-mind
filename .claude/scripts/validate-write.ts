@@ -3,7 +3,7 @@
  * PostToolUse on a write (AfterTool on Gemini): the vault's write
  * validators, run over each file just written (SPEC.md §7.4).
  *
- * The protocol is obsidian-mind's (its validate-write.ts):
+ * The protocol is obsidian-mind's (its validate-write.ts at 70317e2):
  * - the files changed are `refreshTargets`: Claude Code's and Gemini's
  *   `tool_input.file_path`, or each file a Codex `apply_patch` adds,
  *   updates, deletes or moves (both paths); none, no output;
@@ -81,10 +81,10 @@ try {
 		// refresh, say): an effect decides for itself which paths it acts on.
 		const effects = await runEffects(registry, { event: "write", target }, ctx);
 		failures.push(...effects.failures);
+		if (!validate) continue;
 		// The skip rules match path segments, so they get the vault-relative
 		// path: a vault that itself sits under a `.claude/` or `templates/`
 		// folder (a Claude Code worktree, say) would otherwise skip every file.
-		if (!validate) continue;
 		if (shouldSkipFile(relPath)) {
 			debug(`validate: skipped ${relPath}`);
 			continue;

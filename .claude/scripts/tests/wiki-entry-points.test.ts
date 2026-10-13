@@ -57,6 +57,11 @@ function startContext(stdin: object, env: Record<string, string> = {}) {
 	return { code, stdout, context };
 }
 
+/** validate-write given a Codex apply_patch, which names its files in the patch, relative to the session's cwd (#100). */
+function applyPatch(command: string, env: Record<string, string> = {}) {
+	return run("validate-write", { hook_event_name: "PostToolUse", tool_name: "apply_patch", cwd: vault, tool_input: { command } }, env);
+}
+
 before(() => {
 	vault = mkdtempSync(join(tmpdir(), "wiki-entry-"));
 	state = mkdtempSync(join(tmpdir(), "wiki-entry-state-"));
@@ -355,8 +360,6 @@ describe("validate-write", () => {
 	});
 
 	describe("a Codex apply_patch, whose payload names its files in the patch (#100)", () => {
-		const patch = (command: string) =>
-			run("validate-write", { hook_event_name: "PostToolUse", tool_name: "apply_patch", cwd: vault, tool_input: { command } });
 
 		test("each note it adds, updates or moves to is validated, in one envelope; CRLF and an absolute path too", () => {
 			writeFileSync(join(vault, "concepts", "Added.md"), "no frontmatter");
@@ -372,7 +375,7 @@ describe("validate-write", () => {
 				"*** Move to: concepts/Moved.md",
 				"*** End Patch",
 			].join("\r\n");
-			const { stdout } = patch(command);
+			const { stdout } = applyPatch(command);
 			const context = parseHookContext(stdout, "PostToolUse");
 			assert.match(context, /concepts\/Added\.md:\n- Missing YAML frontmatter/);
 			assert.match(context, /concepts\/Lonely\.md:\n- Cites no source/);
@@ -380,11 +383,11 @@ describe("validate-write", () => {
 		});
 
 		test("a patch that only deletes, or writes only outside the vault or no Markdown, writes nothing", () => {
-			assert.equal(patch("*** Begin Patch\n*** Delete File: concepts/Lonely.md\n*** End Patch\n").stdout, "");
+			assert.equal(applyPatch("*** Begin Patch\n*** Delete File: concepts/Lonely.md\n*** End Patch\n").stdout, "");
 			writeFileSync(join(state, "elsewhere.md"), "no frontmatter");
 			writeFileSync(join(vault, "concepts", "notes.txt"), "x");
 			const command = `*** Begin Patch\n*** Update File: ${join(state, "elsewhere.md")}\n*** Add File: concepts/notes.txt\n+x\n*** End Patch\n`;
-			assert.equal(patch(command).stdout, "");
+			assert.equal(applyPatch(command).stdout, "");
 		});
 	});
 
@@ -444,14 +447,15 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		}
 	});
 
-	test("validate-write.ts runs the write effects for each note an apply_patch writes, deletes or moves, once each (#100)", () => {
+	test("validate-write.ts runs the write effects for each file an apply_patch writes, deletes or moves, once each, Markdown or not (#100)", () => {
 		writeFileSync(join(vault, "concepts", "New.md"), fm(BASE) + "[[Paper]]\n");
+		writeFileSync(join(vault, "concepts", "data.txt"), "x");
 		rmSync(join(markers, "write-paths"), { force: true });
-		const command = "*** Begin Patch\n*** Delete File: concepts/Gone.md\n*** Update File: concepts/Old.md\n*** Move to: concepts/New.md\n*** End Patch\n";
-		const r = run("validate-write", { hook_event_name: "PostToolUse", tool_name: "apply_patch", cwd: vault, tool_input: { command } }, { EFFECT_PROBE_DIR: markers });
+		const command = "*** Begin Patch\n*** Delete File: concepts/Gone.md\n*** Update File: concepts/Old.md\n*** Move to: concepts/New.md\n*** Add File: concepts/data.txt\n+x\n*** End Patch\n";
+		const r = applyPatch(command, { EFFECT_PROBE_DIR: markers });
 		assert.equal(r.code, 0, r.stderr);
 		const paths = readFileSync(join(markers, "write-paths"), "utf-8").split("\n").filter(Boolean).sort();
-		assert.deepEqual(paths, ["concepts/Gone.md", "concepts/New.md", "concepts/Old.md"], "the index sees a deleted note and a moved note's old path");
+		assert.deepEqual(paths, ["concepts/Gone.md", "concepts/New.md", "concepts/Old.md", "concepts/data.txt"], "the index sees a deleted note and a moved note's old path");
 	});
 
 	test("stop-checklist.ts runs the stop effects before its checks, so a checklist item that throws keeps them", () => {
