@@ -8,12 +8,9 @@
  * by lib/project-dir.ts) named
  * `session_<trigger>_<YYYYMMDD_HHMMSS>.jsonl`.
  *
- * Copied from obsidian-mind's pre-compact.ts at 70317e2, whose backup and
- * its three exports (tested by the vendored tests/pre-compact.test.ts) are
- * unchanged. Its own QMD refresh trigger is replaced by the effects the
- * vault's extensions declare on `pre-compact` (#104), QMD's refresh among
- * them, so the extension switches reach compaction too. PreCompact has no
- * context channel: an effect's failure goes to the debug log.
+ * Copied from obsidian-mind's pre-compact.ts at 70317e2, with its backup
+ * and exports unchanged. Its own QMD trigger is replaced by the declared
+ * pre-compact effects (#104; SPEC.md §7.2).
  */
 
 import {
@@ -68,22 +65,8 @@ export function pruneBackups(dir: string, retain: number): void {
 	}
 }
 
-if (isMainModule(import.meta.url)) {
-	const input = await readStdinJson<HookInput>();
-	if (!input) process.exit(0);
-
-	// The pre-compact effects run before the backup, QMD's index refresh among
-	// them: writes tend to cluster right before compaction, and catching them
-	// now means the resume's SessionStart finds the index current.
-	const vaultRoot = resolveProjectDir(process.cwd());
-	try {
-		const { registry, ctx } = await openVault(vaultRoot, "pre-compact");
-		const effects = await runEffects(registry, { event: "pre-compact" }, ctx);
-		for (const line of formatFailures([...registry.failures, ...effects.failures])) debug(`pre-compact: ${line}`);
-	} catch (err) {
-		debug(`pre-compact: effects: ${err instanceof Error ? err.message : String(err)}`);
-	}
-
+/** Copy the transcript to `thinking/session-logs/` and prune; every failure is non-fatal. */
+function backUp(vaultRoot: string, input: HookInput): void {
 	const transcriptPath =
 		typeof input.transcript_path === "string" ? input.transcript_path : "";
 	const trigger =
@@ -91,7 +74,7 @@ if (isMainModule(import.meta.url)) {
 
 	if (!transcriptPath) {
 		debug("pre-compact: no transcript_path in input");
-		process.exit(0);
+		return;
 	}
 
 	const backupDir = join(vaultRoot, "thinking/session-logs");
@@ -115,9 +98,30 @@ if (isMainModule(import.meta.url)) {
 		} else {
 			debug(`pre-compact: copy failed: ${(err as Error).message}`);
 		}
-		process.exit(0);
+		return;
 	}
 
 	pruneBackups(backupDir, BACKUP_RETAIN);
+}
+
+if (isMainModule(import.meta.url)) {
+	const input = await readStdinJson<HookInput>();
+	if (!input) process.exit(0);
+	const vaultRoot = resolveProjectDir(process.cwd());
+
+	// The backup first: it is a quick copy, and it survives a hook killed by
+	// its time limit while an extension loads.
+	backUp(vaultRoot, input);
+
+	// Then the pre-compact effects, QMD's index refresh among them: writes
+	// tend to cluster right before compaction, and catching them now means the
+	// resume's SessionStart finds the index current.
+	try {
+		const { registry, ctx } = await openVault(vaultRoot, "pre-compact");
+		const effects = await runEffects(registry, { event: "pre-compact" }, ctx);
+		for (const line of formatFailures([...registry.failures, ...effects.failures])) debug(`pre-compact: ${line}`);
+	} catch (err) {
+		debug(`pre-compact: effects: ${err instanceof Error ? err.message : String(err)}`);
+	}
 	process.exit(0);
 }

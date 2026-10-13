@@ -423,7 +423,8 @@ describe("pre-compact", () => {
 		const transcript = join(state, "transcript.jsonl");
 		writeFileSync(transcript, '{"type":"user"}\n');
 		try {
-			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "auto", transcript_path: transcript });
+			// The effects are the probe suite's; off here, the run skips loading them.
+			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "auto", transcript_path: transcript }, { VAULT_EXTENSIONS: "off" });
 			assert.equal(r.code, 0, r.stderr);
 			const backups = readdirSync(join(vault, "thinking", "session-logs"));
 			assert.equal(backups.length, 1);
@@ -435,12 +436,15 @@ describe("pre-compact", () => {
 	});
 
 	test("a missing transcript, or none named, exits 0 with no output", () => {
-		for (const input of [{ hook_event_name: "PreCompact", trigger: "manual", transcript_path: join(state, "gone.jsonl") }, { hook_event_name: "PreCompact" }]) {
-			const r = run("pre-compact", input);
-			assert.equal(r.code, 0, r.stderr);
-			assert.equal(r.stdout, "");
+		try {
+			for (const input of [{ hook_event_name: "PreCompact", trigger: "manual", transcript_path: join(state, "gone.jsonl") }, { hook_event_name: "PreCompact" }]) {
+				const r = run("pre-compact", input, { VAULT_EXTENSIONS: "off" });
+				assert.equal(r.code, 0, r.stderr);
+				assert.equal(r.stdout, "");
+			}
+		} finally {
+			rmSync(join(vault, "thinking"), { recursive: true, force: true });
 		}
-		rmSync(join(vault, "thinking"), { recursive: true, force: true });
 	});
 });
 
