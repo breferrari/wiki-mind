@@ -93,7 +93,7 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Declare the personalize hook in shard.yaml | [#82](https://github.com/breferrari/wiki-mind/issues/82) |
 | ✅ | Install into a named folder in the README and release notes for ShardMind 1.0 | [#83](https://github.com/breferrari/wiki-mind/issues/83) |
 | ✅ | Codex and Gemini as removable modules, with AGENTS.md as the one manual | [#25](https://github.com/breferrari/wiki-mind/issues/25) |
-| ⬜ | Take obsidian-mind#341's SessionStart JSON envelope when the record moves past it | [#98](https://github.com/breferrari/wiki-mind/issues/98) |
+| ✅ | Take obsidian-mind#341's SessionStart JSON envelope when the record moves past it | [#98](https://github.com/breferrari/wiki-mind/issues/98) |
 | ⬜ | Take obsidian-mind's Codex and Gemini config fixes on the next re-vendor | [#100](https://github.com/breferrari/wiki-mind/issues/100) |
 | ✅ | Vendor mindframe's one frontmatter reader, and lift /wiki-retract's BOM refusal | [#101](https://github.com/breferrari/wiki-mind/issues/101) |
 | ✅ | Adopt mindframe's qmd extension and refresh effects in one migration | [#102](https://github.com/breferrari/wiki-mind/issues/102) |
