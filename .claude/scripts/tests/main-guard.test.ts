@@ -8,6 +8,9 @@
 
 import { test, describe, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { isMainModule } from "../lib/main-guard.ts";
@@ -55,5 +58,24 @@ describe("isMainModule", () => {
 		// pathToFileURL encodes the space as %20; isMainModule must decode
 		// before comparing against the raw argv path.
 		assert.equal(isMainModule(pathToFileURL(path).href), true);
+	});
+
+	test("true when argv[1] reaches the module through a symlinked folder (obsidian-mind#391)", () => {
+		// Node gives the entry module its real path; argv[1] keeps the path as typed,
+		// as for a vault under macOS's /var, a symlink to /private/var.
+		const root = mkdtempSync(join(tmpdir(), "main-guard-"));
+		try {
+			mkdirSync(join(root, "real"));
+			writeFileSync(join(root, "real", "foo.ts"), "");
+			try {
+				symlinkSync(join(root, "real"), join(root, "link"), "junction");
+			} catch {
+				return; // no symlink rights here; the comparison is the same on every platform
+			}
+			process.argv[1] = join(root, "link", "foo.ts");
+			assert.equal(isMainModule(pathToFileURL(realpathSync(join(root, "real", "foo.ts"))).href), true);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
 	});
 });

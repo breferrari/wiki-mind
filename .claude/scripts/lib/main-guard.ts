@@ -11,11 +11,23 @@
  * apples-to-apples on every platform.
  */
 
+import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+/** The real path, or the path itself when it can't be resolved. */
+const real = (path: string): string => {
+	try {
+		return realpathSync(path);
+	} catch {
+		return path;
+	}
+};
+
 export function isMainModule(importMetaUrl: string): boolean {
-	return (
-		process.argv[1] !== undefined &&
-		fileURLToPath(importMetaUrl) === process.argv[1]
-	);
+	const argv1 = process.argv[1];
+	if (argv1 === undefined) return false;
+	const modulePath = fileURLToPath(importMetaUrl);
+	// Node gives the entry module its real path; argv[1] keeps the path as
+	// typed, so a symlinked folder on the way (macOS's /var) still counts.
+	return modulePath === argv1 || real(modulePath) === real(argv1);
 }
