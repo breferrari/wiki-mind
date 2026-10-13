@@ -23,6 +23,11 @@ let state = "";
 const fm = (fields: Record<string, string>) => `---\n${Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join("\n")}\n---\n`;
 const BASE = { date: "2026-10-05", description: "d", tags: "[t]" };
 
+/** The extensions the shipped vault-manifest.json declares. */
+function shipped(): { id: string }[] {
+	return (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
+}
+
 function manifest(extra: Record<string, unknown> = {}, extensions?: unknown[]): void {
 	const base = JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as Record<string, unknown>;
 	writeFileSync(join(vault, "vault-manifest.json"), JSON.stringify({ ...base, ...extra, ...(extensions === undefined ? {} : { extensions }) }));
@@ -85,7 +90,7 @@ describe("session-start", () => {
 	});
 
 	test("a vault that sets QMD keys without declaring the qmd extension sees how to declare it on the meter (#102)", () => {
-		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
+		const declared = shipped();
 		manifest({}, declared.filter((d) => d.id !== "qmd"));
 		let context: string;
 		try {
@@ -135,7 +140,7 @@ describe("session-start", () => {
 			join(vault, ".claude", "extensions", "big", "big.mjs"),
 			`export default { id: "big", sections: [{ id: "big.quotes", header: "### Quotes", render: () => ${JSON.stringify('"'.repeat(6000))} }] };\n`,
 		);
-		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		const declared = shipped();
 		manifest({}, [...declared, { id: "big", module: ".claude/extensions/big/big.mjs", events: ["session-start"] }]);
 		let out: ReturnType<typeof startContext>;
 		try {
@@ -410,7 +415,7 @@ describe("validate-write", () => {
 		// A probe validator that would flag any file it sees: the skip rules decide.
 		mkdirSync(join(vault, ".claude", "extensions", "seer"), { recursive: true });
 		writeFileSync(join(vault, ".claude", "extensions", "seer", "index.mjs"), 'export default { id: "seer", validators: [{ id: "seer.any", appliesTo: () => true, validate: () => ["seen"] }] };\n');
-		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		const declared = shipped();
 		manifest({}, [...declared, { id: "seer", module: ".claude/extensions/seer/index.mjs", events: ["write"] }]);
 		writeFileSync(join(vault, "claude.md"), "# mine\n");
 		writeFileSync(join(vault, "concepts", "Claude.md"), fm(BASE) + "[[Paper]]\n");
@@ -493,7 +498,7 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 			// A write effect also logs its target's path, one per line, to `write-paths`.
 			`import { appendFileSync, writeFileSync } from "node:fs";\nimport { join } from "node:path";\nconst dir = () => process.env["EFFECT_PROBE_DIR"] ?? ".";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string; target?: { relPath: string } }) => { writeFileSync(join(dir(), trigger.event), ""); if (trigger.target) appendFileSync(join(dir(), "write-paths"), trigger.target.relPath + "\\n"); } }] };\n`,
 		);
-		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		const declared = shipped();
 		manifest({}, [...declared, { id: "probe", module: ".claude/extensions/probe/index.ts", events: EVENTS }]);
 	});
 	after(() => manifest());

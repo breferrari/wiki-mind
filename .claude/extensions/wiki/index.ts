@@ -15,7 +15,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CLAUDE_MD, INSTRUCTION_FILE, retiredInVault, sameOnDisk, stripFrontmatter, type Extension, type Finding, type HookContext, type WriteTarget } from "../../scripts/core/index.ts";
+import { CLAUDE_MD, INSTRUCTION_FILE, isRetiredInstructionFile, retiredInVault, sameOnDisk, stripFrontmatter, type Extension, type Finding, type HookContext, type WriteTarget } from "../../scripts/core/index.ts";
 import {
 	FOLDERS,
 	NOTE_TYPES,
@@ -136,8 +136,10 @@ export const extension: Extension = {
 					// CLAUDE.md always, and GEMINI.md only where the vault's Gemini
 					// settings point Gemini at AGENTS.md, each name matched the way the
 					// agent opens it (the core's retiredInVault, mindframe #91 and #104).
-					const retired = retiredInVault(ctx.vaultRoot);
-					names = readdirSync(ctx.vaultRoot).filter(retired).sort();
+					// The settings are read only when a candidate is there.
+					const candidates = readdirSync(ctx.vaultRoot).filter((n) => isRetiredInstructionFile(n));
+					if (candidates.length === 0) return null;
+					names = candidates.filter(retiredInVault(ctx.vaultRoot)).sort();
 				} catch {
 					return null;
 				}
