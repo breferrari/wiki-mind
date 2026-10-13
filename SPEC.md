@@ -233,10 +233,10 @@ The same events obsidian-mind hooks, wired the same way in `.claude/settings.jso
 | SessionStart | `session-start.ts` | Context sections: `Index.md` summary, open questions, recent sources. |
 | UserPromptSubmit | `classify-message.ts` | Wiki prompt signals: a new source, a claim, a comparison, a question. |
 | PostToolUse (Write/Edit; Codex's `apply_patch`, Gemini's `write_file` and `replace`) | `validate-write.ts` | Write validators: frontmatter and link rules per §2, on each file the call writes. |
-| PreCompact | `pre-compact.ts` | The pre-compact effects, then obsidian-mind's transcript backup, copied (#104). |
+| PreCompact | `pre-compact.ts` | obsidian-mind's transcript backup, copied, then the pre-compact effects (#104). |
 | Stop | `stop-checklist.ts` | Stop detectors: the `wiki-lint` checks. |
 
-**Decided (2026-10-13, maintainer may overrule):** QMD is an extension, mindframe's first-party `qmd` (#102, mindframe #70 and #95). Its session-start notes are sections, and its index refresh runs as effects, so the entry points carry no QMD code of their own. `session-start.ts`, `validate-write.ts`, `stop-checklist.ts` and `pre-compact.ts` each call the registry's `runEffects` for their event: session start; every write inside the vault, before the skip rules; Stop, before its checks; and compaction, before the transcript backup (#104). The vault declares the extension in `vault-manifest.json`.
+**Decided (2026-10-13, maintainer may overrule):** QMD is an extension, mindframe's first-party `qmd` (#102, mindframe #70 and #95). Its session-start notes are sections, and its index refresh runs as effects, so the entry points carry no QMD code of their own. `session-start.ts`, `validate-write.ts`, `stop-checklist.ts` and `pre-compact.ts` each call the registry's `runEffects` for their event: session start; every write inside the vault, before the skip rules; Stop, before its checks; and compaction, after the transcript backup (#104). The vault declares the extension in `vault-manifest.json`.
 
 ### 6.4 The Claude Code mod
 
