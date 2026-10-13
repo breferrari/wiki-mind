@@ -18,6 +18,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
   2. `cd my-wiki`
 
   If your ShardMind can't find the shard by name, use the full GitHub reference: `npx shardmind install github:breferrari/wiki-mind my-wiki`. An older ShardMind stops with a version error: run `npx shardmind@latest`, or upgrade a global install with `npm i -g shardmind@latest`.
+- **QMD search runs as an extension.** `vault-manifest.json` declares it under `extensions`, as `qmd`. It keeps the search index fresh at session start, after each write, before a compaction and at Stop, as before. If the entry is missing or wrong, session start says how to fix it.
 
 ### Fixed
 

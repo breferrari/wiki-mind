@@ -32,7 +32,7 @@ describe("what a vault gets", () => {
 	});
 
 	test("no test file and no test support installs", () => {
-		const leaked = [...installed].filter((f) => /\.test\.ts$/.test(f) || f.startsWith(".claude/scripts/tests/") || f.endsWith("/world.ts"));
+		const leaked = [...installed].filter((f) => /\.test\.ts$/.test(f) || f.startsWith(".claude/scripts/tests/") || /\/(world|test-fakes)\.ts$/.test(f));
 		assert.deepEqual(leaked, []);
 	});
 

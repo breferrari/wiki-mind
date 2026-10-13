@@ -5,10 +5,10 @@
  *
  * The protocol is obsidian-mind's (its validate-write.ts at v9.1.0):
  * - no `tool_input.file_path`, no output;
- * - the debounced QMD refresh runs before any skip, so every Markdown
- *   write refreshes the index;
  * - a file outside the vault root is not validated (the boundary is
  *   segment-safe: /vault does not match /vaulting);
+ * - the write effects (QMD's index refresh among them) run before the skip
+ *   rules, so every Markdown write refreshes the index;
  * - the file is read once, and every validator sees the same snapshot;
  * - warnings go to the agent in the event's envelope, which echoes the
  *   event name.
@@ -18,14 +18,11 @@
  */
 
 import { readFileSync } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
-import { fileURLToPath } from "node:url";
 import { debug, readStdinJson, writeHookOutput } from "./lib/hook-io.ts";
 import { shouldSkipFile } from "./lib/frontmatter.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
-import { shouldRefreshForPath, triggerDebouncedRefresh } from "./lib/qmd-refresh.ts";
 import { openVault } from "./core/context.ts";
-import { formatFailures, runValidators } from "./core/registry.ts";
+import { formatFailures, runEffects, runValidators } from "./core/registry.ts";
 
 type HookInput = {
 	readonly tool_input?: unknown;
@@ -40,18 +37,6 @@ if (typeof filePath !== "string" || filePath === "") {
 	process.exit(0);
 }
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-// QMD_REFRESH_SENTINEL routes the sentinel to a tmp path for tests.
-const SENTINEL_PATH = process.env["QMD_REFRESH_SENTINEL"] ?? join(SCRIPT_DIR, ".qmd-refresh-sentinel");
-if (shouldRefreshForPath(filePath)) {
-	triggerDebouncedRefresh({
-		sentinelPath: SENTINEL_PATH,
-		workerPath: resolvePath(SCRIPT_DIR, "qmd-refresh-run.ts"),
-		debounceMs: 30_000,
-		logPrefix: "validate-write",
-	});
-}
-
 const vaultRoot = resolveProjectDir(process.cwd());
 const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
 const fileFwd = filePath.replaceAll("\\", "/");
@@ -63,13 +48,6 @@ if (!fold(fileFwd).startsWith(`${fold(rootFwd)}/`)) {
 	process.exit(0);
 }
 const relPath = fileFwd.slice(rootFwd.length + 1);
-// The skip rules match path segments, so they get the vault-relative path:
-// a vault that itself sits under a `.claude/` or `templates/` folder (a
-// Claude Code worktree, say) would otherwise skip every file.
-if (shouldSkipFile(relPath)) {
-	debug(`validate: skipped ${filePath}`);
-	process.exit(0);
-}
 
 let content: string;
 try {
@@ -82,8 +60,17 @@ try {
 const blocks: string[] = [];
 try {
 	const { registry, ctx } = await openVault(vaultRoot, "write");
-	const validated = await runValidators(registry, { relPath, content }, ctx);
-	const failureLines = formatFailures([...registry.failures, ...validated.failures]);
+	// Every write's effects run before the skip below (QMD's index refresh,
+	// say): an effect decides for itself which paths it acts on.
+	const target = { relPath, content };
+	const effects = await runEffects(registry, { event: "write", target }, ctx);
+	// The skip rules match path segments, so they get the vault-relative path:
+	// a vault that itself sits under a `.claude/` or `templates/` folder (a
+	// Claude Code worktree, say) would otherwise skip every file.
+	const skipped = shouldSkipFile(relPath);
+	if (skipped) debug(`validate: skipped ${filePath}`);
+	const validated = skipped ? { result: [], failures: [] } : await runValidators(registry, target, ctx);
+	const failureLines = formatFailures([...registry.failures, ...effects.failures, ...validated.failures]);
 	if (validated.result.length > 0) blocks.push(`⚠️  ${relPath}:\n${validated.result.map((w) => `- ${w}`).join("\n")}`);
 	if (failureLines.length > 0) blocks.push(`Extensions:\n${failureLines.join("\n")}`);
 } catch (err) {

@@ -7,7 +7,7 @@
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,6 +58,18 @@ describe("session-start", () => {
 	test("started in a vault subfolder, it walks up to vault-manifest.json and serves the vault (SPEC.md §7.3)", () => {
 		const { stdout } = run("session-start", { source: "startup" }, { CLAUDE_PROJECT_DIR: join(vault, "questions") });
 		assert.match(stdout, /### Open questions\n- \[\[Why\]\]/);
+	});
+
+	test("a vault that sets QMD keys without declaring the qmd extension sees how to declare it on the meter (#102)", () => {
+		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
+		manifest({}, declared.filter((d) => d.id !== "qmd"));
+		let stdout: string;
+		try {
+			stdout = run("session-start", { source: "startup" }).stdout;
+		} finally {
+			manifest();
+		}
+		assert.match(stdout, /QMD off: extensions needs \{"id":"qmd"/);
 	});
 
 	test("a startup gets the core sections, then the extension's, under the meter", () => {
@@ -271,5 +283,67 @@ describe("validate-write", () => {
 		const leaked = readdirSync(join(vault, ".claude", "scripts")).filter((f) => RUNTIME_STATE.has(f));
 		assert.deepEqual(leaked, []);
 		assert.equal(existsSync(join(vault, ".claude", "scripts", ".stop-handoff")), false);
+	});
+});
+
+describe("each entry point runs the effects declared on its event (#90)", () => {
+	// A probe extension: an effect on every effect event, writing a marker named after the event.
+	const EVENTS = ["session-start", "write", "pre-compact", "stop"];
+	let markers = "";
+	before(() => {
+		markers = join(state, "markers");
+		mkdirSync(markers);
+		mkdirSync(join(vault, ".claude", "extensions", "probe"), { recursive: true });
+		writeFileSync(
+			join(vault, ".claude", "extensions", "probe", "index.ts"),
+			`import { writeFileSync } from "node:fs";\nimport { join } from "node:path";\nexport default { id: "probe", effects: [{ id: "probe.mark", on: ${JSON.stringify(EVENTS)}, run: (trigger: { event: string }) => writeFileSync(join(process.env["EFFECT_PROBE_DIR"] ?? ".", trigger.event), "") }] };\n`,
+		);
+		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		manifest({}, [...declared, { id: "probe", module: ".claude/extensions/probe/index.ts", events: EVENTS }]);
+	});
+	after(() => manifest());
+
+	// Inputs are functions: the vault's path is known only once the suite's `before` has run.
+	for (const [script, event, stdin] of [
+		["session-start", "session-start", () => ({ hook_event_name: "SessionStart", source: "startup", session_id: "e1" })],
+		["validate-write", "write", () => ({ hook_event_name: "PostToolUse", tool_name: "Write", tool_input: { file_path: join(vault, "concepts", "Lonely.md") } })],
+		["stop-checklist", "stop", () => ({ hook_event_name: "Stop", session_id: "e3" })],
+	] as const) {
+		test(`${script}.ts runs the ${event} effects`, () => {
+			const r = run(script, stdin(), { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.ok(existsSync(join(markers, event)), `the ${event} effect ran`);
+		});
+	}
+
+	test("validate-write.ts runs the write effects before the skip rules, for a file it does not validate", () => {
+		mkdirSync(join(vault, "templates"), { recursive: true });
+		writeFileSync(join(vault, "templates", "Concept.md"), "---\ndate:\n---\n");
+		rmSync(join(markers, "write"), { force: true });
+		try {
+			const r = run("validate-write", { hook_event_name: "PostToolUse", tool_name: "Write", tool_input: { file_path: join(vault, "templates", "Concept.md") } }, { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.ok(existsSync(join(markers, "write")), "the write effect ran");
+		} finally {
+			rmSync(join(vault, "templates"), { recursive: true, force: true });
+		}
+	});
+
+	test("stop-checklist.ts runs the stop effects before its checks, so a checklist item that throws keeps them", () => {
+		mkdirSync(join(vault, ".claude", "extensions", "thrower"), { recursive: true });
+		writeFileSync(
+			join(vault, ".claude", "extensions", "thrower", "index.ts"),
+			'export default { id: "thrower", checklist: [{ id: "thrower.bad", get full(): string { throw new Error("broken getter"); }, short: "s" }] };\n',
+		);
+		const declared = (JSON.parse(readFileSync(join(vault, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		manifest({}, [...declared, { id: "thrower", module: ".claude/extensions/thrower/index.ts", events: ["stop"] }]);
+		rmSync(join(markers, "stop"), { force: true });
+		try {
+			const r = run("stop-checklist", { hook_event_name: "Stop", session_id: "e4" }, { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.ok(existsSync(join(markers, "stop")), "the stop effect ran");
+		} finally {
+			manifest({}, declared);
+		}
 	});
 });

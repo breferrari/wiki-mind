@@ -1,7 +1,9 @@
 /**
  * The four zones (CONTRIBUTING.md, "Developing this shard"), held by their
  * imports so the core can be lifted with a `git mv`:
- * - `lib/` is vendored and imports only `lib/`;
+ * - `lib/` is vendored and imports only `lib/`, but for mindframe's two
+ *   re-exports of the qmd extension's libraries (`lib/qmd.ts` and
+ *   `lib/session-start.ts`), which upstream keeps until mindframe #96;
  * - `core/` imports only `core/` and `lib/`;
  * - `.claude/extensions/` imports only itself and `core/index.ts`, the
  *   core's one public entry point (SPEC.md §7.4);
@@ -51,10 +53,12 @@ const LIB = join(SCRIPTS, "lib");
 const CORE = join(SCRIPTS, "core");
 const EXTENSIONS = join(CLAUDE, "extensions");
 const CORE_ENTRY = join(CORE, "index.ts");
+// The qmd extension's libraries lib/ still re-exports, until mindframe #96.
+const QMD_REEXPORTED = new Set(["qmd.ts", "index-name.ts"].map((name) => join(SCRIPTS, "extensions", "qmd", "lib", name)));
 
 describe("the four zones", () => {
 	test("lib/ imports only lib/", () => {
-		assert.deepEqual(violations(sources(LIB, true), inside(LIB)), []);
+		assert.deepEqual(violations(sources(LIB, true), (t) => inside(LIB)(t) || QMD_REEXPORTED.has(t)), []);
 	});
 
 	test("core/ imports only core/ and lib/", () => {

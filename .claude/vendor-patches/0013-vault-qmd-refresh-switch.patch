@@ -1,6 +1,6 @@
-Description: Let tests turn off the detached QMD refresh worker with VAULT_QMD_REFRESH=off (the spawn becomes a no-op; decisions and stamps still run), set it for every hook runScript spawns, in the test runner and in the per-file preload, and fail a run that leaves a worker behind, killing it with its children
+Description: Let tests turn off the detached QMD refresh worker with VAULT_QMD_REFRESH=off (the spawn becomes a no-op; decisions and stamps still run), set it for every hook runScript spawns, in the test runner and in the per-file preload, and fail a run that leaves a refresh worker behind, matched by refresh-run in its command line so a qmd extension's worker counts too, killing it with its children
 Forwarded: https://github.com/breferrari/obsidian-mind/issues/337
-Last-Update: 2026-10-12
+Last-Update: 2026-10-13
 
 diff --git a/.claude/scripts/lib/qmd-refresh.ts b/.claude/scripts/lib/qmd-refresh.ts
 --- a/.claude/scripts/lib/qmd-refresh.ts
@@ -39,7 +39,7 @@ diff --git a/.claude/scripts/lib/qmd-refresh.ts b/.claude/scripts/lib/qmd-refres
 diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-tests.ts
 --- a/.claude/scripts/tests/_run-tests.ts
 +++ b/.claude/scripts/tests/_run-tests.ts
-@@ -21,14 +21,27 @@
+@@ -21,14 +21,29 @@
   * 3. after the run, fails if a new store or config appeared in the user's
   *    folders, naming each, then removes the temp folder.
   *
@@ -48,9 +48,11 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
 + * that outlives the test and calls qmd later; several suites at once pile
 + * them up. The runner sets VAULT_QMD_REFRESH=off, which the trigger honours
 + * by spawning nothing, and points TMPDIR, TEMP and TMP into its temp folder,
-+ * so a trailing worker a test starts names that folder in its arguments. An
-+ * immediate worker carries no arguments, so the guard can't attribute it;
-+ * the switch is what stops that one. After the run it looks for
++ * so a trailing worker a test starts names that folder in its arguments, as
++ * does a refresh-run worker the qmd extension starts for a vault in that
++ * folder (`--vault`). An immediate
++ * worker of the hooks' own trigger carries no arguments, so the guard can't
++ * attribute it; the switch is what stops that one. After the run it looks for
 + * such workers: it names each one, kills it, and fails the run, since a
 + * guard that only killed would hide the leak.
 + *
@@ -69,13 +71,15 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  import { homedir, tmpdir } from "node:os";
  import { join } from "node:path";
  
-@@ -49,8 +62,40 @@
+@@ -49,8 +64,42 @@
  	}
  }
  
 +/**
-+ * The processes running qmd-refresh-run.ts with `marker` in their
-+ * command line: the refresh workers this run's tests started. Listing
++ * The processes running a refresh worker with `marker` in their command
++ * line: the refresh workers this run's tests started. A worker is the
++ * hooks' own `qmd-refresh-run.ts` or the qmd extension's
++ * `extensions/qmd/refresh-run.ts`; `refresh-run` matches both. Listing
 + * failures read as none; the run's own result still stands.
 + */
 +function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
@@ -85,7 +89,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
 +	const listed = windows
 +		? spawnSync(
 +				"powershell.exe",
-+				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%qmd-refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
++				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
 +				{ encoding: "utf-8", timeout: 30_000, windowsHide: true },
 +			)
 +		: spawnSync("ps", ["-ax", "-ww", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
@@ -100,7 +104,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
 +		.map((line) => /^\s*(\d+)\s+(.*)$/.exec(line))
 +		.filter((m): m is RegExpExecArray => m !== null)
 +		.map((m) => ({ pid: Number(m[1]), cmd: m[2] ?? "" }))
-+		.filter((p) => p.cmd.includes("qmd-refresh-run") && fold(p.cmd).includes(fold(marker)));
++		.filter((p) => p.cmd.includes("refresh-run") && fold(p.cmd).includes(fold(marker)));
 +}
 +
  const before = watched.map(({ dir, ext }) => listing(dir, ext));
@@ -110,7 +114,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  
  const run = spawnSync(
  	process.execPath,
-@@ -62,10 +107,48 @@
+@@ -62,10 +111,48 @@
  			XDG_CACHE_HOME: join(isolated, "cache"),
  			QMD_CONFIG_DIR: join(isolated, "config", "qmd"),
  			OM_QMD_ISOLATED: isolated,
@@ -159,7 +163,7 @@ diff --git a/.claude/scripts/tests/_run-tests.ts b/.claude/scripts/tests/_run-te
  const added = watched.flatMap(({ dir, ext }, i) =>
  	[...listing(dir, ext)].filter((f) => !before[i]!.has(f)).sort().map((f) => join(dir, f)),
  );
-@@ -83,4 +166,5 @@
+@@ -83,4 +170,5 @@
  	);
  	process.exit(1);
  }

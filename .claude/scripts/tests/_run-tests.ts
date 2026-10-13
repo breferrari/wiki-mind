@@ -26,9 +26,11 @@
  * that outlives the test and calls qmd later; several suites at once pile
  * them up. The runner sets VAULT_QMD_REFRESH=off, which the trigger honours
  * by spawning nothing, and points TMPDIR, TEMP and TMP into its temp folder,
- * so a trailing worker a test starts names that folder in its arguments. An
- * immediate worker carries no arguments, so the guard can't attribute it;
- * the switch is what stops that one. After the run it looks for
+ * so a trailing worker a test starts names that folder in its arguments, as
+ * does a refresh-run worker the qmd extension starts for a vault in that
+ * folder (`--vault`). An immediate
+ * worker of the hooks' own trigger carries no arguments, so the guard can't
+ * attribute it; the switch is what stops that one. After the run it looks for
  * such workers: it names each one, kills it, and fails the run, since a
  * guard that only killed would hide the leak.
  *
@@ -63,8 +65,10 @@ function listing(dir: string, ext: string): Set<string> {
 }
 
 /**
- * The processes running qmd-refresh-run.ts with `marker` in their
- * command line: the refresh workers this run's tests started. Listing
+ * The processes running a refresh worker with `marker` in their command
+ * line: the refresh workers this run's tests started. A worker is the
+ * hooks' own `qmd-refresh-run.ts` or the qmd extension's
+ * `extensions/qmd/refresh-run.ts`; `refresh-run` matches both. Listing
  * failures read as none; the run's own result still stands.
  */
 function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
@@ -74,7 +78,7 @@ function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 	const listed = windows
 		? spawnSync(
 				"powershell.exe",
-				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%qmd-refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
+				["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%refresh-run%'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }"],
 				{ encoding: "utf-8", timeout: 30_000, windowsHide: true },
 			)
 		: spawnSync("ps", ["-ax", "-ww", "-o", "pid=,args="], { encoding: "utf-8", timeout: 30_000 });
@@ -89,7 +93,7 @@ function refreshWorkers(marker: string): { pid: number; cmd: string }[] {
 		.map((line) => /^\s*(\d+)\s+(.*)$/.exec(line))
 		.filter((m): m is RegExpExecArray => m !== null)
 		.map((m) => ({ pid: Number(m[1]), cmd: m[2] ?? "" }))
-		.filter((p) => p.cmd.includes("qmd-refresh-run") && fold(p.cmd).includes(fold(marker)));
+		.filter((p) => p.cmd.includes("refresh-run") && fold(p.cmd).includes(fold(marker)));
 }
 
 const before = watched.map(({ dir, ext }) => listing(dir, ext));

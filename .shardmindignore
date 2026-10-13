@@ -24,6 +24,8 @@ ROADMAP.md
 .claude/scripts/**/*.test.ts
 .claude/skills/wiki-mind/hooks/*.test.ts
 .claude/skills/wiki-mind/hooks/world.ts
+# The qmd extension's test fakes, imported only by its tests.
+.claude/scripts/extensions/qmd/test-fakes.ts
 
 # Vendor records and patches describe the repo's sources; an installed vault
 # is the user's own, and updates through ShardMind. Without a record the
