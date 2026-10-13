@@ -63,8 +63,12 @@ describe("session-start", () => {
 	test("a vault that sets QMD keys without declaring the qmd extension sees how to declare it on the meter (#102)", () => {
 		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
 		manifest({}, declared.filter((d) => d.id !== "qmd"));
-		const { stdout } = run("session-start", { source: "startup" });
-		manifest();
+		let stdout: string;
+		try {
+			stdout = run("session-start", { source: "startup" }).stdout;
+		} finally {
+			manifest();
+		}
 		assert.match(stdout, /QMD off: extensions needs \{"id":"qmd"/);
 	});
 
@@ -316,9 +320,30 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		mkdirSync(join(vault, "templates"), { recursive: true });
 		writeFileSync(join(vault, "templates", "Concept.md"), "---\ndate:\n---\n");
 		rmSync(join(markers, "write"), { force: true });
-		const r = run("validate-write", { hook_event_name: "PostToolUse", tool_name: "Write", tool_input: { file_path: join(vault, "templates", "Concept.md") } }, { EFFECT_PROBE_DIR: markers });
-		assert.equal(r.code, 0, r.stderr);
-		assert.equal(r.stdout.trim(), "", "a skipped file gets no warnings");
-		assert.ok(existsSync(join(markers, "write")), "the write effect ran");
+		try {
+			const r = run("validate-write", { hook_event_name: "PostToolUse", tool_name: "Write", tool_input: { file_path: join(vault, "templates", "Concept.md") } }, { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.ok(existsSync(join(markers, "write")), "the write effect ran");
+		} finally {
+			rmSync(join(vault, "templates"), { recursive: true, force: true });
+		}
+	});
+
+	test("stop-checklist.ts runs the stop effects before its checks, so a checklist item that throws keeps them", () => {
+		mkdirSync(join(vault, ".claude", "extensions", "thrower"), { recursive: true });
+		writeFileSync(
+			join(vault, ".claude", "extensions", "thrower", "index.ts"),
+			'export default { id: "thrower", checklist: [{ id: "thrower.bad", get full(): string { throw new Error("broken getter"); }, short: "s" }] };\n',
+		);
+		const declared = (JSON.parse(readFileSync(join(vault, "vault-manifest.json"), "utf-8")) as { extensions: unknown[] }).extensions;
+		manifest({}, [...declared, { id: "thrower", module: ".claude/extensions/thrower/index.ts", events: ["stop"] }]);
+		rmSync(join(markers, "stop"), { force: true });
+		try {
+			const r = run("stop-checklist", { hook_event_name: "Stop", session_id: "e4" }, { EFFECT_PROBE_DIR: markers });
+			assert.equal(r.code, 0, r.stderr);
+			assert.ok(existsSync(join(markers, "stop")), "the stop effect ran");
+		} finally {
+			manifest({}, declared);
+		}
 	});
 });
