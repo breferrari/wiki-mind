@@ -104,10 +104,7 @@
       "upstreamSha256": "8dffe4f7fb07a56ed8d7ead6a6da22b7deb00257e1e4c3436ef9d9b0cf331b5d"
     },
     ".claude/scripts/tests/_proc.ts": {
-      "patches": [
-        "0014-extension-refresh-worker.patch"
-      ],
-      "sha256": "60019068d81fc734b0f3538055cad567054c3f7a7f3fdfc1a291b1735014f9d3",
+      "sha256": "bc232ead8b04833f543be613da9126f8bb480f3ef2ed3cc4cbe0938d6ca86d5e",
       "upstream": ".claude/scripts/tests/_proc.ts",
       "upstreamSha256": "bc232ead8b04833f543be613da9126f8bb480f3ef2ed3cc4cbe0938d6ca86d5e"
     },
@@ -158,10 +155,7 @@
       "upstreamSha256": "d65eba1d321931f749f7c8bbc53a1d2f672d06dbc7fdca8f2a401019b9e37c5f"
     },
     ".claude/scripts/tests/proc.test.ts": {
-      "patches": [
-        "0014-extension-refresh-worker.patch"
-      ],
-      "sha256": "2d0f75ca5c2e82c0f9db918c2c3e6350dcae2ab00759c11bb3bac36386f75a5f",
+      "sha256": "ff150dffb094ea73432733761c8e586ce27b62dae7bf6cd3f9b210e1fc91aca9",
       "upstream": ".claude/scripts/tests/proc.test.ts",
       "upstreamSha256": "ff150dffb094ea73432733761c8e586ce27b62dae7bf6cd3f9b210e1fc91aca9"
     },

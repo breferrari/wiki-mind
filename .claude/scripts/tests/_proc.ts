@@ -1,8 +1,6 @@
 /**
- * Process helpers for the test runner (#337): finding the refresh workers a
- * run may leave behind, and stopping each one's whole tree. A worker is the
- * hooks' own `qmd-refresh-run.ts` or the qmd extension's
- * `extensions/qmd/refresh-run.ts`; `refresh-run` matches both.
+ * Process helpers for the test runner (#337): finding the qmd-refresh-run
+ * workers a run may leave behind, and stopping each one's whole tree.
  *
  * A worker can be blocked in `qmd embed` for up to five minutes, so killing
  * only its own pid would leave that qmd running. A detached worker leads its
@@ -38,7 +36,7 @@ export function listingCommand(platform: NodeJS.Platform = process.platform): { 
 				// PowerShell itself, whose own command line holds the filter text;
 				// and each command line on one line, so a continuation line can
 				// never read as a pid of its own.
-				"[Console]::OutputEncoding = [Text.Encoding]::UTF8; Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%refresh-run%'\" | Where-Object { $_.ProcessId -ne $PID } | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine -replace '[\\r\\n]+', ' ')\" }",
+				"[Console]::OutputEncoding = [Text.Encoding]::UTF8; Get-CimInstance Win32_Process -Filter \"CommandLine LIKE '%qmd-refresh-run%'\" | Where-Object { $_.ProcessId -ne $PID } | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine -replace '[\\r\\n]+', ' ')\" }",
 			],
 		};
 	}
@@ -55,7 +53,7 @@ export function parseProcessList(stdout: string): Proc[] {
 }
 
 /**
- * The running refresh workers, or why the listing failed (an error
+ * The running qmd-refresh-run workers, or why the listing failed (an error
  * such as a missing `ps` or PowerShell, a killing signal, a non-zero exit),
  * so the caller can say the check did not run rather than report none.
  */
@@ -68,7 +66,7 @@ export function listRefreshWorkers(
 	if (r.error !== undefined) return { failed: `${cmd}: ${r.error.message}` };
 	if (r.signal) return { failed: `${cmd} killed by ${r.signal}` };
 	if (r.status !== 0 || typeof r.stdout !== "string") return { failed: `${cmd} exit ${r.status}` };
-	return { workers: parseProcessList(r.stdout).filter((p) => p.pid !== process.pid && /refresh-run/.test(p.cmd)) };
+	return { workers: parseProcessList(r.stdout).filter((p) => p.pid !== process.pid && /qmd-refresh-run/.test(p.cmd)) };
 }
 
 const isEsrch = (err: unknown) => (err as NodeJS.ErrnoException)?.code === "ESRCH";
