@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HOOK_OUTPUT_MAX_CHARS, parseHookContext } from "../lib/hook-io.ts";
-import { METER_HEADROOM, parseInstructionBudget } from "../lib/session-start.ts";
+import { METER_HEADROOM } from "../lib/session-start.ts";
 import { rmTemp, runScript } from "./_helpers.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -40,10 +40,21 @@ function run(script: string, stdin: string | object | null, env: Record<string, 
 	});
 }
 
-/** session-start on the hook path: the context its SessionStart envelope carries. */
+/**
+ * session-start on the hook path: the context its SessionStart envelope
+ * carries. It never throws, so a test's state restore still runs; output
+ * that is not the envelope comes back as a context no assertion matches,
+ * with the exit code and stderr.
+ */
 function startContext(stdin: object, env: Record<string, string> = {}) {
-	const { stdout, code } = run("session-start", stdin, env);
-	return { code, stdout, context: parseHookContext(stdout, "SessionStart") };
+	const { stdout, stderr, code } = run("session-start", stdin, env);
+	let context: string;
+	try {
+		context = parseHookContext(stdout, "SessionStart");
+	} catch (err) {
+		context = `<${err instanceof Error ? err.message : String(err)}; exit ${code}; stderr: ${stderr}>`;
+	}
+	return { code, stdout, context };
 }
 
 before(() => {
@@ -92,10 +103,12 @@ describe("session-start", () => {
 	});
 
 	test("on the hook path, the context goes out in one SessionStart envelope within the hook output cap (#98)", () => {
-		// JSON escapes double a quote, a backslash, a CR, an LF or a tab: a
-		// context measured in UTF-8 bytes would overrun the cap in the envelope.
-		const line = '- "quoted" back\\slash\\ed\ttab 🧪\r\n';
-		writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n" + line.repeat(400));
+		// JSON escapes double a quote, a backslash or a tab. The wiki shows
+		// Index.md's first 40 lines, so these 40 make a section of about 7 kB in
+		// UTF-8 bytes and twice that encoded: measured in bytes it would fit the
+		// budget, and the envelope would overrun the cap.
+		const line = "- " + '"\\\t'.repeat(60) + " 🧪\n";
+		writeFileSync(join(vault, "Index.md"), "# Index\n" + line.repeat(40));
 		let out: ReturnType<typeof startContext>;
 		try {
 			out = startContext({ source: "startup" });
@@ -121,8 +134,21 @@ describe("session-start", () => {
 		assert.match(delivered, /^## Session Context\n/, "the instruction file gets Markdown, not the hook envelope");
 		assert.match(delivered, /why slow/);
 		assert.match(delivered, /budget_\n$/);
-		const instructionBudget = parseInstructionBudget(readFileSync(join(vault, "vault-manifest.json"), "utf-8"));
-		assert.ok(instructionBudget !== null && Buffer.byteLength(delivered) <= instructionBudget + METER_HEADROOM);
+	});
+
+	test("under the mod, deliver holds the layer to the instruction budget, in UTF-8 bytes", () => {
+		writeFileSync(join(vault, "Index.md"), "# Index\n" + `- ${"x".repeat(50)}\n`.repeat(40));
+		manifest({ eager_layer_instruction_budget_bytes: 1500 });
+		let delivered: string;
+		try {
+			delivered = run("session-start", { source: "startup", om_mod: "deliver" }).stdout;
+		} finally {
+			manifest();
+			writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n");
+		}
+		assert.match(delivered, /^## Session Context\n/);
+		assert.ok(Buffer.byteLength(delivered) <= 1500 + METER_HEADROOM, `${Buffer.byteLength(delivered)} B`);
+		assert.match(delivered, /collapsed: [^\n]*Index/, "the instruction budget gave the Index up");
 	});
 
 	test("VAULT_PATH is exported to CLAUDE_ENV_FILE, even when standing down", () => {

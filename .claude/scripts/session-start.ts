@@ -11,8 +11,9 @@
  *   `deliver` writes the full layer under the instruction budget;
  * - otherwise a resume or compact re-entry gets pointers, and any other
  *   start gets the full layer, as one SessionStart JSON envelope
- *   (`hookSpecificOutput.additionalContext`), budgeted on its JSON-encoded
- *   size so the whole stdout fits the hook output cap (#98).
+ *   (`hookSpecificOutput.additionalContext`), budgeted on the larger of
+ *   its UTF-8 bytes and its JSON-encoded length, so the whole stdout fits
+ *   the hook output cap (#98).
  *
  * The core sections (the heading, the date, extension failures) come first
  * and never degrade; the extensions' sections follow in priority order and
@@ -132,8 +133,9 @@ const limit: OutputLimit = delivering
 
 const context = fitWithMeter(
 	budgeted.text + "\n",
-	(cut, bodyBytes) =>
-		formatInjectionSize(bodyBytes, {
+	// Uncut, the size the budget judged, without the separator line added here.
+	(cut, bodySize) =>
+		formatInjectionSize(cut ? bodySize : budgeted.bytes, {
 			budgetBytes: budget.bytes,
 			collapsed: budgeted.collapsed,
 			degraded: budgeted.degraded,

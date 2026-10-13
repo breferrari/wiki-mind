@@ -22,7 +22,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Fixed
 
-- **Gemini and Codex get the session context.** Session start now sends it in the JSON shape their hooks read, so the counts, open questions, newest sources and the head of `Index.md` reach them as they reach Claude Code. The context budget is 9.0kB, down from 9.1kB, so the whole output fits the hook's size limit.
+- **Gemini and Codex get the session context.** Session start now sends it in the JSON shape their hooks read, so the counts, open questions, newest sources and the head of `Index.md` reach them as they reach Claude Code. The JSON takes room of its own, so the budget's ceiling is now 9.0kB (9,024 bytes), and the default budget is 9.0kB, down from 9.1kB. If you set `eager_layer_budget_bytes` above the ceiling in `vault-manifest.json`, the context is held to the ceiling, and the meter's last line says so: lower it to 9000 to clear the note.
 - **`/wiki-retract` handles a note saved with a byte-order mark.** Some Windows editors start a file with one. The note's frontmatter is read as frontmatter, and the mark stays the file's first character.
 - **`/wiki-retract` finds the vault when the session started in a subfolder.** Before, it looked for `sources/` inside that subfolder and found nothing.
 - **Your name and research focus head `Index.md`** when you give them at install. Before, ShardMind recorded them but never ran the step that writes them.
