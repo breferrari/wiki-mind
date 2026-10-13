@@ -17,14 +17,22 @@ export const MARK = " (no longer current)";
 export const WITHDRAWN_HEADING = "## Withdrawn claims";
 
 /** A note's lines and the line ending it uses, so a rewrite keeps CRLF as CRLF. */
-export type Lines = { lines: string[]; eol: "\n" | "\r\n" };
+/**
+ * A note's lines, the line ending it uses, and whether it starts with a
+ * byte-order mark. A rewrite joins them back as they came: CRLF stays CRLF,
+ * and the mark stays the file's first character (SPEC.md §2.1), whatever
+ * happens to the first line.
+ */
+export type Lines = { lines: string[]; eol: "\n" | "\r\n"; bom: boolean };
 
 export function splitLines(content: string): Lines {
-	const eol = content.includes("\r\n") ? "\r\n" : "\n";
-	return { lines: content.split(/\r?\n/), eol };
+	const bom = content.startsWith("\uFEFF");
+	const text = bom ? content.slice(1) : content;
+	const eol = text.includes("\r\n") ? "\r\n" : "\n";
+	return { lines: text.split(/\r?\n/), eol, bom };
 }
 
-export const joinLines = ({ lines, eol }: Lines): string => lines.join(eol);
+export const joinLines = ({ lines, eol, bom }: Lines): string => (bom ? "\uFEFF" : "") + lines.join(eol);
 
 /** Which part of a note a line is in: the core's regions, plus the wiki's Withdrawn claims. */
 export type Region = "frontmatter" | "fence" | "heading" | "withdrawn" | "body";

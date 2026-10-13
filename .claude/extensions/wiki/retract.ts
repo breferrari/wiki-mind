@@ -270,11 +270,7 @@ function setField(lines: string[], name: string, value: string | null): void {
 	} else if (at !== -1) {
 		lines[at] = `${name}: ${value}`;
 	} else if (close === -1) {
-		// A new block goes at the very top, after a byte-order mark if the note has
-		// one: the mark stays the file's first character (SPEC.md §2.1).
-		const bom = (lines[0] ?? "").startsWith("\uFEFF");
-		if (bom) lines[0] = (lines[0] ?? "").slice(1);
-		lines.unshift(`${bom ? "\uFEFF" : ""}---`, `${name}: ${value}`, "---");
+		lines.unshift("---", `${name}: ${value}`, "---");
 	} else {
 		lines.splice(close, 0, `${name}: ${value}`);
 	}

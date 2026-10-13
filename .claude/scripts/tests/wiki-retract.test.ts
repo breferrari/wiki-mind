@@ -445,7 +445,7 @@ describe("code-review fixes", () => {
 });
 
 describe("a note that starts with a byte-order mark (#101)", () => {
-	const BOM = "﻿";
+	const BOM = "\uFEFF";
 
 	test("a source note with a BOM keeps it first, and its status goes inside its one frontmatter block", () => {
 		const root = wiki({ "sources/Smith 2024.md": BOM + fm(SOURCE) + "# Smith 2024\n" });
@@ -457,6 +457,20 @@ describe("a note that starts with a byte-order mark (#101)", () => {
 		const root = wiki({ "sources/Smith 2024.md": `${BOM}# Smith 2024\n\nBody.\n` });
 		run(root, { source: "Smith 2024" });
 		assert.equal(read(root, "sources/Smith 2024.md"), `${BOM}---\nstatus: retracted\n---\n# Smith 2024\n\n## Retracted\n\n- ${DATE}: retracted.\n\nBody.\n`);
+	});
+
+	test("a citing note with a BOM keeps it first when its first line is withdrawn", () => {
+		const root = wiki({ "concepts/Bom.md": `${BOM}- A claim [[Smith 2024]].\n- Other [[Lee 2025]].\n` });
+		run(root, { source: "Smith 2024" });
+		assert.equal(read(root, "concepts/Bom.md"), `${BOM}- Other [[Lee 2025]].\n\n## Withdrawn claims\n\n- A claim [[Smith 2024]]. (withdrawn ${DATE})\n`);
+	});
+
+	test("a heading behind a BOM is a heading, KEPT, not withdrawn as a claim", () => {
+		const note = `${BOM}# About [[Smith 2024]]\n\n- [[Lee 2025]].\n`;
+		const root = wiki({ "concepts/Head.md": note });
+		const { plan } = run(root, { source: "Smith 2024" });
+		assert.ok(plan.outcomes.some((o) => o.kind === "KEPT" && o.relPath === "concepts/Head.md" && o.line === 1), JSON.stringify(plan.outcomes));
+		assert.equal(read(root, "concepts/Head.md"), note);
 	});
 
 	test("a citing note with a BOM: its frontmatter link is KEPT, and the note is left as it is", () => {
