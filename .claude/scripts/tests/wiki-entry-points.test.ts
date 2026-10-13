@@ -103,10 +103,10 @@ describe("session-start", () => {
 	});
 
 	test("on the hook path, the context goes out in one SessionStart envelope within the hook output cap (#98)", () => {
-		// JSON escapes double a quote, a backslash or a tab. The wiki shows
-		// Index.md's first 40 lines, so these 40 make a section of about 7 kB in
-		// UTF-8 bytes and twice that encoded: measured in bytes it would fit the
-		// budget, and the envelope would overrun the cap.
+		// JSON escapes double a quote, a backslash or a tab. The Index section
+		// shows Index.md's head, about 7 kB in UTF-8 bytes here and twice that
+		// encoded. Measured in bytes, the budget would keep it whole and the cap
+		// would then cut it: the "truncated to fit" check is the guard.
 		const line = "- " + '"\\\t'.repeat(60) + " 🧪\n";
 		writeFileSync(join(vault, "Index.md"), "# Index\n" + line.repeat(40));
 		let out: ReturnType<typeof startContext>;
@@ -137,18 +137,22 @@ describe("session-start", () => {
 	});
 
 	test("under the mod, deliver holds the layer to the instruction budget, in UTF-8 bytes", () => {
-		writeFileSync(join(vault, "Index.md"), "# Index\n" + `- ${"x".repeat(50)}\n`.repeat(40));
-		manifest({ eager_layer_instruction_budget_bytes: 1500 });
-		let delivered: string;
+		// About 1.7 kB as UTF-8 and 3 kB JSON-encoded: the Index fits a 2000 B
+		// instruction budget only when deliver measures bytes, as it should.
+		writeFileSync(join(vault, "Index.md"), "# Index\n" + `- ${'"'.repeat(30)}\n`.repeat(40));
+		manifest({ eager_layer_instruction_budget_bytes: 2000 });
+		let result: ReturnType<typeof run>;
 		try {
-			delivered = run("session-start", { source: "startup", om_mod: "deliver" }).stdout;
+			result = run("session-start", { source: "startup", om_mod: "deliver" });
 		} finally {
 			manifest();
 			writeFileSync(join(vault, "Index.md"), "# Index\n- [[Paper]]\n");
 		}
-		assert.match(delivered, /^## Session Context\n/);
-		assert.ok(Buffer.byteLength(delivered) <= 1500 + METER_HEADROOM, `${Buffer.byteLength(delivered)} B`);
-		assert.match(delivered, /collapsed: [^\n]*Index/, "the instruction budget gave the Index up");
+		const delivered = result.stdout;
+		assert.match(delivered, /^## Session Context\n/, `exit ${result.code}; stderr: ${result.stderr}`);
+		assert.ok(Buffer.byteLength(delivered) <= 2000 + METER_HEADROOM, `${Buffer.byteLength(delivered)} B`);
+		assert.doesNotMatch(delivered, /collapsed: [^\n]*Index/, "measured in bytes, the Index fits");
+		assert.match(delivered, /### Index\n# Index\n- """/);
 	});
 
 	test("VAULT_PATH is exported to CLAUDE_ENV_FILE, even when standing down", () => {
