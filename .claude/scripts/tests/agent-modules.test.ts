@@ -93,9 +93,25 @@ describe("every hook command runs from the vault root", () => {
 			encoding: "utf-8",
 			timeout: 60_000,
 			input: JSON.stringify(payload(event)),
-			// Every agent's variable names the temp vault, so an inherited one (a suite run
-			// from a Codex session, say) can't point a hook at the developer's vault.
-			env: { ...process.env, CLAUDE_PROJECT_DIR: "", CODEX_PROJECT_DIR: "", GEMINI_PROJECT_DIR: "", [agentVar]: vault, VAULT_QMD: "off", VAULT_QMD_REFRESH: "off" },
+			// The agent's own variable names the temp vault, and the other agents' are
+			// cleared, so an inherited one (a suite run from a Codex session, say) can't
+			// point a hook at the developer's vault. The hooks' state and env-file
+			// variables point into the temp vault, for the same reason.
+			env: {
+				...process.env,
+				CLAUDE_PROJECT_DIR: "",
+				CODEX_PROJECT_DIR: "",
+				GEMINI_PROJECT_DIR: "",
+				[agentVar]: vault,
+				CLAUDE_ENV_FILE: "",
+				INDEX_PATH: "",
+				STOP_HANDOFF_DIR: join(vault, ".state", "handoff"),
+				CLASSIFY_HINT_STATE: join(vault, ".state", "hints.json"),
+				STOP_CHECKLIST_STATE: join(vault, ".state", "checklist.json"),
+				QMD_REFRESH_SENTINEL: join(vault, ".state", "sentinel"),
+				VAULT_QMD: "off",
+				VAULT_QMD_REFRESH: "off",
+			},
 		});
 	}
 

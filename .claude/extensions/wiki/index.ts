@@ -98,6 +98,24 @@ function staleLinks(note: Note, stale: ReadonlyMap<string, string>): string[] {
 	);
 }
 
+/**
+ * True when the vault's Gemini settings point Gemini at AGENTS.md and not at
+ * GEMINI.md: only then is a GEMINI.md retired (SPEC.md §6.1). Without the
+ * gemini module, or with a user's own settings that name no context file,
+ * GEMINI.md is still Gemini's manual. The core's retired list can't tell
+ * (SPEC.md §7.2, S8).
+ */
+function geminiReadsAgentsMd(vaultRoot: string): boolean {
+	try {
+		const settings = JSON.parse(readFileSync(join(vaultRoot, ".gemini", "settings.json"), "utf-8")) as { context?: { fileName?: unknown } };
+		const names = settings.context?.fileName;
+		const list = Array.isArray(names) ? names : typeof names === "string" ? [names] : [];
+		return list.includes(INSTRUCTION_FILE) && !list.some((n) => typeof n === "string" && n.toLowerCase() === "gemini.md");
+	} catch {
+		return false;
+	}
+}
+
 function isOpen(note: Note): boolean {
 	return statusOf(note.content) === "open";
 }
@@ -134,9 +152,7 @@ export const extension: Extension = {
 			render: (ctx) => {
 				let names: string[];
 				try {
-					// A GEMINI.md is retired only where the gemini module points Gemini at
-					// AGENTS.md; without that module, it is Gemini's own manual.
-					const gemini = existsSync(join(ctx.vaultRoot, ".gemini", "settings.json"));
+					const gemini = geminiReadsAgentsMd(ctx.vaultRoot);
 					names = readdirSync(ctx.vaultRoot)
 						.filter((n) => isRetiredInstructionFile(n) && (gemini || n.toLowerCase() !== "gemini.md"))
 						.sort();

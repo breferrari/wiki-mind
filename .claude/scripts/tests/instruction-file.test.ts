@@ -4,7 +4,9 @@
  * - AGENTS.md ships, and stays under the core's byte cap;
  * - no retired instruction file (CLAUDE.md, GEMINI.md) ships;
  * - session-start warns when a retired one is left at the vault root after
- *   an update, since Claude Code would read a CLAUDE.md in place of AGENTS.md.
+ *   an update: a CLAUDE.md, which Claude Code would read in place of
+ *   AGENTS.md, and a GEMINI.md where the vault's Gemini settings point Gemini
+ *   at AGENTS.md instead.
  *
  * Only the exact names are tested: the core's match will become
  * filesystem-case-aware (mindframe #91).
@@ -59,8 +61,16 @@ describe("session-start warns about a retired instruction file left at the vault
 		assert.equal(await warning(), undefined);
 	});
 
+	test("with Gemini settings that name no context file, or name GEMINI.md, no warning either", async () => {
+		mkdirSync(join(root, ".gemini"), { recursive: true });
+		for (const settings of ['{"model":"x"}', '{"context":{"fileName":["AGENTS.md","GEMINI.md"]}}', "not json"]) {
+			writeFileSync(join(root, ".gemini", "settings.json"), settings);
+			assert.equal(await warning(), undefined, settings);
+		}
+	});
+
 	test("with the gemini module, a GEMINI.md alone gets Gemini's reason, not Claude's", async () => {
-		mkdirSync(join(root, ".gemini"));
+		mkdirSync(join(root, ".gemini"), { recursive: true });
 		writeFileSync(join(root, ".gemini", "settings.json"), '{"context":{"fileName":["AGENTS.md"]}}\n');
 		writeFileSync(join(root, "GEMINI.md"), "# old\n");
 		const w = await warning();
