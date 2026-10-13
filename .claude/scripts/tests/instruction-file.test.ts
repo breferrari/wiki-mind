@@ -96,7 +96,10 @@ describe("session-start warns about a retired instruction file left at the vault
 			writeFileSync(join(root, "GEMINI.md"), "# old\n");
 			mkdirSync(join(root, ".gemini"), { recursive: true });
 		});
-		after(() => rmSync(join(root, ".gemini"), { recursive: true, force: true }));
+		after(() => {
+			rmSync(join(root, ".gemini"), { recursive: true, force: true });
+			rmSync(join(root, "GEMINI.md"), { force: true });
+		});
 
 		test("settings with comments still name AGENTS.md, so a GEMINI.md is retired", async () => {
 			writeFileSync(join(root, ".gemini", "settings.json"), '// the vault\'s manual\n{"context":{"fileName":["AGENTS.md"]} /* one file */}\n');
@@ -109,10 +112,12 @@ describe("session-start warns about a retired instruction file left at the vault
 		});
 	});
 
-	test("a lowercase claude.md is named where the filesystem ignores case (mindframe #91)", { skip: process.platform === "linux" }, async () => {
+	test("a lowercase claude.md is named where the filesystem ignores case, and not on Linux (mindframe #91)", async () => {
 		writeFileSync(join(root, "claude.md"), "# mine\n");
 		try {
-			assert.match((await warning())?.body ?? "", /Claude Code reads `claude\.md` in place of it/);
+			const w = (await warning())?.body ?? "";
+			if (process.platform === "linux") assert.equal(w, "");
+			else assert.match(w, /Claude Code reads `claude\.md` in place of it/);
 		} finally {
 			rmSync(join(root, "claude.md"), { force: true });
 		}

@@ -411,7 +411,7 @@ describe("validate-write", () => {
 		});
 	});
 
-	test("a root claude.md is skipped as the agent loads it, and a nested Claude.md is still a note (mindframe #91)", { skip: process.platform === "linux" }, () => {
+	test("a root claude.md is skipped where the agent loads it as CLAUDE.md, and a nested Claude.md is always a note (mindframe #91)", () => {
 		// A probe validator that would flag any file it sees: the skip rules decide.
 		mkdirSync(join(vault, ".claude", "extensions", "seer"), { recursive: true });
 		writeFileSync(join(vault, ".claude", "extensions", "seer", "index.mjs"), 'export default { id: "seer", validators: [{ id: "seer.any", appliesTo: () => true, validate: () => ["seen"] }] };\n');
@@ -420,7 +420,11 @@ describe("validate-write", () => {
 		writeFileSync(join(vault, "claude.md"), "# mine\n");
 		writeFileSync(join(vault, "concepts", "Claude.md"), fm(BASE) + "[[Paper]]\n");
 		try {
-			assert.equal(write(join(vault, "claude.md")).stdout, "", "a root claude.md is the retired CLAUDE.md where case is ignored");
+			// Where the filesystem ignores case (Windows, macOS) a root claude.md is the
+			// retired CLAUDE.md; on Linux the agent never loads it, so it stays a note.
+			const root = write(join(vault, "claude.md")).stdout;
+			if (process.platform === "linux") assert.match(root, /seen/);
+			else assert.equal(root, "");
 			assert.match(write(join(vault, "concepts", "Claude.md")).stdout, /seen/);
 		} finally {
 			manifest();
