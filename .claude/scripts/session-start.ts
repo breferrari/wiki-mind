@@ -91,13 +91,13 @@ const now = Date.now();
 // unexpectedly, the session still gets the core sections and says why.
 let extensionSections: BudgetSection[] = [];
 let notes: string[];
-let meterNotes: string[] = [];
+let migration: string[] = [];
 try {
 	const { manifest, registry, ctx } = await openVault(vaultRoot, "session-start", process.env, now);
 	const collected = await collectSections(registry, ctx, mode);
 	const effects = await runEffects(registry, { event: "session-start" }, ctx);
 	extensionSections = collected.result;
-	meterNotes = migrationNotes(manifest);
+	migration = migrationNotes(manifest);
 	notes = [
 		...formatFailures([...registry.failures, ...collected.failures, ...effects.failures]),
 		...undispatched(registry).map((slot) => `ℹ️  ${slot}: declared, not dispatched yet`),
@@ -135,7 +135,7 @@ process.stdout.write(
 				clampedFrom: budget.clampedFrom,
 				cut,
 				cutTo: limit.name,
-				notes: meterNotes,
+				notes: migration,
 			}),
 		limit,
 	),
