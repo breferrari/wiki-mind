@@ -63,7 +63,7 @@ Update this table in the same PR that adds or removes a top-level path.
 
 The hook core now comes from mindframe (`core/scripts/`), recorded in `.claude/scripts/VENDOR.json`. The rest of the vendored machinery comes from obsidian-mind, recorded in `.claude/VENDOR.json` (SPEC.md §7.5). These rules keep the two sources and wiki-mind's own code apart.
 
-1. **Four zones, never mixed.** `tests/zones.test.ts` holds the imports.
+1. **The zones, never mixed.** `tests/zones.test.ts` holds the imports.
 
    | Zone | Holds | May import |
    |------|-------|------------|
