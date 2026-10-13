@@ -7,7 +7,7 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
@@ -30,7 +30,7 @@
     ],
     "AfterTool": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "write_file|replace",
         "hooks": [
           {
             "type": "command",

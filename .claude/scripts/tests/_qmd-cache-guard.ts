@@ -1,5 +1,6 @@
 /**
- * Per-process redirect of QMD's cache and config, for a direct
+ * Per-process redirect of QMD's cache and config, and the switch that stops
+ * the detached qmd refresh (#337), for a direct
  * `node --import ./tests/_qmd-cache-guard.ts --test` run.
  *
  * `npm test` goes through `_run-tests.ts`, which sets the redirect once for
@@ -9,17 +10,17 @@
  * runner, so without the wrapper each file gets its own temp folders here.
  *
  * See `_run-tests.ts` for why the redirect exists.
- *
- * It also turns the detached QMD refresh worker off (VAULT_QMD_REFRESH=off)
- * for a direct run, as `_run-tests.ts` does for `npm test`: a hook a test
- * runs would otherwise leave a worker behind that calls qmd later.
  */
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { REFRESH_SWITCH } from "../lib/qmd-refresh.ts";
 
-process.env["VAULT_QMD_REFRESH"] = "off";
+// Every test process, direct run or not: no hook a test runs spawns the
+// detached qmd refresh (#337). Forced, not defaulted, so an exported "on" or
+// "" cannot leak through. `_run-tests.ts` also sets it for the run.
+process.env[REFRESH_SWITCH] = "off";
 
 if (process.env["OM_QMD_ISOLATED"] === undefined) {
 	const isolated = mkdtempSync(join(tmpdir(), "om-test-qmd-"));
