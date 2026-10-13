@@ -377,18 +377,24 @@ describe("validate-write", () => {
 				"*** Move to: concepts/Moved.md",
 				"*** End Patch",
 			].join("\r\n");
-			const { stdout } = applyPatch(command);
+			let stdout: string;
+			try {
+				stdout = applyPatch(command).stdout;
+			} finally {
+				rmSync(join(vault, "concepts", "Old.md"));
+			}
 			const context = parseHookContext(stdout, "PostToolUse");
 			assert.match(context, /concepts\/Added\.md:\n- Missing YAML frontmatter/);
 			assert.match(context, /concepts\/Lonely\.md:\n- Cites no source/);
 			assert.match(context, /concepts\/Moved\.md:\n- Cites no source/);
 			assert.doesNotMatch(context, /Old\.md/);
-			rmSync(join(vault, "concepts", "Old.md"));
 		});
 
-		test("on Windows, one note named in two cases is validated once", { skip: process.platform !== "win32" }, () => {
-			const { stdout } = applyPatch("*** Begin Patch\n*** Update File: concepts/Lonely.md\n*** Update File: CONCEPTS/lonely.md\n*** End Patch\n");
-			assert.equal(parseHookContext(stdout, "PostToolUse").match(/Cites no source/g)?.length, 1);
+		test("on Windows, one note named in two cases is validated once, and a case-only rename under its new name", { skip: process.platform !== "win32" }, () => {
+			const twice = applyPatch("*** Begin Patch\n*** Update File: concepts/Lonely.md\n*** Update File: CONCEPTS/lonely.md\n*** End Patch\n");
+			assert.equal(parseHookContext(twice.stdout, "PostToolUse").match(/Cites no source/g)?.length, 1);
+			const renamed = applyPatch("*** Begin Patch\n*** Update File: concepts/LONELY.md\n*** Move to: concepts/Lonely.md\n*** End Patch\n");
+			assert.match(parseHookContext(renamed.stdout, "PostToolUse"), /concepts\/Lonely\.md:\n- Cites no source/);
 		});
 
 		test("a patch that only deletes, or writes only outside the vault or no Markdown, writes nothing", () => {
@@ -463,13 +469,14 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		// Brief.md is added and then moved away in the same patch: written, but gone.
 		const command =
 			"*** Begin Patch\n*** Delete File: concepts/Gone.md\n*** Update File: concepts/Old.md\n*** Move to: concepts/New.md\n*** Add File: concepts/data.txt\n+x\n" +
-			"*** Add File: concepts/Brief.md\n+x\n*** Update File: concepts/Brief.md\n*** Move to: concepts/New.md\n*** End Patch\n";
+			"*** Add File: concepts/Brief.md\n+x\n*** Update File: concepts/Brief.md\n*** Move to: concepts/Brief2.md\n*** End Patch\n";
+		writeFileSync(join(vault, "concepts", "Brief2.md"), fm(BASE) + "[[Paper]]\n");
 		const r = applyPatch(command, { EFFECT_PROBE_DIR: markers });
 		assert.equal(r.code, 0, r.stderr);
 		const paths = readFileSync(join(markers, "write-paths"), "utf-8").split("\n").filter(Boolean).sort();
 		assert.deepEqual(
 			paths,
-			["concepts/Brief.md", "concepts/Gone.md", "concepts/New.md", "concepts/Old.md", "concepts/data.txt"],
+			["concepts/Brief.md", "concepts/Brief2.md", "concepts/Gone.md", "concepts/New.md", "concepts/Old.md", "concepts/data.txt"],
 			"the index sees a deleted note, a moved note's old path, and a written file that is gone",
 		);
 	});

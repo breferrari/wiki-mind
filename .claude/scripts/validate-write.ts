@@ -11,9 +11,9 @@
  *   segment-safe: /vault does not match /vaulting);
  * - the write effects (QMD's index refresh among them) run for each changed
  *   file before the skip rules, so the index sees every Markdown change; a
- *   removed file's target has empty content;
+ *   removed file, or a written one already gone, has empty content;
  * - the files written (`writeTargets`: not a deleted file or a moved
- *   note's old path) are validated;
+ *   note's old path) are validated, and one that can't be read is reported;
  * - each file is read once, and every validator sees the same snapshot;
  * - warnings go to the agent in one envelope for the call, which echoes the
  *   event name.
@@ -37,12 +37,13 @@ type HookInput = {
 
 const input = await readStdinJson<HookInput>();
 const vaultRoot = resolveProjectDir(process.cwd());
-const changed = refreshTargets(input, vaultRoot);
-if (changed.length === 0) {
+const written = new Set(writeTargets(input, vaultRoot));
+// refreshTargets is written plus removed (a deleted file, a moved note's old path).
+const removed = refreshTargets(input, vaultRoot).filter((p) => !written.has(p));
+if (written.size === 0 && removed.length === 0) {
 	debug("validate: no file written");
 	process.exit(0);
 }
-const written = new Set(writeTargets(input, vaultRoot));
 
 const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
 // Windows paths compare without case: `C:/Vault` and `c:/vault/x.md` are
@@ -50,33 +51,45 @@ const rootFwd = vaultRoot.replaceAll("\\", "/").replace(/\/+$/, "");
 const fold = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
 
 /**
- * Each changed file inside the vault, once (on Windows, one file named in
- * two cases is one file), with its vault-relative path, read once. A removed
- * file, or a written one that is gone or can't be read (a patch that adds a
- * note and then moves it away), has empty content and is not validated: its
- * effects still run, so the index hears it changed.
+ * Each changed file inside the vault, once, keyed so that on Windows one
+ * file named in two cases is one file; a written spelling wins over a
+ * removed one, so a case-only rename is validated under its new name.
  */
-const seen = new Set<string>();
-const targets = changed.flatMap((filePath) => {
+const byFile = new Map<string, { filePath: string; relPath: string; written: boolean }>();
+const listed: { filePath: string; isWritten: boolean }[] = [
+	...[...written].map((filePath) => ({ filePath, isWritten: true })),
+	...removed.map((filePath) => ({ filePath, isWritten: false })),
+];
+for (const { filePath, isWritten } of listed) {
 	const fileFwd = filePath.replaceAll("\\", "/");
 	if (!fold(fileFwd).startsWith(`${fold(rootFwd)}/`)) {
 		debug(`validate: outside the vault root, skipped: ${filePath}`);
-		return [];
+		continue;
 	}
-	if (seen.has(fold(fileFwd))) return [];
-	seen.add(fold(fileFwd));
-	const relPath = fileFwd.slice(rootFwd.length + 1);
-	if (!written.has(filePath)) return [{ relPath, content: "", validate: false }];
+	if (!byFile.has(fold(fileFwd))) byFile.set(fold(fileFwd), { filePath, relPath: fileFwd.slice(rootFwd.length + 1), written: isWritten });
+}
+
+/**
+ * Each target, read once if written. A removed file, or a written one that
+ * is gone (a patch that adds a note and then moves it away), has empty
+ * content and is not validated: its effects still run, so the index hears
+ * it changed. A written file that exists but can't be read is reported.
+ */
+const unread: string[] = [];
+const targets = [...byFile.values()].map(({ filePath, relPath, written: isWritten }) => {
+	if (!isWritten) return { relPath, content: "", validate: false };
 	try {
-		return [{ relPath, content: readFileSync(filePath, "utf-8"), validate: true }];
-	} catch {
+		return { relPath, content: readFileSync(filePath, "utf-8"), validate: true };
+	} catch (err) {
+		const code = (err as NodeJS.ErrnoException).code;
+		if (code !== "ENOENT") unread.push(`⚠️  ${relPath}: not checked, it could not be read (${code ?? String(err)})`);
 		debug(`validate: could not read ${filePath}`);
-		return [{ relPath, content: "", validate: false }];
+		return { relPath, content: "", validate: false };
 	}
 });
 if (targets.length === 0) process.exit(0);
 
-const blocks: string[] = [];
+const blocks: string[] = [...unread];
 try {
 	const { registry, ctx } = await openVault(vaultRoot, "write");
 	const failures: Failure[] = [...registry.failures];
