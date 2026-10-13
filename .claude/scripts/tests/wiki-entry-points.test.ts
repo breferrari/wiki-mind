@@ -439,9 +439,10 @@ describe("pre-compact", () => {
 		const transcript = join(state, "transcript.jsonl");
 		writeFileSync(transcript, "{}\n");
 		try {
-			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "../../escape", transcript_path: transcript }, { VAULT_EXTENSIONS: "off" });
+			// Taken as given, this trigger would put the backup in the vault root.
+			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "a/../../../escape", transcript_path: transcript }, { VAULT_EXTENSIONS: "off" });
 			assert.equal(r.code, 0, r.stderr);
-			assert.deepEqual(readdirSync(join(vault, "thinking")), ["session-logs"], "nothing written beside the backup folder");
+			assert.deepEqual(readdirSync(vault).filter((f) => f.startsWith("escape")), [], "nothing written in the vault root");
 			assert.match(readdirSync(join(vault, "thinking", "session-logs"))[0]!, /^session_unknown_\d{8}_\d{6}\.jsonl$/);
 		} finally {
 			rmSync(join(vault, "thinking"), { recursive: true, force: true });
@@ -505,8 +506,10 @@ describe("each entry point runs the effects declared on its event (#90)", () => 
 		const declared = (JSON.parse(readFileSync(join(vault, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
 		manifest({}, declared.map((d) => (d.id === "probe" ? { ...d, enabled: false } : d)));
 		try {
-			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "manual" }, { EFFECT_PROBE_DIR: markers });
+			// HOOK_DEBUG shows any registry or effect failure: none, so it is enabled: false that skipped it.
+			const r = run("pre-compact", { hook_event_name: "PreCompact", trigger: "manual" }, { EFFECT_PROBE_DIR: markers, HOOK_DEBUG: "1" });
 			assert.equal(r.code, 0, r.stderr);
+			assert.doesNotMatch(r.stderr, /pre-compact: (effects:|⚠️)/);
 			assert.equal(existsSync(join(markers, "pre-compact")), false);
 		} finally {
 			manifest({}, declared);

@@ -8,8 +8,10 @@
  * by lib/project-dir.ts) named
  * `session_<trigger>_<YYYYMMDD_HHMMSS>.jsonl`.
  *
- * Copied from obsidian-mind's pre-compact.ts at 70317e2, with its backup
- * and exports unchanged. Its own QMD trigger is replaced by the declared
+ * Copied from obsidian-mind's pre-compact.ts at 70317e2, with its exports
+ * unchanged. The backup takes only a short plain-word trigger for its file
+ * name, and a backup that fails never costs the effects; obsidian-mind's own
+ * QMD trigger is replaced by the declared
  * pre-compact effects (#104; SPEC.md §7.2).
  */
 
@@ -72,7 +74,7 @@ function backUp(vaultRoot: string, input: HookInput): void {
 	// The trigger names the backup file, so only a plain word is taken: an
 	// agent's own value can't escape the folder or break a Windows name.
 	const trigger =
-		typeof input.trigger === "string" && /^[A-Za-z]+$/.test(input.trigger) ? input.trigger : "unknown";
+		typeof input.trigger === "string" && /^[A-Za-z]{1,32}$/.test(input.trigger) ? input.trigger : "unknown";
 
 	if (!transcriptPath) {
 		debug("pre-compact: no transcript_path in input");
