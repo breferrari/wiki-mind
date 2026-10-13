@@ -60,6 +60,14 @@ describe("session-start", () => {
 		assert.match(stdout, /### Open questions\n- \[\[Why\]\]/);
 	});
 
+	test("a vault that sets QMD keys without declaring the qmd extension sees how to declare it on the meter (#102)", () => {
+		const declared = (JSON.parse(readFileSync(join(REPO, "vault-manifest.json"), "utf-8")) as { extensions: { id: string }[] }).extensions;
+		manifest({}, declared.filter((d) => d.id !== "qmd"));
+		const { stdout } = run("session-start", { source: "startup" });
+		manifest();
+		assert.match(stdout, /QMD off: extensions needs \{"id":"qmd"/);
+	});
+
 	test("a startup gets the core sections, then the extension's, under the meter", () => {
 		const { stdout, code } = run("session-start", { source: "startup" });
 		assert.equal(code, 0);
