@@ -35,9 +35,8 @@ import {
 	type BudgetSection,
 	type InjectionBudget,
 } from "./lib/session-start.ts";
-import { openVault } from "./core/context.ts";
-import { collectSections, formatFailures, undispatched } from "./core/registry.ts";
-import { qmdSessionStart } from "./core/qmd-session.ts";
+import { collectSections, formatFailures, runEffects, undispatched } from "./core/registry.ts";
+import { migrationNotes, openVault } from "./core/context.ts";
 
 type HookInput = { readonly source?: unknown };
 
@@ -77,8 +76,8 @@ const delivering = omMod === "deliver";
 const mode = delivering ? "full" : injectionMode(hookInput?.source);
 
 process.chdir(vaultRoot);
-// The budgets and QMD read the manifest's raw text; openVault parses it for
-// the registry.
+// The budgets read the manifest's raw text; openVault parses it for the
+// registry.
 let manifestJson: string | null = null;
 try {
 	manifestJson = readFileSync("vault-manifest.json", "utf-8");
@@ -87,16 +86,20 @@ try {
 }
 const now = Date.now();
 
-// The extensions' sections and the notices about them. If anything here
-// throws unexpectedly, the session still gets the core sections and says why.
+// The extensions' sections, their session-start effects (QMD's index refresh
+// among them), and the notices about both. If anything here throws
+// unexpectedly, the session still gets the core sections and says why.
 let extensionSections: BudgetSection[] = [];
 let notes: string[];
+let meterNotes: string[] = [];
 try {
-	const { registry, ctx } = await openVault(vaultRoot, "session-start", process.env, now);
+	const { manifest, registry, ctx } = await openVault(vaultRoot, "session-start", process.env, now);
 	const collected = await collectSections(registry, ctx, mode);
+	const effects = await runEffects(registry, { event: "session-start" }, ctx);
 	extensionSections = collected.result;
+	meterNotes = migrationNotes(manifest);
 	notes = [
-		...formatFailures([...registry.failures, ...collected.failures]),
+		...formatFailures([...registry.failures, ...collected.failures, ...effects.failures]),
 		...undispatched(registry).map((slot) => `ℹ️  ${slot}: declared, not dispatched yet`),
 		...(registry.off ? ["ℹ️  extensions are off (VAULT_EXTENSIONS=off)"] : []),
 	];
@@ -109,14 +112,6 @@ const sections: BudgetSection[] = [
 	{ header: "### Date", body: formatDateHeader(new Date(now)), priority: 0 },
 ];
 
-// QMD's session-start work (core/qmd-session.ts): the index refresh in the
-// background, and a load-bearing note when QMD needed a self-heal or is too
-// old. Never fatal: a session must start whatever QMD's state.
-try {
-	for (const note of qmdSessionStart(vaultRoot, manifestJson).notes) sections.push({ header: note.header, body: note.body, priority: 0 });
-} catch {
-	/* QMD is optional */
-}
 if (notes.length > 0) sections.push({ header: "### Extensions", body: notes.join("\n"), priority: 0 });
 sections.push(...extensionSections);
 
@@ -140,6 +135,7 @@ process.stdout.write(
 				clampedFrom: budget.clampedFrom,
 				cut,
 				cutTo: limit.name,
+				notes: meterNotes,
 			}),
 		limit,
 	),

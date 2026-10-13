@@ -19,7 +19,7 @@
  * 5. Each call runs in its own try with its own time limit, and fails open:
  *    a throw or a timeout is recorded, the item is skipped, and the hook
  *    carries on and reports it. `VAULT_EXTENSIONS=off` turns every extension
- *    off, for debugging. Effects (write, pre-compact, Stop) are calls like
+ *    off, for debugging. Effects (session start, write, pre-compact, Stop) are calls like
  *    any other, made for their side effect: they return nothing.
  * 6. The core owns the output budget. Extensions return sections; the entry
  *    point assembles them and applyInjectionBudget gives up the highest
@@ -65,7 +65,7 @@ export const EXTENSIONS_KEY = "extensions";
 export const KILL_SWITCH = "VAULT_EXTENSIONS";
 
 /** The effect events as a message names them. */
-const EFFECT_EVENTS_TEXT = "write, pre-compact or stop";
+const EFFECT_EVENTS_TEXT = "session-start, write, pre-compact or stop";
 
 /** The per-call time limit when a declaration sets none. */
 export const DEFAULT_TIMEOUT_MS = 1_000;
@@ -294,20 +294,20 @@ const isFindingList = (v: unknown): v is Finding[] =>
 	v.every((f: unknown) => typeof f === "object" && f !== null && isString((f as Finding).claim) && isStringList((f as Finding).lines));
 
 /**
- * Run one extension call under its time limit, and check what it returned.
- * A throw, a rejection, a timeout, or a value of the wrong shape is recorded
- * as a Failure: nothing an extension returns reaches the hook's output
- * unchecked.
+ * One extension call, already started, held to its time limit, and what it
+ * returned checked. A throw, a rejection, a timeout, or a value of the wrong
+ * shape is recorded as a Failure: nothing an extension returns reaches the
+ * hook's output unchecked.
  */
 async function isolated<R>(
 	entry: Entry<{ readonly id: string }>,
 	point: Point,
-	fn: () => unknown,
+	started: Promise<unknown>,
 	accept: (value: unknown) => value is R,
 	expected: string,
 ): Promise<{ ok: true; value: R } | { ok: false; failure: Failure }> {
 	try {
-		const value = await withTimeout(Promise.resolve().then(fn), entry.timeoutMs);
+		const value = await withTimeout(started, entry.timeoutMs);
 		if (!accept(value)) throw new Error(`returned ${describe(value)}, not ${expected}`);
 		return { ok: true, value };
 	} catch (err) {
@@ -315,7 +315,21 @@ async function isolated<R>(
 	}
 }
 
-/** Run every entry concurrently, keeping the results and the failures in run order. */
+/** A call started now: its value, or its synchronous throw, as a promise. */
+function start(fn: () => unknown): Promise<unknown> {
+	try {
+		return Promise.resolve(fn());
+	} catch (err) {
+		return Promise.reject(err);
+	}
+}
+
+/**
+ * Run every entry concurrently, keeping the results and the failures in run
+ * order. Every call starts before any time limit does, so one call's
+ * synchronous work, such as QMD's spawnSync probes, never spends another
+ * call's time, before it or after it (#70).
+ */
 async function each<T extends { readonly id: string }, R>(
 	entries: readonly Entry<T>[],
 	failures: Failure[],
@@ -324,7 +338,8 @@ async function each<T extends { readonly id: string }, R>(
 	accept: (value: unknown) => value is R,
 	expected: string,
 ): Promise<{ entry: Entry<T>; value: R }[]> {
-	const runs = await Promise.all(entries.map((entry) => isolated(entry, point, () => fn(entry.item), accept, expected)));
+	const started = entries.map((entry) => start(() => fn(entry.item)));
+	const runs = await Promise.all(entries.map((entry, i) => isolated(entry, point, started[i] as Promise<unknown>, accept, expected)));
 	const out: { entry: Entry<T>; value: R }[] = [];
 	runs.forEach((run, i) => {
 		const entry = entries[i];

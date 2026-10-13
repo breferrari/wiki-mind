@@ -16,7 +16,7 @@
  * - the debounced QMD refresh runs on every path that reports.
  */
 
-import { dirname, join, resolve as resolvePath } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
 	debug,
@@ -29,12 +29,11 @@ import {
 import { claimChanged } from "./lib/hint-state.ts";
 import { readOmMod } from "./lib/om-mod.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
-import { triggerDebouncedRefresh } from "./lib/qmd-refresh.ts";
 import { reportKey } from "./lib/report-key.ts";
 import { HANDOFF_DIR, pruneHandoffs, writeHandoff } from "./lib/stop-handoff.ts";
 import { AGENT_PREFACE, FEEDBACK_PREFACE, FEEDBACK_TRAILER, modPreface, stopSummary } from "./lib/stop-report.ts";
 import { openVault } from "./core/context.ts";
-import { collectChecklist, formatFailures, runDetectors } from "./core/registry.ts";
+import { collectChecklist, formatFailures, runDetectors, runEffects } from "./core/registry.ts";
 
 /**
  * The vault's Claude Code mod, as its plugin.json names it. The mod's report
@@ -43,11 +42,8 @@ import { collectChecklist, formatFailures, runDetectors } from "./core/registry.
  */
 const MOD_NAME = "wiki-mind";
 
-const DEBOUNCE_MS = 30_000;
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-// The env overrides route state to tmp paths for tests; production never sets them.
-const SENTINEL_PATH = process.env["QMD_REFRESH_SENTINEL"] ?? join(SCRIPT_DIR, ".qmd-refresh-sentinel");
-const WORKER_PATH = resolvePath(SCRIPT_DIR, "qmd-refresh-run.ts");
+// The env override routes state to a tmp path for tests; production never sets it.
 const STATE_PATH = process.env["STOP_CHECKLIST_STATE"] ?? join(SCRIPT_DIR, ".checklist-state.json");
 
 type HookInput = {
@@ -74,7 +70,9 @@ async function report(): Promise<void> {
 	const { registry, ctx } = await openVault(vaultRoot, "stop");
 	const checklist = collectChecklist(registry);
 	const detected = await runDetectors(registry, ctx);
-	const failures = [...registry.failures, ...checklist.failures, ...detected.failures];
+	// Stop's effects (QMD's index refresh among them), after the checks have read the vault.
+	const effects = await runEffects(registry, { event: "stop" }, ctx);
+	const failures = [...registry.failures, ...checklist.failures, ...detected.failures, ...effects.failures];
 
 	const items = checklist.result;
 	const checklistText = items.length > 0 ? ["Wrap-up checklist:", ...items.map((i) => `- ${i.full}`)].join("\n") : "";
@@ -123,13 +121,6 @@ try {
 	if (omMod === "report") writeStopReportData({ key: "unavailable", claims: [], agentText: "" });
 	else writeSilentHookOutput();
 }
-
-triggerDebouncedRefresh({
-	sentinelPath: SENTINEL_PATH,
-	workerPath: WORKER_PATH,
-	debounceMs: DEBOUNCE_MS,
-	logPrefix: "stop-checklist",
-});
 
 // Exit once stdout has flushed: an extension call that timed out may have
 // left a timer or a socket behind, and Stop's hook timeout is 5 s.

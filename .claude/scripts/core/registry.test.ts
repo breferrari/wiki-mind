@@ -211,6 +211,28 @@ describe("rule 5: a throw or a timeout is isolated", () => {
 		assert.match(failures[0]?.message ?? "", /timed out after 100 ms/);
 	});
 
+	test("every call starts before any limit: a call that blocks spends no other call's time, before it or after it (#70)", async () => {
+		const busy = (ms: number) => {
+			const end = Date.now() + ms;
+			while (Date.now() < end) {
+				/* synchronous work, as QMD's spawnSync probes are */
+			}
+		};
+		const blocking: Extension = { id: "blocks", sections: [{ id: "sync", priority: 0, header: "### sync", render: () => (busy(300), "blocked") }] };
+		const waiting: Extension = { id: "waits", sections: [{ id: "io", priority: 1, header: "### io", render: () => new Promise<string>((r) => setTimeout(() => r("arrived"), 20)) }] };
+		const { result, failures } = await collectSections(fromLoaded([declared(blocking), declared(waiting, { timeoutMs: 100 })]), ctx, "full");
+		assert.deepEqual(failures, []);
+		assert.deepEqual(result.map((s) => s.body), ["blocked", "arrived"]);
+		// And the other way round: an async call that starts first keeps its time too. Its work
+		// goes on past the block (a second wait, started only when the first ends), so a limit
+		// that ran through the block would already be spent.
+		const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+		const first: Extension = { id: "waits-first", sections: [{ id: "io", priority: -1, header: "### io", render: async () => (await pause(0), await pause(30), "arrived") }] };
+		const after = await collectSections(fromLoaded([declared(first, { timeoutMs: 150 }), declared(blocking)]), ctx, "full");
+		assert.deepEqual(after.failures, []);
+		assert.deepEqual(after.result.map((s) => s.body), ["arrived", "blocked"]);
+	});
+
 	test("an item with an invalid priority is a failure, not a guess", async () => {
 		const ext: Extension = { id: "a", sections: [section("nan", Number.NaN, "x"), section("ok", 1, "y")] };
 		const { result, failures } = await collectSections(fromLoaded([declared(ext)]), ctx, "full");
@@ -353,10 +375,10 @@ describe("rule 7: slots are recorded, not dispatched", () => {
 		assert.deepEqual(undispatched(registry), ["a: pre-tool guards", "a: MCP tools"]);
 	});
 
-	test("effects on an extension that declares no write, pre-compact or stop are listed: they can never run", () => {
+	test("effects on an extension that declares no effect event are listed: they can never run", () => {
 		const effects = [{ id: "e", on: ["write"], run: () => {} }] as const;
-		const registry = fromLoaded([declared({ id: "a", effects }, { events: ["session-start"] }), declared({ id: "b", effects }, { events: ["write"] })]);
-		assert.deepEqual(undispatched(registry), ["a: effects, with no write, pre-compact or stop in its events"]);
+		const registry = fromLoaded([declared({ id: "a", effects }, { events: ["prompt"] }), declared({ id: "b", effects }, { events: ["write"] })]);
+		assert.deepEqual(undispatched(registry), ["a: effects, with no session-start, write, pre-compact or stop in its events"]);
 	});
 
 	test("a getter that throws does not make undispatched throw", () => {
@@ -385,6 +407,14 @@ describe("rule 5: effects run for their side effect alone", () => {
 			assert.deepEqual(failures, []);
 		}
 		assert.deepEqual(ran, ["w:write", "pc:pre-compact", "pc:stop"]);
+	});
+
+	test("an effect runs at session start too (#95)", async () => {
+		const ran: string[] = [];
+		const ext: Extension = { id: "a", effects: [effect("s", ["session-start"], (t) => { ran.push(t.event); })] };
+		const { failures } = await runEffects(fromLoaded([declared(ext, { events: ["session-start"] })]), { event: "session-start" }, ctx);
+		assert.deepEqual(failures, []);
+		assert.deepEqual(ran, ["session-start"]);
 	});
 
 	test("an effect whose `on` names an event its declaration does not list is a failure, not a silent skip", async () => {
@@ -456,7 +486,7 @@ describe("rule 5: effects run for their side effect alone", () => {
 		assert.match(failures[0]?.message ?? "", /returned number, not nothing/);
 	});
 
-	test("an `on` that is not a list of write, pre-compact and stop is a failure", async () => {
+	test("an `on` that is not a list of the effect events is a failure", async () => {
 		let ran = 0;
 		const run = () => { ran++; };
 		const ext: Extension = {

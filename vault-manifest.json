@@ -25,6 +25,16 @@
   ],
   "extensions": [
     {
+      "id": "qmd",
+      "module": ".claude/scripts/extensions/qmd/index.ts",
+      "events": [
+        "session-start",
+        "write",
+        "pre-compact",
+        "stop"
+      ]
+    },
+    {
       "id": "wiki",
       "module": ".claude/extensions/wiki/index.ts",
       "events": [
