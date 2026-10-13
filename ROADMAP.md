@@ -102,7 +102,7 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Retract or supersede a source, as SPEC §2.1 specifies | [#86](https://github.com/breferrari/wiki-mind/issues/86) |
 | ✅ | Find the vault from a subfolder in /wiki-retract | [#89](https://github.com/breferrari/wiki-mind/issues/89) |
 | ✅ | Run the effects extensions declare from wiki-mind's entry points | [#90](https://github.com/breferrari/wiki-mind/issues/90) |
-| ⬜ | Run the pre-compact effects extensions declare | [#104](https://github.com/breferrari/wiki-mind/issues/104) |
+| ✅ | Run the pre-compact effects extensions declare | [#104](https://github.com/breferrari/wiki-mind/issues/104) |
 | ⬜ | Take mindframe #91: case-aware retired instruction files | [#107](https://github.com/breferrari/wiki-mind/issues/107) |
 | ⬜ | Take mindframe #104: use the core's retiredInVault in place of S8's narrowing | [#108](https://github.com/breferrari/wiki-mind/issues/108) |
 | ✅ | Stop the test suite from leaving detached QMD refresh workers running | [#93](https://github.com/breferrari/wiki-mind/issues/93) |
