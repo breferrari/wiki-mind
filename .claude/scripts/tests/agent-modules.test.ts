@@ -4,7 +4,8 @@
  * `.gemini/settings.json`'s `context.fileName`, each agent's module claims
  * its own dotfolder, and every hook command each agent's config names runs
  * from the vault root, as that agent runs it, and exits 0 with JSON or
- * nothing on stdout.
+ * nothing on stdout. SessionStart's JSON is its envelope, carrying the
+ * session context (#98).
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
@@ -13,6 +14,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseHookContext } from "../lib/hook-io.ts";
 import { rmTemp } from "./_helpers.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -132,12 +134,11 @@ describe("every hook command runs from the vault root", () => {
 						const command = windowsKey && process.platform === "win32" && hook.commandWindows !== undefined ? hook.commandWindows : hook.command;
 						const r = runHook(command, event, agentVar);
 						assert.equal(r.status, 0, `${path} ${event}: ${command}\n${r.stdout}\n${r.stderr}`);
-						// SessionStart prints its context as plain text. Gemini's contract
-						// wants JSON (hookSpecificOutput.additionalContext), and Codex's is
-						// unverified. obsidian-mind#341 fixes it upstream; wiki-mind takes it
-						// when its record moves past that (#98), and this check tightens then.
-						if (event === "SessionStart") continue;
 						const out = r.stdout.trim();
+						// Both agents read SessionStart's context from the envelope's
+						// additionalContext: Gemini per its hook reference, Codex as
+						// obsidian-mind#345 verified (#98).
+						if (event === "SessionStart") assert.match(parseHookContext(out, "SessionStart"), /^## Session Context\n/, `${path} ${event}`);
 						if (out !== "") assert.doesNotThrow(() => JSON.parse(out), `${path} ${event} prints JSON or nothing: ${out.slice(0, 200)}`);
 					}
 				}

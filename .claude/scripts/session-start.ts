@@ -10,7 +10,9 @@
  * - under the mod (`om_mod`), `standdown` exits with no output, and
  *   `deliver` writes the full layer under the instruction budget;
  * - otherwise a resume or compact re-entry gets pointers, and any other
- *   start gets the full layer, under the hook output cap.
+ *   start gets the full layer, as one SessionStart JSON envelope
+ *   (`hookSpecificOutput.additionalContext`), budgeted on its JSON-encoded
+ *   size so the whole stdout fits the hook output cap (#98).
  *
  * The core sections (the heading, the date, extension failures) come first
  * and never degrade; the extensions' sections follow in priority order and
@@ -18,7 +20,7 @@
  */
 
 import { appendFileSync, readFileSync } from "node:fs";
-import { HOOK_OUTPUT_LIMIT, fitWithMeter, readStdinJson, type OutputLimit } from "./lib/hook-io.ts";
+import { envelopedLimit, fitWithMeter, readStdinJson, writeHookOutput, type OutputLimit } from "./lib/hook-io.ts";
 import { readOmMod } from "./lib/om-mod.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
 import {
@@ -26,6 +28,7 @@ import {
 	METER_HEADROOM,
 	applyInjectionBudget,
 	effectiveInjectionBudget,
+	enveloped,
 	formatDateHeader,
 	formatEnvExport,
 	formatInjectionSize,
@@ -34,6 +37,7 @@ import {
 	parseInstructionBudget,
 	type BudgetSection,
 	type InjectionBudget,
+	utf8Bytes,
 } from "./lib/session-start.ts";
 import { collectSections, formatFailures, runEffects, undispatched } from "./core/registry.ts";
 import { migrationNotes, openVault } from "./core/context.ts";
@@ -118,28 +122,32 @@ sections.push(...extensionSections);
 const budget: InjectionBudget = delivering
 	? { bytes: parseInstructionBudget(manifestJson) ?? DEFAULT_INSTRUCTION_BUDGET_BYTES }
 	: effectiveInjectionBudget(parseInjectionBudget(manifestJson));
-const budgeted = applyInjectionBudget(sections, budget.bytes);
+// The instruction file takes the layer as written; the hook path sends it in
+// the envelope, so it is measured as JSON.
+const measure = delivering ? utf8Bytes : enveloped;
+const budgeted = applyInjectionBudget(sections, budget.bytes, measure);
 const limit: OutputLimit = delivering
 	? { max: budget.bytes + METER_HEADROOM, unit: "bytes", name: "the instruction budget" }
-	: HOOK_OUTPUT_LIMIT;
+	: envelopedLimit("SessionStart");
 
-process.stdout.write(
-	fitWithMeter(
-		budgeted.text + "\n",
-		(cut, bodyBytes) =>
-			formatInjectionSize(bodyBytes, {
-				budgetBytes: budget.bytes,
-				collapsed: budgeted.collapsed,
-				degraded: budgeted.degraded,
-				cutSections: budgeted.cut,
-				clampedFrom: budget.clampedFrom,
-				cut,
-				cutTo: limit.name,
-				notes: migration,
-			}),
-		limit,
-	),
-	// Exit once stdout has flushed: an extension call that timed out may have
-	// left a timer or a socket behind.
-	() => process.exit(0),
+const context = fitWithMeter(
+	budgeted.text + "\n",
+	(cut, bodyBytes) =>
+		formatInjectionSize(bodyBytes, {
+			budgetBytes: budget.bytes,
+			collapsed: budgeted.collapsed,
+			degraded: budgeted.degraded,
+			cutSections: budgeted.cut,
+			clampedFrom: budget.clampedFrom,
+			cut,
+			cutTo: limit.name,
+			notes: migration,
+		}),
+	limit,
+	measure,
 );
+if (delivering) process.stdout.write(context);
+else writeHookOutput("SessionStart", context);
+// Exit once stdout has flushed: an extension call that timed out may have
+// left a timer or a socket behind.
+process.stdout.write("", () => process.exit(0));
