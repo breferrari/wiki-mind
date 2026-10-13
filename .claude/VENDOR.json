@@ -75,11 +75,6 @@
       "upstream": ".claude/scripts/package.json",
       "upstreamSha256": "11526375fb7a5285bb05d546e8992fcf575a1974b5f4d71e29d91b81a2be940a"
     },
-    ".claude/scripts/pre-compact.ts": {
-      "sha256": "f618672951a78376f597fd86e62e65617bdec6ff0adeeaf432c35573f5f127a7",
-      "upstream": ".claude/scripts/pre-compact.ts",
-      "upstreamSha256": "f618672951a78376f597fd86e62e65617bdec6ff0adeeaf432c35573f5f127a7"
-    },
     ".claude/scripts/qmd-mcp.d.mts": {
       "sha256": "eeb94ce2c89404a9fbd580e3037d5b1e346e30a928a0b6d713fe26704385b489",
       "upstream": ".claude/scripts/qmd-mcp.d.mts",

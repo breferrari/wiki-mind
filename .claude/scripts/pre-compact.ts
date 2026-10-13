@@ -7,6 +7,13 @@
  * Backups land in the vault root's `thinking/session-logs/` (the root found
  * by lib/project-dir.ts) named
  * `session_<trigger>_<YYYYMMDD_HHMMSS>.jsonl`.
+ *
+ * Copied from obsidian-mind's pre-compact.ts at 70317e2, whose backup and
+ * its three exports (tested by the vendored tests/pre-compact.test.ts) are
+ * unchanged. Its own QMD refresh trigger is replaced by the effects the
+ * vault's extensions declare on `pre-compact` (#104), QMD's refresh among
+ * them, so the extension switches reach compaction too. PreCompact has no
+ * context channel: an effect's failure goes to the debug log.
  */
 
 import {
@@ -16,12 +23,12 @@ import {
 	statSync,
 	unlinkSync,
 } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { debug, readStdinJson } from "./lib/hook-io.ts";
 import { isMainModule } from "./lib/main-guard.ts";
-import { triggerDebouncedRefresh } from "./lib/qmd-refresh.ts";
 import { resolveProjectDir } from "./lib/project-dir.ts";
+import { openVault } from "./core/context.ts";
+import { formatFailures, runEffects } from "./core/registry.ts";
 
 type HookInput = {
 	readonly transcript_path?: unknown;
@@ -65,21 +72,16 @@ if (isMainModule(import.meta.url)) {
 	const input = await readStdinJson<HookInput>();
 	if (!input) process.exit(0);
 
-	// Fire a debounced QMD refresh before (or alongside) the backup.
-	// Writes tend to cluster right before compaction, and catching them
-	// now means the session-resume SessionStart runs `qmd update` against
-	// an index that's already current. Uses the same sentinel as the
-	// PostToolUse and Stop hooks so we never spawn a redundant worker.
-	{
-		const scriptDir = dirname(fileURLToPath(import.meta.url));
-		triggerDebouncedRefresh({
-			sentinelPath:
-				process.env["QMD_REFRESH_SENTINEL"] ??
-				join(scriptDir, ".qmd-refresh-sentinel"),
-			workerPath: resolvePath(scriptDir, "qmd-refresh-run.ts"),
-			debounceMs: 30_000,
-			logPrefix: "pre-compact",
-		});
+	// The pre-compact effects run before the backup, QMD's index refresh among
+	// them: writes tend to cluster right before compaction, and catching them
+	// now means the resume's SessionStart finds the index current.
+	const vaultRoot = resolveProjectDir(process.cwd());
+	try {
+		const { registry, ctx } = await openVault(vaultRoot, "pre-compact");
+		const effects = await runEffects(registry, { event: "pre-compact" }, ctx);
+		for (const line of formatFailures([...registry.failures, ...effects.failures])) debug(`pre-compact: ${line}`);
+	} catch (err) {
+		debug(`pre-compact: effects: ${err instanceof Error ? err.message : String(err)}`);
 	}
 
 	const transcriptPath =
@@ -92,8 +94,7 @@ if (isMainModule(import.meta.url)) {
 		process.exit(0);
 	}
 
-	const projectDir = resolveProjectDir(process.cwd());
-	const backupDir = join(projectDir, "thinking/session-logs");
+	const backupDir = join(vaultRoot, "thinking/session-logs");
 	mkdirSync(backupDir, { recursive: true });
 
 	const dest = join(
