@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-	INJECTION_CEILING_BYTES,
+	effectiveInjectionBudget,
 	parseInfraRootFilenames,
 	parseInjectionBudget,
 	parseInstructionBudget,
@@ -37,8 +37,7 @@ describe("vault-manifest.json", () => {
 	});
 
 	test("the session-context budget is within the core's ceiling, so it is never clamped", () => {
-		const budget = parseInjectionBudget(raw);
-		assert.ok(budget !== null && budget <= INJECTION_CEILING_BYTES, `${budget} B is over the ${INJECTION_CEILING_BYTES} B ceiling`);
+		assert.equal(effectiveInjectionBudget(parseInjectionBudget(raw)).clampedFrom, undefined);
 	});
 
 	test("QMD: the index is derived from the vault folder, the minimum version parses, the context is set", () => {

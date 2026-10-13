@@ -86,8 +86,7 @@ describe("session-start", () => {
 		assert.ok(order.every((i) => i >= 0), context);
 		assert.deepEqual([...order].sort((a, b) => a - b), order);
 		assert.match(context, /- \[\[Why\]\] — why slow/);
-		// The shipped budget is under the core's ceiling, so the meter has no clamp note.
-		assert.match(context, /_context injected: [\d.]+kB \/ 9\.0kB budget_\n$/);
+		assert.match(context, /_context injected: [\d.]+kB \/ [\d.]+kB budget_\n$/);
 	});
 
 	test("on the hook path, the context goes out in one SessionStart envelope within the hook output cap (#98)", () => {

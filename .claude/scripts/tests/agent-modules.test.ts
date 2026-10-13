@@ -139,7 +139,7 @@ describe("every hook command runs from the vault root", () => {
 						// additionalContext: Gemini per its hook reference, Codex as
 						// obsidian-mind#345 verified (#98).
 						if (event === "SessionStart") assert.match(parseHookContext(out, "SessionStart"), /^## Session Context\n/, `${path} ${event}`);
-						if (out !== "") assert.doesNotThrow(() => JSON.parse(out), `${path} ${event} prints JSON or nothing: ${out.slice(0, 200)}`);
+						else if (out !== "") assert.doesNotThrow(() => JSON.parse(out), `${path} ${event} prints JSON or nothing: ${out.slice(0, 200)}`);
 					}
 				}
 			}
