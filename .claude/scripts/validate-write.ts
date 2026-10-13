@@ -5,10 +5,10 @@
  *
  * The protocol is obsidian-mind's (its validate-write.ts at v9.1.0):
  * - no `tool_input.file_path`, no output;
- * - the debounced QMD refresh runs before any skip, so every Markdown
- *   write refreshes the index;
  * - a file outside the vault root is not validated (the boundary is
  *   segment-safe: /vault does not match /vaulting);
+ * - the write effects (QMD's index refresh among them) run before the skip
+ *   rules, so every Markdown write refreshes the index;
  * - the file is read once, and every validator sees the same snapshot;
  * - warnings go to the agent in the event's envelope, which echoes the
  *   event name.
@@ -62,13 +62,14 @@ try {
 	const { registry, ctx } = await openVault(vaultRoot, "write");
 	// Every write's effects run before the skip below (QMD's index refresh,
 	// say): an effect decides for itself which paths it acts on.
-	const effects = await runEffects(registry, { event: "write", target: { relPath, content } }, ctx);
+	const target = { relPath, content };
+	const effects = await runEffects(registry, { event: "write", target }, ctx);
 	// The skip rules match path segments, so they get the vault-relative path:
 	// a vault that itself sits under a `.claude/` or `templates/` folder (a
 	// Claude Code worktree, say) would otherwise skip every file.
 	const skipped = shouldSkipFile(relPath);
 	if (skipped) debug(`validate: skipped ${filePath}`);
-	const validated = skipped ? { result: [], failures: [] } : await runValidators(registry, { relPath, content }, ctx);
+	const validated = skipped ? { result: [], failures: [] } : await runValidators(registry, target, ctx);
 	const failureLines = formatFailures([...registry.failures, ...effects.failures, ...validated.failures]);
 	if (validated.result.length > 0) blocks.push(`⚠️  ${relPath}:\n${validated.result.map((w) => `- ${w}`).join("\n")}`);
 	if (failureLines.length > 0) blocks.push(`Extensions:\n${failureLines.join("\n")}`);

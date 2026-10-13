@@ -13,7 +13,8 @@
  *   agent with the next prompt (lib/stop-handoff.ts), or as Stop feedback
  *   when it cannot be saved;
  * - SessionEnd, or an input with no session, reports in full;
- * - the debounced QMD refresh runs on every path that reports.
+ * - Stop's effects (QMD's debounced index refresh among them) run with the
+ *   report, once the registry has loaded.
  */
 
 import { dirname, join } from "node:path";
