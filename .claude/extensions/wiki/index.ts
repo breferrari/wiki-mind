@@ -166,7 +166,7 @@ export const extension: Extension = {
 			header: "### QMD bootstrap",
 			render: (ctx) => {
 				if (!existsSync(join(ctx.vaultRoot, RETIRED_BOOTSTRAP))) return null;
-				return `⚠️ \`${RETIRED_BOOTSTRAP}\` is retired and no longer runs: QMD's bootstrap is \`${BOOTSTRAP}\`, which session start runs when the index is missing. Move anything of your own out of the old script, then delete \`.scripts/\`.`;
+				return `⚠️ \`${RETIRED_BOOTSTRAP}\` is retired and no longer runs: QMD's bootstrap is \`${BOOTSTRAP}\`, which session start runs when the index is missing. Move anything of your own out of the old script, then delete it, and \`.scripts/\` if nothing else is in it.`;
 			},
 		},
 		{
