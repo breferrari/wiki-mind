@@ -110,7 +110,7 @@ This manual is for every agent that opens the vault. Each one runs the same hook
 |-------|-------------------|-------------|----------|
 | Claude Code | natively | `.claude/settings.json` | `/wiki-ingest` and the rest |
 | Codex | natively | `.codex/hooks.json` | type the command's name, `wiki-ingest`, without the slash: it reads `.claude/commands/wiki-ingest.md` |
-| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | `/wiki-ingest` and the rest: each is a wrapper in `.gemini/commands/` that reads `.claude/commands/wiki-ingest.md` |
+| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | `/wiki-ingest` and the rest: a wrapper in `.gemini/commands/` reads each one's `.claude/commands/` file |
 
 A command file's `$ARGUMENTS` is the input the user gave with the command: for `wiki-retract`, the source and any flags; for `wiki-ingest`, the URL or inbox path. Under Gemini, the wrapper passes that input in its place.
 
