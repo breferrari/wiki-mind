@@ -60,7 +60,8 @@ const INDEX_LINES_SHOWN = 40;
 const STALE_QUESTION_DAYS = 30;
 
 /** obsidian-mind's QMD bootstrap files, retired (#112), and the qmd extension's bootstrap, which replaced them. tests/bootstrap-path.test.ts holds the second against the extension's own path. */
-const RETIRED_BOOTSTRAP_FILES = [".scripts/qmd-bootstrap.ts", ".scripts/package.json"] as const;
+const RETIRED_BOOTSTRAP = ".scripts/qmd-bootstrap.ts";
+const RETIRED_SCRIPTS_PACKAGE = ".scripts/package.json";
 const BOOTSTRAP = ".claude/scripts/extensions/qmd/qmd-bootstrap.ts";
 
 const plural = (n: number, one: string, many: string = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -99,6 +100,22 @@ function staleLinks(note: Note, stale: ReadonlyMap<string, string>): string[] {
 	return lines.flatMap((line, i) =>
 		kinds[i] === "body" ? unmarkedLinks(line, linkSpans(line), names).map((span) => `[[${stale.get(span.name)}]] on line ${i + 1}`) : [],
 	);
+}
+
+/**
+ * The files left from the old bootstrap: its script, and with it the folder's
+ * package.json. Without the script, the package.json counts only when nothing
+ * else is in `.scripts/`: a user's own scripts there may need it.
+ */
+function leftoverBootstrap(vaultRoot: string): string[] {
+	const has = (f: string) => existsSync(join(vaultRoot, f));
+	if (has(RETIRED_BOOTSTRAP)) return [RETIRED_BOOTSTRAP, ...(has(RETIRED_SCRIPTS_PACKAGE) ? [RETIRED_SCRIPTS_PACKAGE] : [])];
+	if (!has(RETIRED_SCRIPTS_PACKAGE)) return [];
+	try {
+		return readdirSync(join(vaultRoot, ".scripts")).length === 1 ? [RETIRED_SCRIPTS_PACKAGE] : [];
+	} catch {
+		return [];
+	}
 }
 
 function isOpen(note: Note): boolean {
@@ -166,7 +183,7 @@ export const extension: Extension = {
 			priority: 0,
 			header: "### QMD bootstrap",
 			render: (ctx) => {
-				const left = RETIRED_BOOTSTRAP_FILES.filter((f) => existsSync(join(ctx.vaultRoot, f)));
+				const left = leftoverBootstrap(ctx.vaultRoot);
 				if (left.length === 0) return null;
 				return `⚠️ ${left.map((f) => `\`${f}\``).join(" and ")} ${left.length === 1 ? "is" : "are"} left from the old QMD bootstrap, which no longer runs: the vault's bootstrap is now \`${BOOTSTRAP}\`. Ask the user before removing anything: move anything of their own out first, then delete ${left.length === 1 ? "it" : "them"}, and \`.scripts/\` if nothing else is in it.`;
 			},

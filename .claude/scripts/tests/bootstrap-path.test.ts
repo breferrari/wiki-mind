@@ -48,20 +48,40 @@ describe("session start names files left from the old bootstrap (#115)", () => {
 		assert.equal(await warning(), undefined);
 	});
 
-	for (const files of [["qmd-bootstrap.ts"], ["package.json"], ["qmd-bootstrap.ts", "package.json"]]) {
-		test(`${files.join(" and ")} left: named, with the bootstrap that replaced it, and the user asked first`, async () => {
-			mkdirSync(join(root, ".scripts"), { recursive: true });
-			for (const f of files) writeFileSync(join(root, ".scripts", f), "// mine\n");
-			try {
-				const body = (await warning())?.body ?? "";
-				for (const f of files) assert.ok(body.includes(`\`.scripts/${f}\``), `names .scripts/${f}`);
-				assert.match(body, /no longer runs/);
-				assert.ok(body.includes(`\`${relative(REPO, BOOTSTRAP_PATH).replaceAll("\\", "/")}\``), "gives the extension's real bootstrap path");
-				assert.match(body, /Ask the user before removing anything/);
-				assert.match(body, /move anything of their own out first/);
-			} finally {
-				rmSync(join(root, ".scripts"), { recursive: true, force: true });
-			}
-		});
-	}
+	const left = async (files: string[], mode: "full" | "pointer" = "full") => {
+		mkdirSync(join(root, ".scripts"), { recursive: true });
+		for (const f of files) writeFileSync(join(root, ".scripts", f), "// mine\n");
+		try {
+			return (await collectSections(registry, ctx, mode)).result.find((s) => s.header === "### QMD bootstrap")?.body ?? "";
+		} finally {
+			rmSync(join(root, ".scripts"), { recursive: true, force: true });
+		}
+	};
+	const bootstrapPath = () => relative(REPO, BOOTSTRAP_PATH).replaceAll("\\", "/");
+
+	test("the old script alone: named, the bootstrap that replaced it given, and the user asked first", async () => {
+		const body = await left(["qmd-bootstrap.ts"]);
+		assert.match(body, /`\.scripts\/qmd-bootstrap\.ts` is left from the old QMD bootstrap, which no longer runs/);
+		assert.ok(body.includes(`\`${bootstrapPath()}\``), "gives the extension's real bootstrap path");
+		assert.match(body, /Ask the user before removing anything: move anything of their own out first, then delete it,/);
+	});
+
+	test("the old script and its package.json: both named", async () => {
+		const body = await left(["qmd-bootstrap.ts", "package.json"]);
+		assert.match(body, /`\.scripts\/qmd-bootstrap\.ts` and `\.scripts\/package\.json` are left/);
+		assert.match(body, /then delete them,/);
+	});
+
+	test("package.json alone in .scripts/: named", async () => {
+		assert.match(await left(["package.json"]), /`\.scripts\/package\.json` is left/);
+	});
+
+	test("package.json beside the user's own scripts: kept quiet, since they may need it", async () => {
+		assert.equal(await left(["package.json", "my-tool.ts"]), "");
+	});
+
+	test("on a resume, the section shows only when something is left: it has no pointer", async () => {
+		assert.equal((await collectSections(registry, ctx, "pointer")).result.find((s) => s.header === "### QMD bootstrap"), undefined);
+		assert.match(await left(["qmd-bootstrap.ts"], "pointer"), /is left from the old QMD bootstrap/);
+	});
 });
