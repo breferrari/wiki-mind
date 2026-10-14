@@ -100,10 +100,11 @@ test("a description's escapes are undone once", () => {
 	assert.equal(description('---\ndescription: "Use C:\\\\path and \u2014 dashes"\n---\n'), "Use C:\\path and \u2014 dashes");
 });
 
-test("classify-message.ts knows the wrappers' preamble, byte for byte, so it reads only the typed arguments (#118)", () => {
+test("classify-message.ts declares the same preamble as the wrappers, so it reads only the typed arguments (#118)", () => {
 	// Read from source: an entry point runs on import, and lib/ is vendored, so there is no module to share it from.
 	const source = readFileSync(join(REPO, ".claude", "scripts", "classify-message.ts"), "utf-8");
-	const declared = /const GEMINI_PREAMBLE\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(source)?.[1];
+	// The whole declaration, from line start to its semicolon, so nothing can be appended to the literal.
+	const declared = /^const GEMINI_PREAMBLE = "((?:[^"\\]|\\.)*)";$/m.exec(source)?.[1];
 	assert.ok(declared !== undefined, "classify-message.ts declares GEMINI_PREAMBLE");
 	assert.equal(JSON.parse(`"${declared}"`), PREAMBLE, "the same preamble as the generator's");
 });

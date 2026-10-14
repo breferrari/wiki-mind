@@ -336,7 +336,8 @@ describe("classify-message", () => {
 		const expanded = (name: string, args: string) => {
 			const toml = readFileSync(join(REPO, ".gemini", "commands", `${name}.toml`), "utf-8");
 			const body = /prompt = """\n([\s\S]*?)"""/.exec(toml)?.[1] ?? "";
-			return body.replace("{{args}}", () => args).replace(/@\{([^}]+)\}/, (_, path: string) => readFileSync(join(REPO, path), "utf-8"));
+			// As Gemini does: @{…} first, then {{args}}, so an argument is never read as an injection.
+			return body.replace(/@\{([^}]+)\}/, (_, path: string) => readFileSync(join(REPO, path), "utf-8")).replace("{{args}}", () => args);
 		};
 		const beforeAgent = (session: string, prompt: string) => run("classify-message", { hook_event_name: "BeforeAgent", session_id: session, prompt }).stdout;
 

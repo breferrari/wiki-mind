@@ -40,13 +40,14 @@ const GEMINI_PREAMBLE = "Run the vault command below. It is written for Claude C
 
 /**
  * What the user typed. Under Gemini, BeforeAgent gets a `/wiki-` command's
- * expanded prompt (obsidian-mind #408): the preamble, the typed arguments,
- * then the injected command file, whose words would set off hints of their
- * own. The arguments run from the preamble to the blank line before the
- * command file's frontmatter (every command opens with one, which
- * gemini-commands.test.ts holds), so a multi-line argument is read whole; an
- * argument that itself holds a blank line then `---` is read up to there.
- * With no such boundary, only the preamble's own line is read.
+ * expanded prompt (obsidian-mind #408's finding): the preamble, the typed
+ * arguments, then the injected command file, whose words would set off hints
+ * of their own. #408's shape reads the preamble's line; reading a multi-line
+ * argument whole is wiki-mind's addition. The arguments run from the
+ * preamble to the blank line before the command file's frontmatter (every
+ * command opens with one, which gemini-commands.test.ts holds); an argument
+ * that itself holds a blank line then `---` is read up to there. With no
+ * such boundary, only the preamble's own line is read.
  */
 function typedPrompt(prompt: string): string {
 	if (!prompt.startsWith(GEMINI_PREAMBLE)) return prompt;
