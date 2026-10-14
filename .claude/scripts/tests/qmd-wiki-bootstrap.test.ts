@@ -29,7 +29,7 @@ before(() => {
 	cpSync(join(REPO, ".claude", "scripts", "lib"), join(vault, ".claude", "scripts", "lib"), { recursive: true });
 	// The bootstrap is the qmd extension's (mindframe #96); it imports the
 	// core's index, which imports lib/.
-	cpSync(join(REPO, ".claude", "scripts", "extensions", "qmd"), join(vault, ".claude", "scripts", "extensions", "qmd"), { recursive: true });
+	cpSync(join(REPO, ".claude", "scripts", "extensions", "qmd"), join(vault, ".claude", "scripts", "extensions", "qmd"), { recursive: true, filter: (src) => !src.endsWith(".test.ts") });
 	cpSync(join(REPO, ".claude", "scripts", "core"), join(vault, ".claude", "scripts", "core"), { recursive: true });
 	cpSync(join(REPO, ".claude", "scripts", "package.json"), join(vault, ".claude", "scripts", "package.json"));
 	cpSync(join(REPO, "vault-manifest.json"), join(vault, "vault-manifest.json"));
