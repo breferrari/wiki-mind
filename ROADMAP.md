@@ -97,6 +97,7 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Take obsidian-mind's Codex and Gemini config fixes on the next re-vendor | [#100](https://github.com/breferrari/wiki-mind/issues/100) |
 | ⬜ | Take obsidian-mind's Gemini Stop timing and command files when they land | [#109](https://github.com/breferrari/wiki-mind/issues/109) |
 | ✅ | Take mindframe #96: drop obsidian-mind's qmd bootstrap for the qmd extension's | [#112](https://github.com/breferrari/wiki-mind/issues/112) |
+| ✅ | Warn at session start about a leftover .scripts/qmd-bootstrap.ts that no longer runs | [#115](https://github.com/breferrari/wiki-mind/issues/115) |
 | ✅ | Vendor mindframe's one frontmatter reader, and lift /wiki-retract's BOM refusal | [#101](https://github.com/breferrari/wiki-mind/issues/101) |
 | ✅ | Adopt mindframe's qmd extension and refresh effects in one migration | [#102](https://github.com/breferrari/wiki-mind/issues/102) |
 | ✅ | Spec corrections for a retracted or superseded source | [#26](https://github.com/breferrari/wiki-mind/issues/26) |
