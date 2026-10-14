@@ -95,7 +95,8 @@ Work SPEC.md schedules for after v0.1 (its Later section), so it is planned, not
 | ✅ | Codex and Gemini as removable modules, with AGENTS.md as the one manual | [#25](https://github.com/breferrari/wiki-mind/issues/25) |
 | ✅ | Take obsidian-mind#341's SessionStart JSON envelope, through mindframe c2b8f3b | [#98](https://github.com/breferrari/wiki-mind/issues/98) |
 | ✅ | Take obsidian-mind's Codex and Gemini config fixes on the next re-vendor | [#100](https://github.com/breferrari/wiki-mind/issues/100) |
-| ⬜ | Take obsidian-mind's Gemini Stop timing and command files when they land | [#109](https://github.com/breferrari/wiki-mind/issues/109) |
+| ⬜ | Take obsidian-mind's Gemini Stop timing when it is decided | [#109](https://github.com/breferrari/wiki-mind/issues/109) |
+| ✅ | Classify only the typed arguments of a Gemini /wiki- command, not the injected command text | [#118](https://github.com/breferrari/wiki-mind/issues/118) |
 | ✅ | Take mindframe #96: drop obsidian-mind's qmd bootstrap for the qmd extension's | [#112](https://github.com/breferrari/wiki-mind/issues/112) |
 | ✅ | Warn at session start about a leftover .scripts/qmd-bootstrap.ts that no longer runs | [#115](https://github.com/breferrari/wiki-mind/issues/115) |
 | ✅ | Vendor mindframe's one frontmatter reader, and lift /wiki-retract's BOM refusal | [#101](https://github.com/breferrari/wiki-mind/issues/101) |

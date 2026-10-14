@@ -31,6 +31,31 @@ type HookInput = {
 	readonly session_id?: unknown;
 };
 
+/**
+ * The preamble of a Gemini command wrapper (`.gemini/commands/*.toml`, #117),
+ * up to where Gemini puts the typed arguments. tests/gemini-commands.test.ts
+ * holds it equal to the generator's, and obsidian-mind's is the same.
+ */
+const GEMINI_PREAMBLE = "Run the vault command below. It is written for Claude Code: where it says $ARGUMENTS, use these arguments: ";
+
+/**
+ * What the user typed. Under Gemini, BeforeAgent gets a `/wiki-` command's
+ * expanded prompt (obsidian-mind #408's finding): the preamble, the typed
+ * arguments, then the injected command file, whose words would set off hints
+ * of their own. #408's shape reads the preamble's line; reading a multi-line
+ * argument whole is wiki-mind's addition. The arguments run from the
+ * preamble to the blank line before the command file's frontmatter (every
+ * command opens with one, which gemini-commands.test.ts holds); an argument
+ * that itself holds a blank line then `---` is read up to there. With no
+ * such boundary, only the preamble's own line is read.
+ */
+function typedPrompt(prompt: string): string {
+	if (!prompt.startsWith(GEMINI_PREAMBLE)) return prompt;
+	const rest = prompt.slice(GEMINI_PREAMBLE.length);
+	const boundary = /\r?\n\r?\n\uFEFF?---\r?\n/.exec(rest);
+	return boundary === null ? (rest.split(/\r?\n/)[0] ?? "") : rest.slice(0, boundary.index);
+}
+
 const input = await readStdinJson<HookInput>();
 if (!input) {
 	debug("classify: null input (bad/empty stdin)");
@@ -41,10 +66,10 @@ const sessionId = input.session_id;
 const hasSession = typeof sessionId === "string" && sessionId !== "";
 const stopReport = hasSession ? takeHandoff(HANDOFF_DIR, sessionId) : null;
 
-const prompt = input.prompt;
+const prompt = typeof input.prompt === "string" ? typedPrompt(input.prompt) : "";
 let hints: string[] = [];
 let failureLines: string[] = [];
-if (typeof prompt === "string" && prompt !== "") {
+if (prompt !== "") {
 	const vaultRoot = resolveProjectDir(process.cwd());
 	try {
 		const { registry } = await openVault(vaultRoot, "prompt");

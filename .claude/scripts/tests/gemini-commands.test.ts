@@ -30,13 +30,16 @@ export function description(markdown: string): string {
 	return JSON.parse(`"${extractFrontmatterField(markdown, "description") ?? ""}"`) as string;
 }
 
+/** The wrapper's prompt, up to the typed arguments; classify-message.ts reads only what follows it (#118). */
+const PREAMBLE = "Run the vault command below. It is written for Claude Code: where it says $ARGUMENTS, use these arguments: ";
+
 /** The Gemini TOML wrapper for the command `name`, given its markdown. */
 function wrapper(name: string, markdown: string): string {
 	return [
 		`# Generated in the wiki-mind repo from .claude/commands/${name}.md. In a vault, change the description here too when you change it there.`,
 		`description = ${JSON.stringify(description(markdown))}`,
 		'prompt = """',
-		"Run the vault command below. It is written for Claude Code: where it says $ARGUMENTS, use these arguments: {{args}}",
+		`${PREAMBLE}{{args}}`,
 		"",
 		`@{.claude/commands/${name}.md}`,
 		'"""',
@@ -95,4 +98,19 @@ test("each description is TOML-safe, and each wrapper on disk reads its command 
 
 test("a description's escapes are undone once", () => {
 	assert.equal(description('---\ndescription: "Use C:\\\\path and \u2014 dashes"\n---\n'), "Use C:\\path and \u2014 dashes");
+});
+
+test("classify-message.ts declares the same preamble as the wrappers, so it reads only the typed arguments (#118)", () => {
+	// Read from source: an entry point runs on import, and lib/ is vendored, so there is no module to share it from.
+	const source = readFileSync(join(REPO, ".claude", "scripts", "classify-message.ts"), "utf-8");
+	// The whole declaration, from line start to its semicolon, so nothing can be appended to the literal.
+	const declared = /^const GEMINI_PREAMBLE = "((?:[^"\\]|\\.)*)";$/m.exec(source)?.[1];
+	assert.ok(declared !== undefined, "classify-message.ts declares GEMINI_PREAMBLE");
+	assert.equal(JSON.parse(`"${declared}"`), PREAMBLE, "the same preamble as the generator's");
+});
+
+test("every command opens with frontmatter, where classify-message finds the end of a Gemini command's arguments (#118)", () => {
+	for (const file of readdirSync(COMMANDS).filter((f) => COMMAND.test(f))) {
+		assert.match(readFileSync(join(COMMANDS, file), "utf-8"), /^---\r?\n/, `${file} opens with ---`);
+	}
 });

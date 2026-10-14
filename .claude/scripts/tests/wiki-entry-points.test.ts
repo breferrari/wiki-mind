@@ -330,6 +330,42 @@ describe("classify-message", () => {
 		assert.match(run("classify-message", prompt).stdout, /NEW SOURCE/);
 		assert.equal(run("classify-message", prompt).stdout, "");
 	});
+
+	describe("a Gemini /wiki- command: BeforeAgent gets the wrapper's expanded prompt, and only the typed arguments are classified (#118)", () => {
+		/** The prompt Gemini sends for `/name args`: the wrapper's preamble with {{args}} filled, then the command file injected for @{…}. */
+		const expanded = (name: string, args: string) => {
+			const toml = readFileSync(join(REPO, ".gemini", "commands", `${name}.toml`), "utf-8");
+			const body = /prompt = """\n([\s\S]*?)"""/.exec(toml)?.[1] ?? "";
+			// As Gemini does: @{…} first, then {{args}}, so an argument is never read as an injection.
+			return body.replace(/@\{([^}]+)\}/, (_, path: string) => readFileSync(join(REPO, path), "utf-8")).replace("{{args}}", () => args);
+		};
+		const beforeAgent = (session: string, prompt: string) => run("classify-message", { hook_event_name: "BeforeAgent", session_id: session, prompt }).stdout;
+
+		test("words in the injected command text fire no hint: wiki-synthesize's own \"vs\"", () => {
+			assert.match(expanded("wiki-synthesize", "Attention"), /\bvs\b/, "the fixture's command text has the word");
+			assert.equal(beforeAgent("g1", expanded("wiki-synthesize", "Attention")), "");
+		});
+
+		test("words in the typed arguments fire their hint", () => {
+			assert.match(beforeAgent("g2", expanded("wiki-ingest", "https://arxiv.org/abs/9")), /NEW SOURCE/);
+		});
+
+		test("no arguments: nothing is classified", () => {
+			assert.equal(beforeAgent("g4", expanded("wiki-synthesize", "")), "");
+		});
+
+		test("with no command text after the arguments, only the preamble's line is read", () => {
+			const preamble = expanded("wiki-lint", "").split("\n")[0] ?? "";
+			const prompt = `${preamble}see https://arxiv.org/abs/3\nthen A vs B`;
+			const out = beforeAgent("g5", prompt);
+			assert.match(out, /NEW SOURCE/, "the preamble's line is classified");
+			assert.doesNotMatch(out, /comparison/i, "the rest is not");
+		});
+
+		test("a multi-line argument is read to where the command text begins, not only its first line", () => {
+			assert.match(beforeAgent("g3", expanded("wiki-question", "why is it slow\nsee https://arxiv.org/abs/7")), /NEW SOURCE/);
+		});
+	});
 });
 
 describe("validate-write", () => {
