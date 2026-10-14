@@ -30,7 +30,6 @@ before(() => {
 	state = join(parent, "state");
 	mkdirSync(state);
 	cpSync(join(REPO, ".claude"), join(vault, ".claude"), { recursive: true, filter: (src) => !RUNTIME_STATE.has(basename(src)) });
-	cpSync(join(REPO, ".scripts"), join(vault, ".scripts"), { recursive: true });
 	cpSync(join(REPO, "vault-manifest.json"), join(vault, "vault-manifest.json"));
 	for (const folder of ["sources", "concepts", "syntheses", "questions"]) mkdirSync(join(vault, folder));
 	writeFileSync(join(vault, "concepts", "Lonely.md"), fm({ date: "2026-10-05", description: "d", tags: "[t]" }) + "no source\n");
@@ -84,7 +83,7 @@ describe("no runtime output names the upstream vault", () => {
 	});
 
 	test("the QMD bootstrap script", () => {
-		const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", join(".scripts", "qmd-bootstrap.ts")], {
+		const r = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", join(".claude", "scripts", "extensions", "qmd", "qmd-bootstrap.ts")], {
 			cwd: vault,
 			encoding: "utf-8",
 			timeout: 30_000,
@@ -124,7 +123,6 @@ describe("no runtime output names the upstream vault", () => {
 			".claude/skills/wiki-mind/.claude-plugin/plugin.json",
 			".claude/scripts/package.json",
 			".shardmind/hooks/package.json",
-			".scripts/package.json",
 			".mcp.json",
 			"vault-manifest.json",
 			"AGENTS.md",

@@ -5,7 +5,7 @@
  * bootstrap's generic fallback text.
  *
  * QMD itself is faked: a stand-in `@tobilu/qmd` package, resolved the way
- * lib/qmd.ts resolves the real one, logs each call and answers `--version`.
+ * the qmd extension's lib/qmd.ts resolves the real one, logs each call and answers `--version`.
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rmTemp } from "./_helpers.ts";
-import { deriveQmdIndex } from "../lib/session-start.ts";
+import { deriveQmdIndex } from "../extensions/qmd/lib/index-name.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 let parent = "";
@@ -26,11 +26,10 @@ before(() => {
 	parent = mkdtempSync(join(tmpdir(), "wiki-boot-"));
 	vault = join(parent, "My Research Wiki");
 	mkdirSync(join(vault, ".claude"), { recursive: true });
-	cpSync(join(REPO, ".scripts"), join(vault, ".scripts"), { recursive: true });
 	cpSync(join(REPO, ".claude", "scripts", "lib"), join(vault, ".claude", "scripts", "lib"), { recursive: true });
-	// lib/qmd.ts re-exports the qmd extension's libraries (mindframe #96),
-	// and the extension's lib/qmd.ts imports the core's index.
-	cpSync(join(REPO, ".claude", "scripts", "extensions", "qmd", "lib"), join(vault, ".claude", "scripts", "extensions", "qmd", "lib"), { recursive: true });
+	// The bootstrap is the qmd extension's (mindframe #96); it imports the
+	// core's index, which imports lib/.
+	cpSync(join(REPO, ".claude", "scripts", "extensions", "qmd"), join(vault, ".claude", "scripts", "extensions", "qmd"), { recursive: true, filter: (src) => !src.endsWith(".test.ts") });
 	cpSync(join(REPO, ".claude", "scripts", "core"), join(vault, ".claude", "scripts", "core"), { recursive: true });
 	cpSync(join(REPO, ".claude", "scripts", "package.json"), join(vault, ".claude", "scripts", "package.json"));
 	cpSync(join(REPO, "vault-manifest.json"), join(vault, "vault-manifest.json"));
@@ -49,7 +48,7 @@ after(() => rmTemp(parent));
 
 describe("QMD bootstrap in a wiki-mind vault", () => {
 	test("registers the collection under the derived index, with wiki-mind's context", () => {
-		const run = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", join(".scripts", "qmd-bootstrap.ts")], {
+		const run = spawnSync(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", join(".claude", "scripts", "extensions", "qmd", "qmd-bootstrap.ts")], {
 			cwd: vault,
 			encoding: "utf-8",
 			env: { ...process.env, FAKE_QMD_LOG: log },

@@ -15,7 +15,7 @@ import {
 	makeCollectionAddBenignMatcher,
 	isUnknownSubcommandFailure,
 	legacyCollectionCandidate,
-} from "../lib/qmd-bootstrap.ts";
+} from "./lib/qmd-bootstrap.ts";
 
 describe("buildCollectionAddArgs", () => {
 	test("emits the exact argv shape qmd's `collection add` expects", () => {

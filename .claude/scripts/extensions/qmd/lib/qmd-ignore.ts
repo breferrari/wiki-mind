@@ -17,8 +17,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import { warn } from "./hook-io.ts";
-import { escapeRegex } from "./regex.ts";
+import { escapeRegex, warn } from "../../../core/index.ts";
 
 /**
  * YAML indent widths used by QMD's serializer. Defined once here so the strip

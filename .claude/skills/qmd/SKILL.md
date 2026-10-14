@@ -74,7 +74,7 @@ Each operation lists the MCP call first, then the CLI equivalent. Prefer MCP whe
 The QMD SQLite store lives outside the repo (`~/.cache/qmd/<index>.sqlite`), so a fresh clone starts with no index. Run the bootstrap once:
 
 ```bash
-node --experimental-strip-types .scripts/qmd-bootstrap.ts
+node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts
 ```
 
 It resolves the index name (pinned `qmd_index`, else the vault folder slug) and reads `qmd_context` from `vault-manifest.json`, registers the collection, attaches the vault context, walks the vault, and generates embeddings. Idempotent — safe to re-run.
