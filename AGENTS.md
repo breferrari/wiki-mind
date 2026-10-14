@@ -129,7 +129,7 @@ Under Gemini, the Stop report runs once, when the session ends, rather than afte
 | `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions. |
 | `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. |
 | `.claude/rules/` | What only Claude Code reads. |
-| `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
+| `.codex/`, `.gemini/` | Codex's and Gemini's hook configs, and Gemini's command wrappers in `.gemini/commands/`, which copy each command's description: change it in both places. Each is a module you can leave out at install. |
 
 ## Developing this shard
 
