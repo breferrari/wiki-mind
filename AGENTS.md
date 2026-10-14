@@ -110,9 +110,9 @@ This manual is for every agent that opens the vault. Each one runs the same hook
 |-------|-------------------|-------------|----------|
 | Claude Code | natively | `.claude/settings.json` | `/wiki-ingest` and the rest |
 | Codex | natively | `.codex/hooks.json` | type the command's name, `wiki-ingest`, without the slash: it reads `.claude/commands/wiki-ingest.md` |
-| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | ask for the command by name, `wiki-ingest`: it reads `.claude/commands/wiki-ingest.md` |
+| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | `/wiki-ingest` and the rest: each is a wrapper in `.gemini/commands/` that reads `.claude/commands/wiki-ingest.md` |
 
-A command file's `$ARGUMENTS` is the input the user gave with the command: for `wiki-retract`, the source and any flags; for `wiki-ingest`, the URL or inbox path.
+A command file's `$ARGUMENTS` is the input the user gave with the command: for `wiki-retract`, the source and any flags; for `wiki-ingest`, the URL or inbox path. Under Gemini, the wrapper passes that input in its place.
 
 Under Gemini, the Stop report runs once, when the session ends, rather than after each answer. What only Claude Code needs is in `.claude/rules/`, which only Claude Code reads.
 
