@@ -25,38 +25,38 @@
  * and Linux.
  *
  * Usage:
- *   node --experimental-strip-types .scripts/qmd-bootstrap.ts
+ *   node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts
  */
 
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-import { warn } from "../.claude/scripts/lib/hook-io.ts";
-import { isMainModule } from "../.claude/scripts/lib/main-guard.ts";
+import { manifestOf, warn } from "../../core/index.ts";
+import { isMainModule } from "./lib/main-guard.ts";
 import {
 	buildCollectionAddArgs,
 	isContextRemoveBenign,
 	isUnknownSubcommandFailure,
 	legacyCollectionCandidate,
 	makeCollectionAddBenignMatcher,
-} from "../.claude/scripts/lib/qmd-bootstrap.ts";
+} from "./lib/qmd-bootstrap.ts";
 import {
 	buildQmdCommand,
 	qmdVersionAtLeast,
 	resolveQmdEntry,
-} from "../.claude/scripts/lib/qmd.ts";
+} from "./lib/qmd.ts";
 import {
 	qmdConfigPath,
 	readObsidianIgnore,
 	translateToGlob,
 	writeQmdIgnore,
-} from "../.claude/scripts/lib/qmd-ignore.ts";
-import { writeQmdEmbedModel } from "../.claude/scripts/lib/qmd-models.ts";
+} from "./lib/qmd-ignore.ts";
+import { writeQmdEmbedModel } from "./lib/qmd-models.ts";
 import {
 	deriveQmdIndex,
 	isValidQmdIndex,
-	resolveQmdIndex,
-} from "../.claude/scripts/lib/session-start.ts";
+	resolveQmdIndexOf,
+} from "./lib/index-name.ts";
 
 type ManifestSubset = {
 	readonly qmd_index?: string;
@@ -73,17 +73,9 @@ function readManifestRaw(): string | null {
 	}
 }
 
+/** The manifest by the core's one rule (`manifestOf`): an object, or null for none, malformed JSON or a non-object. */
 function parseManifest(raw: string | null): ManifestSubset | null {
-	if (raw === null) return null;
-	try {
-		const parsed = JSON.parse(raw) as unknown;
-		if (parsed !== null && typeof parsed === "object") {
-			return parsed as ManifestSubset;
-		}
-	} catch {
-		/* handled by caller */
-	}
-	return null;
+	return raw === null ? null : (manifestOf(raw) as ManifestSubset | null);
 }
 
 type SpawnOutcome = {
@@ -103,7 +95,8 @@ function spawnQmd(
 	subcommandArgs: readonly string[],
 ): SpawnOutcome {
 	const { cmd, args, shell } = buildQmdCommand(entry, subcommandArgs);
-	const r = spawnSync(cmd, args as string[], { shell, encoding: "utf-8" });
+	// windowsHide: upstream at obsidian-mind be9be2e (#385). Drop this note once #136 records the script.
+	const r = spawnSync(cmd, args as string[], { shell, encoding: "utf-8", windowsHide: true });
 	return {
 		status: r.status,
 		signal: r.signal,
@@ -221,10 +214,10 @@ function main(): void {
 	// private fallback would populate one index while SessionStart, the
 	// refresh worker, and the MCP wrapper read another — which surfaces as
 	// "0 documents", not as an error.
-	// `process.cwd()` is the vault root: `readManifest()` above already
+	// `process.cwd()` is the vault root: `readManifestRaw()` above already
 	// resolved `vault-manifest.json` relative to it, so a wrong cwd has
 	// already failed.
-	const index = resolveQmdIndex(manifestRaw, process.cwd());
+	const index = resolveQmdIndexOf(manifest, process.cwd());
 
 	if (index === null) {
 		process.stderr.write(

@@ -1,5 +1,5 @@
 /**
- * Pure helpers for `.scripts/qmd-bootstrap.ts`, factored out for unit-testing
+ * Pure helpers for the qmd extension's `qmd-bootstrap.ts`, factored out for unit-testing
  * without spawning qmd.
  *
  * Two qmd-2.x quirks drive the shape here. Its CLI runs `util.parseArgs` with
@@ -9,8 +9,8 @@
  * which mis-fires on native Windows backslash paths.
  */
 
-import { escapeRegex } from "./regex.ts";
-import { isValidQmdIndex } from "./session-start.ts";
+import { escapeRegex } from "../../../core/index.ts";
+import { isValidQmdIndex } from "./index-name.ts";
 
 const DEFAULT_GLOB = "**/*.md";
 

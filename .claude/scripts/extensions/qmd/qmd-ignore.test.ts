@@ -20,9 +20,9 @@ import {
 	upsertIgnoreInYaml,
 	writeQmdIgnore,
 	qmdConfigPath,
-} from "../lib/qmd-ignore.ts";
+} from "./lib/qmd-ignore.ts";
 
-import { rmTemp } from "./_helpers.ts";
+import { rmTemp } from "./test-fakes.ts";
 
 const YAML_BASE = `collections:
   obsidian-mind:

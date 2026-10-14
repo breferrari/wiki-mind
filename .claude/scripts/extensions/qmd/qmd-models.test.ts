@@ -19,9 +19,9 @@ import {
 	QMD_DEFAULT_EMBED_MODEL,
 	upsertEmbedModelInYaml,
 	writeQmdEmbedModel,
-} from "../lib/qmd-models.ts";
+} from "./lib/qmd-models.ts";
 
-import { rmTemp } from "./_helpers.ts";
+import { rmTemp } from "./test-fakes.ts";
 
 const CONFIG = (embed: string) =>
 	`collections:\n  vault:\n    path: /somewhere\n    pattern: "**/*.md"\nmodels:\n  embed: ${embed}\n  generate: hf:some/generate.gguf\n  rerank: hf:some/rerank.gguf\n`;

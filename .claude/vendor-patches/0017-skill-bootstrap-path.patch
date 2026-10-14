@@ -1,0 +1,16 @@
+Description: Give the qmd extension's bootstrap path (.claude/scripts/extensions/qmd/qmd-bootstrap.ts, mindframe #96) for a manual run, in place of .scripts/qmd-bootstrap.ts, which wiki-mind no longer ships
+Forwarded: not-needed: obsidian-mind ships its own .scripts/qmd-bootstrap.ts until it adopts mindframe's core (its Phase 4); this patch retires then
+Last-Update: 2026-10-14
+
+diff --git a/.claude/skills/qmd/SKILL.md b/.claude/skills/qmd/SKILL.md
+--- a/.claude/skills/qmd/SKILL.md
++++ b/.claude/skills/qmd/SKILL.md
+@@ -74,7 +74,7 @@
+ The QMD SQLite store lives outside the repo (`~/.cache/qmd/<index>.sqlite`), so a fresh clone starts with no index. Run the bootstrap once:
+ 
+ ```bash
+-node --experimental-strip-types .scripts/qmd-bootstrap.ts
++node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts
+ ```
+ 
+ It resolves the index name (pinned `qmd_index`, else the vault folder slug) and reads `qmd_context` from `vault-manifest.json`, registers the collection, attaches the vault context, walks the vault, and generates embeddings. Idempotent — safe to re-run.

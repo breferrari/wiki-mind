@@ -16,7 +16,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 
-import { warn } from "./hook-io.ts";
+import { warn } from "../../../core/index.ts";
 
 /**
  * qmd's own default embedder, as of 2.8.3. Recognised so the upsert can tell

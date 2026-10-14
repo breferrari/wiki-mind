@@ -1,0 +1,24 @@
+Description: Run the qmd extension's bootstrap (.claude/scripts/extensions/qmd/qmd-bootstrap.ts, mindframe #96) in place of obsidian-mind's .scripts/qmd-bootstrap.ts, which wiki-mind no longer ships, so the vault has one bootstrap
+Forwarded: not-needed: obsidian-mind runs its own bootstrap until it adopts mindframe's core (its Phase 4); this patch retires then
+Last-Update: 2026-10-14
+
+diff --git a/.shardmind/hooks/bootstrap.ts b/.shardmind/hooks/bootstrap.ts
+--- a/.shardmind/hooks/bootstrap.ts
++++ b/.shardmind/hooks/bootstrap.ts
+@@ -29,12 +29,10 @@
+ import { join } from 'node:path';
+ 
+ // Vault-relative path to the QMD bootstrap script. Centralized so a future
+-// rename is a one-line change. Lives at vault root under `.scripts/`, not
+-// `.claude/scripts/` — the README's QMD setup section invokes the same path
+-// (`node --experimental-strip-types .scripts/qmd-bootstrap.ts`), and changing
+-// it would silently desync the manual setup path from the hook's automated
+-// one.
+-const QMD_BOOTSTRAP_RELATIVE = '.scripts/qmd-bootstrap.ts';
++// rename is a one-line change. The bootstrap is the qmd extension's
++// (mindframe #96), the same script session start runs for a missing or
++// near-empty store, and the path the docs give for a manual run.
++const QMD_BOOTSTRAP_RELATIVE = '.claude/scripts/extensions/qmd/qmd-bootstrap.ts';
+ 
+ // Local mirror of ShardMind's BootstrapContext shape. Inlined (rather than
+ // imported from `shardmind/runtime`) so obsidian-mind has no shardmind
