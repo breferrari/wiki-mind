@@ -349,6 +349,18 @@ describe("classify-message", () => {
 			assert.match(beforeAgent("g2", expanded("wiki-ingest", "https://arxiv.org/abs/9")), /NEW SOURCE/);
 		});
 
+		test("no arguments: nothing is classified", () => {
+			assert.equal(beforeAgent("g4", expanded("wiki-synthesize", "")), "");
+		});
+
+		test("with no command text after the arguments, only the preamble's line is read", () => {
+			const preamble = expanded("wiki-lint", "").split("\n")[0] ?? "";
+			const prompt = `${preamble}see https://arxiv.org/abs/3\nthen A vs B`;
+			const out = beforeAgent("g5", prompt);
+			assert.match(out, /NEW SOURCE/, "the preamble's line is classified");
+			assert.doesNotMatch(out, /comparison/i, "the rest is not");
+		});
+
 		test("a multi-line argument is read to where the command text begins, not only its first line", () => {
 			assert.match(beforeAgent("g3", expanded("wiki-question", "why is it slow\nsee https://arxiv.org/abs/7")), /NEW SOURCE/);
 		});

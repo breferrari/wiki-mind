@@ -43,14 +43,15 @@ const GEMINI_PREAMBLE = "Run the vault command below. It is written for Claude C
  * expanded prompt (obsidian-mind #408): the preamble, the typed arguments,
  * then the injected command file, whose words would set off hints of their
  * own. The arguments run from the preamble to the blank line before the
- * command file's frontmatter, so a multi-line argument is read whole; an
+ * command file's frontmatter (every command opens with one, which
+ * gemini-commands.test.ts holds), so a multi-line argument is read whole; an
  * argument that itself holds a blank line then `---` is read up to there.
  * With no such boundary, only the preamble's own line is read.
  */
 function typedPrompt(prompt: string): string {
 	if (!prompt.startsWith(GEMINI_PREAMBLE)) return prompt;
 	const rest = prompt.slice(GEMINI_PREAMBLE.length);
-	const boundary = /\r?\n\r?\n---\r?\n/.exec(rest);
+	const boundary = /\r?\n\r?\n\uFEFF?---\r?\n/.exec(rest);
 	return boundary === null ? (rest.split(/\r?\n/)[0] ?? "") : rest.slice(0, boundary.index);
 }
 
@@ -64,10 +65,10 @@ const sessionId = input.session_id;
 const hasSession = typeof sessionId === "string" && sessionId !== "";
 const stopReport = hasSession ? takeHandoff(HANDOFF_DIR, sessionId) : null;
 
-const prompt = typeof input.prompt === "string" ? typedPrompt(input.prompt) : input.prompt;
+const prompt = typeof input.prompt === "string" ? typedPrompt(input.prompt) : "";
 let hints: string[] = [];
 let failureLines: string[] = [];
-if (typeof prompt === "string" && prompt !== "") {
+if (prompt !== "") {
 	const vaultRoot = resolveProjectDir(process.cwd());
 	try {
 		const { registry } = await openVault(vaultRoot, "prompt");

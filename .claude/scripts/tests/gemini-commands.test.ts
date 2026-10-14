@@ -101,6 +101,13 @@ test("a description's escapes are undone once", () => {
 });
 
 test("classify-message.ts knows the wrappers' preamble, byte for byte, so it reads only the typed arguments (#118)", () => {
+	// Read from source: an entry point runs on import, and lib/ is vendored, so there is no module to share it from.
 	const source = readFileSync(join(REPO, ".claude", "scripts", "classify-message.ts"), "utf-8");
 	assert.ok(source.includes(`const GEMINI_PREAMBLE = ${JSON.stringify(PREAMBLE)};`), "classify-message.ts declares the generator's preamble");
+});
+
+test("every command opens with frontmatter, where classify-message finds the end of a Gemini command's arguments (#118)", () => {
+	for (const file of readdirSync(COMMANDS).filter((f) => COMMAND.test(f))) {
+		assert.match(readFileSync(join(COMMANDS, file), "utf-8"), /^---\r?\n/, `${file} opens with ---`);
+	}
 });
