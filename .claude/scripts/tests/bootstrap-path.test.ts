@@ -13,10 +13,15 @@ import { BOOTSTRAP_PATH } from "../extensions/qmd/session.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-test("the install hook runs the qmd extension's bootstrap, which ships", () => {
+test("the install hook runs the qmd extension's bootstrap, which ships, and the docs give the same path", () => {
+	const path = relative(REPO, BOOTSTRAP_PATH).replaceAll("\\", "/");
 	const hook = readFileSync(join(REPO, ".shardmind", "hooks", "bootstrap.ts"), "utf-8");
-	const named = /QMD_BOOTSTRAP_RELATIVE\s*(?::\s*string\s*)?=\s*['"`]([^'"`]+)['"`]/.exec(hook)?.[1];
+	const named = /(?:const|let|var)\s+QMD_BOOTSTRAP_RELATIVE\s*(?::\s*string\s*)?=\s*(['"`])(.+?)\1/.exec(hook)?.[2];
 	assert.ok(named !== undefined, "the hook names its bootstrap");
 	assert.ok(existsSync(join(REPO, named)), `${named} ships`);
-	assert.equal(named, relative(REPO, BOOTSTRAP_PATH).replaceAll("\\", "/"));
+	assert.equal(named, path);
+	// The manual command, where each agent looks for it.
+	for (const doc of ["AGENTS.md", ".claude/skills/qmd/SKILL.md"]) {
+		assert.ok(readFileSync(join(REPO, doc), "utf-8").includes(path), `${doc} gives ${path}`);
+	}
 });

@@ -94,6 +94,8 @@ Use the most capable search available, and stop there:
 2. **The QMD CLI:** `qmd --index <name> query|search|get`. `<name>` is `qmd_index` in `vault-manifest.json` when it is set, and otherwise the vault folder's name as a slug.
 3. **Grep and Glob**, only when QMD is not installed.
 
+If QMD finds nothing in a vault that has notes, its index may be missing. Session start rebuilds it; to rebuild it by hand, run `node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts` from the vault root.
+
 ## Hook feedback
 
 - **A Stop report** comes with the user's next message: a wrap-up checklist, and any drift found (unsourced notes, one-sided syntheses, unannotated notes). Deal with the user's message first. Then act on what bears on the current work, ask about what needs their call, and leave the rest.
@@ -125,7 +127,7 @@ Under Gemini, the Stop report runs once, when the session ends, rather than afte
 | `bases/` | Bases views over each note type, embedded in `Index.md`. |
 | `AGENTS.md` | This manual, read by every agent. |
 | `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions. |
-| `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. To rebuild the QMD index by hand, run `node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts` from the vault root. |
+| `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. |
 | `.claude/rules/` | What only Claude Code reads. |
 | `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
 
