@@ -160,7 +160,7 @@ The command prints what it did and what it left alone:
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
 | `.codex/` | Codex's hook config, `hooks.json`, vendored from obsidian-mind (§5). |
-| `.gemini/` | Gemini's `settings.json`: its hooks, and `context.fileName` pointing it at `AGENTS.md`, vendored from obsidian-mind (§5). |
+| `.gemini/` | Gemini's `settings.json`: its hooks, and `context.fileName` pointing it at `AGENTS.md`, vendored from obsidian-mind (§5); and its command wrappers, `commands/wiki-*.toml` (#109). |
 
 ### 3.3 Repo-only (in `.shardmindignore`)
 
@@ -189,7 +189,7 @@ Every value has a default (ShardMind rejects one without). The defaults are what
 | `wiki` | the five note folders, `inbox/`, `bases/`, `Index.md`, `templates/` | no | The product. |
 | `claude` | `.claude/` except `scripts/` and `extensions/`, including `.claude/rules/`; `.claude-plugin/` if shipped | no | As in obsidian-mind: other agents' hook configs resolve into `.claude/scripts/`, so removing Claude would orphan them. `.claude/scripts/` is claimed by no module and so always installs. |
 | `codex` | `.codex/` | yes | Codex reads `AGENTS.md` natively; its module is its hook config (#25). |
-| `gemini` | `.gemini/` | yes | Gemini reads `AGENTS.md` through `context.fileName`; its module is its settings (#25). |
+| `gemini` | `.gemini/` | yes | Gemini reads `AGENTS.md` through `context.fileName`. Its module is its settings (#25) and its command wrappers, `.gemini/commands/wiki-*.toml`: one per `.claude/commands/wiki-*.md`, which each reads live with `@{…}`, on obsidian-mind #400's model. `tests/gemini-commands.test.ts` generates them and fails on a missing, stale or orphaned one (#109). |
 
 **Decided (2026-10-05, maintainer may overrule):** the first release is Claude only (Q6). *Landed in #25:* Codex and Gemini are removable modules. `AGENTS.md` is in no module, so it always installs.
 

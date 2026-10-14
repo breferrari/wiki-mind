@@ -1,0 +1,7 @@
+# Generated in the wiki-mind repo from .claude/commands/wiki-lint.md. In a vault, change the description here too when you change it there.
+description = "Check the wiki for drift: orphans, concepts and entities with no current source, unmarked links to a retracted or superseded source, one-sided syntheses, frontmatter problems, stale open questions, notes Index.md doesn't annotate. Fix what you can, ask about the rest."
+prompt = """
+Run the vault command below. It is written for Claude Code: where it says $ARGUMENTS, use these arguments: {{args}}
+
+@{.claude/commands/wiki-lint.md}
+"""

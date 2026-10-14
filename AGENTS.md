@@ -110,9 +110,9 @@ This manual is for every agent that opens the vault. Each one runs the same hook
 |-------|-------------------|-------------|----------|
 | Claude Code | natively | `.claude/settings.json` | `/wiki-ingest` and the rest |
 | Codex | natively | `.codex/hooks.json` | type the command's name, `wiki-ingest`, without the slash: it reads `.claude/commands/wiki-ingest.md` |
-| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | ask for the command by name, `wiki-ingest`: it reads `.claude/commands/wiki-ingest.md` |
+| Gemini | through `.gemini/settings.json` | `.gemini/settings.json` | `/wiki-ingest` and the rest: a wrapper in `.gemini/commands/` reads each one's `.claude/commands/` file |
 
-A command file's `$ARGUMENTS` is the input the user gave with the command: for `wiki-retract`, the source and any flags; for `wiki-ingest`, the URL or inbox path.
+A command file's `$ARGUMENTS` is the input the user gave with the command: for `wiki-retract`, the source and any flags; for `wiki-ingest`, the URL or inbox path. Under Gemini, the wrapper passes that input in its place.
 
 Under Gemini, the Stop report runs once, when the session ends, rather than after each answer. What only Claude Code needs is in `.claude/rules/`, which only Claude Code reads.
 
@@ -129,7 +129,7 @@ Under Gemini, the Stop report runs once, when the session ends, rather than afte
 | `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions. |
 | `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. |
 | `.claude/rules/` | What only Claude Code reads. |
-| `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
+| `.codex/`, `.gemini/` | Codex's and Gemini's hook configs, and Gemini's command wrappers in `.gemini/commands/`, which copy each command's description: change it in both places. Each is a module you can leave out at install. |
 
 ## Developing this shard
 

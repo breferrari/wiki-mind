@@ -1,0 +1,7 @@
+# Generated in the wiki-mind repo from .claude/commands/wiki-ingest.md. In a vault, change the description here too when you change it there.
+description = "Ingest a source from a URL or inbox/: write its sources/ note, update the concepts and entities it informs with linked claims, mark questions it answers, annotate Index.md."
+prompt = """
+Run the vault command below. It is written for Claude Code: where it says $ARGUMENTS, use these arguments: {{args}}
+
+@{.claude/commands/wiki-ingest.md}
+"""
