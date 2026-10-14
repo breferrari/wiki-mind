@@ -336,7 +336,7 @@ describe("classify-message", () => {
 		const expanded = (name: string, args: string) => {
 			const toml = readFileSync(join(REPO, ".gemini", "commands", `${name}.toml`), "utf-8");
 			const body = /prompt = """\n([\s\S]*?)"""/.exec(toml)?.[1] ?? "";
-			return body.replace("{{args}}", args).replace(/@\{([^}]+)\}/, (_, path: string) => readFileSync(join(REPO, path), "utf-8"));
+			return body.replace("{{args}}", () => args).replace(/@\{([^}]+)\}/, (_, path: string) => readFileSync(join(REPO, path), "utf-8"));
 		};
 		const beforeAgent = (session: string, prompt: string) => run("classify-message", { hook_event_name: "BeforeAgent", session_id: session, prompt }).stdout;
 

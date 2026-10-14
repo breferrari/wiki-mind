@@ -6,7 +6,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Added
 
-- **The commands run under Gemini as slash commands.** `/wiki-ingest`, `/wiki-synthesize`, `/wiki-question`, `/wiki-retract` and `/wiki-lint` work in Gemini as they do in Claude Code. Before, you asked Gemini for a command by name.
+- **The commands run under Gemini as slash commands.** `/wiki-ingest`, `/wiki-synthesize`, `/wiki-question`, `/wiki-retract` and `/wiki-lint` work in Gemini as they do in Claude Code. Before, you asked Gemini for a command by name. Routing hints read only what you type after the command, not the command's own text.
 - **Codex and Gemini.** The vault ships hook configs for both, in `.codex/` and `.gemini/`. Each is a module you can leave out at install. Codex and Gemini read `AGENTS.md` and run the same hooks as Claude Code. Under Codex, run a command by typing its name without the slash, as `wiki-ingest`.
 - **Diagrams in syntheses.** When a comparison has a shape a picture shows, `/wiki-synthesize` offers a mermaid diagram, drawn with the bundled `mermaid-visualizer` skill. A diagram adds no claim: everything in it is already in the note's text, with its source.
 - **Retract or supersede a source with `/wiki-retract`.** The source note stays as the record of what it said. Each claim that cites it is marked when another source still backs it, or moved to the note's Withdrawn claims when nothing does. For a newer source, the agent restates the claim from it. Syntheses that rest on it are flagged for review, and answered questions that rested on it alone reopen. `--undo` reverses it when a retraction is itself withdrawn. `/wiki-lint` reports a link to such a source that nothing has marked.
@@ -24,7 +24,6 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Fixed
 
-- **A Gemini command no longer sets off routing hints from its own text.** Under Gemini, running `/wiki-synthesize` offered the comparison hint because the command's own instructions say "vs". Only what you type after the command is read for hints now.
 - **Session start reads your Gemini settings as Gemini does.** A `.gemini/settings.json` with comments now counts, and so does its older top-level `contextFileName` key. So a leftover `GEMINI.md` is named when Gemini reads `AGENTS.md`. A settings file that starts with a byte-order mark counts as none, as Gemini refuses it.
 - **On Windows and macOS, instruction-file names match in any case.** A lowercase `claude.md` at the vault root is named like `CLAUDE.md`, and a lowercase `gemini.md` like `GEMINI.md` where Gemini reads `AGENTS.md`, since the agent loads each the same way. Saving one, or `agents.md`, no longer checks it as a note. Paths inside the vault match without case on macOS too.
 - **QMD's off switches reach compaction too.** `VAULT_QMD=off`, `VAULT_EXTENSIONS=off` and `enabled: false` on the `qmd` entry now stop its index refresh before a compaction, as they do at session start, after a write and at Stop. Any other extension's pre-compact work now runs as well.
