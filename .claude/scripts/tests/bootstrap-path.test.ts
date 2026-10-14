@@ -20,8 +20,8 @@ test("the install hook runs the qmd extension's bootstrap, which ships, and the 
 	assert.ok(named !== undefined, "the hook names its bootstrap");
 	assert.ok(existsSync(join(REPO, named)), `${named} ships`);
 	assert.equal(named, path);
-	// The manual command, where each agent looks for it.
-	for (const doc of ["AGENTS.md", ".claude/skills/qmd/SKILL.md"]) {
+	// The manual command, where each agent looks for it, and the leftover-script warning (#115).
+	for (const doc of ["AGENTS.md", ".claude/skills/qmd/SKILL.md", ".claude/extensions/wiki/index.ts"]) {
 		assert.ok(readFileSync(join(REPO, doc), "utf-8").includes(path), `${doc} gives ${path}`);
 	}
 });

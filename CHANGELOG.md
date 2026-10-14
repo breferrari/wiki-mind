@@ -12,7 +12,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Changed
 
-- **The QMD bootstrap moved.** To build the search index by hand, for example on a fresh clone, run `node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts` from the vault root. The old `.scripts/qmd-bootstrap.ts` is gone, and `.scripts/` with it, and install and session start already run the new one for you. If you had edited the old script, `shardmind update` keeps your copy, but it no longer runs, since some of the libraries it imports are gone, so delete it.
+- **The QMD bootstrap moved.** To build the search index by hand, for example on a fresh clone, run `node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts` from the vault root. The old `.scripts/qmd-bootstrap.ts` is gone, and `.scripts/` with it, and install and session start already run the new one for you. If you had edited the old script, `shardmind update` keeps your copy, but it no longer runs, since some of the libraries it imports are gone. Session start names it until you delete it.
 - **The vault's manual is `AGENTS.md`, not `CLAUDE.md`.** One instruction file every agent reads; what only Claude Code needs is in `.claude/rules/`. On `shardmind update`, an unmodified `CLAUDE.md` is removed. One you edited is kept, and session-start warns you about it: Claude Code would read it in place of `AGENTS.md`, so move anything of your own into `AGENTS.md` and delete it.
 - **Install names its folder, and needs ShardMind 1.0 or later.** ShardMind 1.0 makes the vault's folder itself, so these steps replace 0.1.0's `mkdir` first:
   1. `npx shardmind install breferrari/wiki-mind my-wiki`

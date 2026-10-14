@@ -59,6 +59,10 @@ const INDEX_LINES_SHOWN = 40;
 /** An open question nobody has touched for this long is reported as stale. */
 const STALE_QUESTION_DAYS = 30;
 
+/** obsidian-mind's QMD bootstrap, retired (#112), and the qmd extension's, which replaced it. tests/bootstrap-path.test.ts holds the second against the extension's own path. */
+const RETIRED_BOOTSTRAP = ".scripts/qmd-bootstrap.ts";
+const BOOTSTRAP = ".claude/scripts/extensions/qmd/qmd-bootstrap.ts";
+
 const plural = (n: number, one: string, many: string = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const article = (word: string) => (/^[aeiou]/i.test(word) ? `an ${word}` : `a ${word}`);
 
@@ -151,6 +155,18 @@ export const extension: Extension = {
 					.map((n) => (sameOnDisk(n, CLAUDE_MD) ? `Claude Code reads \`${n}\` in place of it` : `Gemini no longer reads \`${n}\``))
 					.join("; ");
 				return `⚠️ ${names.map((n) => `\`${n}\``).join(" and ")} ${is} retired: \`${INSTRUCTION_FILE}\` is this vault's one instruction file (${why}). Move anything of your own from ${it} into \`${INSTRUCTION_FILE}\` (or \`.claude/rules/\` for Claude-only notes), then delete ${it}.`;
+			},
+		},
+		{
+			// obsidian-mind's QMD bootstrap, which the vault no longer ships (#112):
+			// update keeps a copy the user edited, and it no longer runs, since some
+			// of the libraries it imports are gone (#115).
+			id: "wiki.retired-bootstrap",
+			priority: 0,
+			header: "### QMD bootstrap",
+			render: (ctx) => {
+				if (!existsSync(join(ctx.vaultRoot, RETIRED_BOOTSTRAP))) return null;
+				return `⚠️ \`${RETIRED_BOOTSTRAP}\` is retired and no longer runs: QMD's bootstrap is \`${BOOTSTRAP}\`, which session start runs when the index is missing. Move anything of your own out of the old script, then delete \`.scripts/\`.`;
 			},
 		},
 		{
