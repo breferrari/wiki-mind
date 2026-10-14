@@ -278,7 +278,7 @@ A vendored file is upstream plus patches, nothing else. A local change is a patc
 | Group | Files |
 |-------|-------|
 | Generic libraries (`.claude/scripts/lib/`) | `hook-io`, `main-guard`, `project-dir`, `om-mod`, `frontmatter`, `wikilinks`, `regex`, `read-field`, `read-head`, `charcount`, `atomic-write`, `report-key`, `hint-state`, `stop-handoff`, `stop-report`, `qmd`, `qmd-refresh`, `session-start`, `prose-width`, `write-targets` (#100) (20; #112 dropped `qmd-bootstrap`, `qmd-ignore` and `qmd-models` for the qmd extension's) |
-| Generic scripts | `qmd-mcp.mjs` (+ `.d.mts`), `qmd-refresh-run.ts`, `.shardmind/hooks/bootstrap.ts` |
+| Generic scripts | `qmd-mcp.mjs` (+ `.d.mts`), `qmd-refresh-run.ts`, `.shardmind/hooks/bootstrap.ts` (patched to run the qmd extension's bootstrap, S11) |
 | Config | `.claude/scripts/package.json` and `tsconfig.json`, `.shardmind/hooks/package.json`, `.mcp.json` |
 | Skills | `obsidian-markdown`, `obsidian-bases`, `obsidian-cli`, `json-canvas`, `defuddle`, `qmd` |
 | Tests | the obsidian-mind tests whose subject is a vendored file, and `tests/pre-compact.test.ts`, whose subject wiki-mind now owns (#104), plus `tests/_helpers.ts`, and the runner `tests/_run-tests.ts` with `tests/_qmd-cache-guard.ts` and its process helpers `tests/_proc.ts` (#100) |
