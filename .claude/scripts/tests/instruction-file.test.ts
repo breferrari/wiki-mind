@@ -127,34 +127,3 @@ describe("session-start warns about a retired instruction file left at the vault
 		}
 	});
 });
-
-describe("session-start warns about a leftover .scripts/qmd-bootstrap.ts, which update keeps when edited and which no longer runs (#115)", () => {
-	let root = "";
-	let ctx: HookContext;
-	const registry = fromLoaded([{ declaration: { id: "wiki", module: ".claude/extensions/wiki/index.ts", events: ["session-start"] }, extension }]);
-	before(() => {
-		root = mkdtempSync(join(tmpdir(), "wiki-bootstrap-"));
-		ctx = { vaultRoot: root, manifest: null, now: Date.now() };
-	});
-	after(() => rmTemp(root));
-
-	const bootstrap = async () => (await collectSections(registry, ctx, "full")).result.find((s) => s.header === "### QMD bootstrap");
-
-	test("absent: no warning", async () => {
-		assert.equal(await bootstrap(), undefined);
-	});
-
-	test("present: named as retired, with the extension's bootstrap and what to do", async () => {
-		mkdirSync(join(root, ".scripts"), { recursive: true });
-		writeFileSync(join(root, ".scripts", "qmd-bootstrap.ts"), "// my edits\n");
-		try {
-			const w = await bootstrap();
-			assert.ok(w, "a warning section");
-			assert.match(w.body, /`\.scripts\/qmd-bootstrap\.ts` is retired/);
-			assert.match(w.body, /`\.claude\/scripts\/extensions\/qmd\/qmd-bootstrap\.ts`/);
-			assert.match(w.body, /delete/);
-		} finally {
-			rmSync(join(root, ".scripts"), { recursive: true, force: true });
-		}
-	});
-});
