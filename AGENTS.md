@@ -84,7 +84,7 @@ When the user asks something the wiki covers, answer from the notes and cite the
 - **Name a note by its title**, with no date prefix: `concepts/Retrieval-augmented generation.md`.
 - **One note per thing.** Split a note that grows to hold two ideas. Merge two notes that turn out to be one, keeping the links working.
 - **Orphans are bugs.** Every note links to at least one other, and `Index.md` annotates it.
-- **Never move, rename or delete notes without asking.** Don't edit `.claude/`, `.scripts/` or the manifests: they are the vault's machinery.
+- **Never move, rename or delete notes without asking.** Don't edit `.claude/` or the manifests: they are the vault's machinery.
 
 ## Search
 
@@ -128,7 +128,6 @@ Under Gemini, the Stop report runs once, when the session ends, rather than afte
 | `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. |
 | `.claude/rules/` | What only Claude Code reads. |
 | `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
-| `.scripts/` | The QMD index bootstrap. |
 
 ## Developing this shard
 

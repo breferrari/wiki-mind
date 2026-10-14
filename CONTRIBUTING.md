@@ -53,7 +53,6 @@ Update this table in the same PR that adds or removes a top-level path.
 | `.claude/extensions/` | wiki-mind's own hook extensions. |
 | `.claude/settings.json` | Wires the hooks. |
 | `.claude/skills/` | Obsidian and QMD skills, and the Claude Code mod in `wiki-mind/` (vendored). |
-| `.scripts/` | QMD index bootstrap. |
 | `.mcp.json` | Registers the QMD MCP server. |
 | `.claude/rules/` | What only Claude Code reads, beside `AGENTS.md`. |
 | `.codex/` | Codex's hook config, vendored from obsidian-mind; the removable codex module. |
