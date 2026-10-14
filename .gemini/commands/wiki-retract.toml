@@ -1,4 +1,4 @@
-# Generated in the wiki-mind repo from .claude/commands/wiki-retract.md. Do not edit: it is rewritten from the command.
+# Generated in the wiki-mind repo from .claude/commands/wiki-retract.md. In a vault, change the description here too when you change it there.
 description = "Mark a source retracted or superseded, and update every note that cites it: claims with another current source are marked, claims without one move to Withdrawn claims, syntheses are flagged, answered questions reopen. --undo when a retraction is itself withdrawn."
 prompt = """
 Run the vault command below. It is written for Claude Code: where it says $ARGUMENTS, use these arguments: {{args}}

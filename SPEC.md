@@ -160,7 +160,7 @@ The command prints what it did and what it left alone:
 | `.mcp.json` | Registers the QMD MCP server. |
 | `vault-manifest.json` | Vault metadata the scripts read (QMD index name, budgets). Also the marker the hook commands walk up to when finding the vault root. |
 | `.codex/` | Codex's hook config, `hooks.json`, vendored from obsidian-mind (§5). |
-| `.gemini/` | Gemini's `settings.json`: its hooks, and `context.fileName` pointing it at `AGENTS.md`, vendored from obsidian-mind (§5). |
+| `.gemini/` | Gemini's `settings.json`: its hooks, and `context.fileName` pointing it at `AGENTS.md`, vendored from obsidian-mind (§5); and its command wrappers, `commands/wiki-*.toml` (#109). |
 
 ### 3.3 Repo-only (in `.shardmindignore`)
 
