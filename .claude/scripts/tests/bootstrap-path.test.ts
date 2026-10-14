@@ -15,7 +15,7 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 test("the install hook runs the qmd extension's bootstrap, which ships", () => {
 	const hook = readFileSync(join(REPO, ".shardmind", "hooks", "bootstrap.ts"), "utf-8");
-	const named = /const QMD_BOOTSTRAP_RELATIVE = '([^']+)';/.exec(hook)?.[1];
+	const named = /QMD_BOOTSTRAP_RELATIVE\s*(?::\s*string\s*)?=\s*['"`]([^'"`]+)['"`]/.exec(hook)?.[1];
 	assert.ok(named !== undefined, "the hook names its bootstrap");
 	assert.ok(existsSync(join(REPO, named)), `${named} ships`);
 	assert.equal(named, relative(REPO, BOOTSTRAP_PATH).replaceAll("\\", "/"));

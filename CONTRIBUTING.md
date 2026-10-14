@@ -66,7 +66,7 @@ The hook core now comes from mindframe (`core/scripts/`), recorded in `.claude/s
 
    | Zone | Holds | May import |
    |------|-------|------------|
-   | `.claude/scripts/lib/` | vendored libraries, from mindframe or obsidian-mind, untouched except for parameterized changes, each a patch in `vendor-patches/` | `lib/` only, but for `lib/qmd.ts` and `lib/session-start.ts`, which re-export the qmd extension's `lib/qmd.ts` and `lib/index-name.ts` until mindframe #96 |
+   | `.claude/scripts/lib/` | vendored libraries, from mindframe or obsidian-mind, untouched except for parameterized changes, each a patch in `vendor-patches/` | `lib/` only, but for `lib/qmd.ts` and `lib/session-start.ts`, which re-export the qmd extension's `lib/qmd.ts` and `lib/index-name.ts` until mindframe #135 |
    | `.claude/scripts/core/` | the extension registry and its API, vendored from mindframe | `core/` and `lib/` |
    | `.claude/extensions/` | wiki-mind's behaviour | itself and `core/index.ts`, the core's one public entry point |
    | `.claude/scripts/extensions/qmd/` | mindframe's qmd extension, vendored: an extension like the ones above, kept beside the core it comes with | itself and `core/index.ts`; its own `imports.test.ts` holds this |

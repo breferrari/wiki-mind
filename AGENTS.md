@@ -125,7 +125,7 @@ Under Gemini, the Stop report runs once, when the session ends, rather than afte
 | `bases/` | Bases views over each note type, embedded in `Index.md`. |
 | `AGENTS.md` | This manual, read by every agent. |
 | `vault-manifest.json` | Vault metadata the hooks read, including the declared extensions. |
-| `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. |
+| `.claude/` | The hooks, the extension registry and its wiki extension, the skills, and the Claude Code mod. To rebuild the QMD index by hand, run `node --experimental-strip-types .claude/scripts/extensions/qmd/qmd-bootstrap.ts` from the vault root. |
 | `.claude/rules/` | What only Claude Code reads. |
 | `.codex/`, `.gemini/` | Codex's and Gemini's hook configs. Each is a module you can leave out at install. |
 

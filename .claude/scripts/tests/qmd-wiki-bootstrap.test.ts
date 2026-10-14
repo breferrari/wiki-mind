@@ -5,7 +5,7 @@
  * bootstrap's generic fallback text.
  *
  * QMD itself is faked: a stand-in `@tobilu/qmd` package, resolved the way
- * lib/qmd.ts resolves the real one, logs each call and answers `--version`.
+ * the qmd extension's lib/qmd.ts resolves the real one, logs each call and answers `--version`.
  */
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rmTemp } from "./_helpers.ts";
-import { deriveQmdIndex } from "../lib/session-start.ts";
+import { deriveQmdIndex } from "../extensions/qmd/lib/index-name.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 let parent = "";
