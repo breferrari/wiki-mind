@@ -338,19 +338,19 @@ describe("classify-message", () => {
 			const body = /prompt = """\n([\s\S]*?)"""/.exec(toml)?.[1] ?? "";
 			return body.replace("{{args}}", args).replace(/@\{([^}]+)\}/, (_, path: string) => readFileSync(join(REPO, path), "utf-8"));
 		};
-		const before = (session: string, prompt: string) => run("classify-message", { hook_event_name: "BeforeAgent", session_id: session, prompt }).stdout;
+		const beforeAgent = (session: string, prompt: string) => run("classify-message", { hook_event_name: "BeforeAgent", session_id: session, prompt }).stdout;
 
 		test("words in the injected command text fire no hint: wiki-synthesize's own \"vs\"", () => {
 			assert.match(expanded("wiki-synthesize", "Attention"), /\bvs\b/, "the fixture's command text has the word");
-			assert.equal(before("g1", expanded("wiki-synthesize", "Attention")), "");
+			assert.equal(beforeAgent("g1", expanded("wiki-synthesize", "Attention")), "");
 		});
 
 		test("words in the typed arguments fire their hint", () => {
-			assert.match(before("g2", expanded("wiki-ingest", "https://arxiv.org/abs/9")), /NEW SOURCE/);
+			assert.match(beforeAgent("g2", expanded("wiki-ingest", "https://arxiv.org/abs/9")), /NEW SOURCE/);
 		});
 
 		test("a multi-line argument is read to where the command text begins, not only its first line", () => {
-			assert.match(before("g3", expanded("wiki-question", "why is it slow\nsee https://arxiv.org/abs/7")), /NEW SOURCE/);
+			assert.match(beforeAgent("g3", expanded("wiki-question", "why is it slow\nsee https://arxiv.org/abs/7")), /NEW SOURCE/);
 		});
 	});
 });

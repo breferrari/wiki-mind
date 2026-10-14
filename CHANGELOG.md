@@ -24,6 +24,7 @@ What changed in each release. A vault installed with ShardMind shows this after 
 
 ### Fixed
 
+- **A Gemini command no longer sets off routing hints from its own text.** Under Gemini, running `/wiki-synthesize` offered the comparison hint because the command's own instructions say "vs". Only what you type after the command is read for hints now.
 - **Session start reads your Gemini settings as Gemini does.** A `.gemini/settings.json` with comments now counts, and so does its older top-level `contextFileName` key. So a leftover `GEMINI.md` is named when Gemini reads `AGENTS.md`. A settings file that starts with a byte-order mark counts as none, as Gemini refuses it.
 - **On Windows and macOS, instruction-file names match in any case.** A lowercase `claude.md` at the vault root is named like `CLAUDE.md`, and a lowercase `gemini.md` like `GEMINI.md` where Gemini reads `AGENTS.md`, since the agent loads each the same way. Saving one, or `agents.md`, no longer checks it as a note. Paths inside the vault match without case on macOS too.
 - **QMD's off switches reach compaction too.** `VAULT_QMD=off`, `VAULT_EXTENSIONS=off` and `enabled: false` on the `qmd` entry now stop its index refresh before a compaction, as they do at session start, after a write and at Stop. Any other extension's pre-compact work now runs as well.
